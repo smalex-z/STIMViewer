@@ -56,9 +56,13 @@ class Camera:
         self.keep_image = True
         self._buffer_list = []
 
+        self.target_gain = 1
+        self.max_gain = 1
+
         self.killed = False
 
         self._get_device()
+        self._setup_device_and_datastream()
         self._interface.set_camera(self)
 
         self._image_converter = ids_peak_ipl.ImageConverter()
@@ -102,7 +106,7 @@ class Camera:
             ids_peak.DeviceAccessType_Control)
         self.node_map = self._device.RemoteDevice().NodeMaps()[0]
 
-        #self.max_gain = self.node_map.FindNode("Gain").Maximum() TODO: GAIN
+        self.max_gain = self.node_map.FindNode("Gain").Maximum()
 
         # Load the default settings
         self.node_map.FindNode("UserSetSelector").SetCurrentEntry("Default")
@@ -146,9 +150,8 @@ class Camera:
         self.node_map.FindNode("TriggerMode").SetCurrentEntry("On")
         self.node_map.FindNode("TriggerSource").SetCurrentEntry("Software")
 
-    # Auto Gain and Exposure TODO: GAIN
 
-    """
+    # GAIN    
     def _setup_device_and_datastream(self):
         self._datastream = self._device.DataStreams()[0].OpenDataStream()
         # Disable auto gain and auto exposure to enable custom gain in program
@@ -163,7 +166,7 @@ class Camera:
             buffer = self._datastream.AllocAndAnnounceBuffer(payload_size)
             self._datastream.QueueBuffer(buffer)
         print("Allocated buffers, finished opening device")
-    """
+    
 
     def close(self):
         self.stop_acquisition()
@@ -176,8 +179,7 @@ class Camera:
             except Exception as e:
                 print(f"Exception (close): {str(e)}")
 
-    """
-    TODO: GAIN
+    
     def _find_and_set_remote_device_enumeration(self, name: str, value: str):
         all_entries = self.node_map.FindNode(name).Entries()
         available_entries = []
@@ -193,7 +195,7 @@ class Camera:
             self.node_map.FindNode(name).SetValue(value)
         except ids_peak.Exception:
             self.interface.warning(f"Could not set value for {name}!")
-
+    """
     def print(self):
         print(
             f"{self._device.ModelName()}: ("
@@ -230,22 +232,6 @@ class Camera:
 
         for buffer in self._buffer_list:
             self._datastream.QueueBuffer(buffer)
-
-        """
-        TODO: GAIN
-        self.target_fps = 0
-        try:
-            # Get cameras maximums possible FPS
-            self.max_fps = self.node_map.FindNode("AcquisitionFrameRate").Maximum()
-            # Set frames per second to given maximum
-            self.target_fps = self.max_fps
-            self.set_remote_device_value("AcquisitionFrameRate", self.target_fps)
-        except ids_peak.Exception:
-            self.interface.warning(
-                "Warning Unable to limit fps, "
-                "since node AcquisitionFrameRate is not supported."
-                "Program will continue without set limit.")
-        """
 
         # Lock parameters that should not be accessed during acquisition
         try:
@@ -311,117 +297,6 @@ class Camera:
         while exists(build_string()):
             num += 1
         return build_string()
-
-
-    """
-    TODO: GAIN
-    def record(self, timer: int):
-        
-
-        # Create video writing object
-        video = ids_peak_ipl.VideoWriter()
-        cwd = os.getcwd()
-
-        dropped_before = 0
-        lost_before = 0
-
-        try:
-            # Create a new file the video will be saved in.
-            video.Open(self._valid_name(cwd + "/" + "video", ".avi"))
-
-            # Set target frame rate and gain
-            self.set_remote_device_value("AcquisitionFrameRate", self.target_fps)
-            self.set_remote_device_value("Gain", self.target_gain)
-
-            video.Container().SetFramerate(self.target_fps)
-
-            print("Recording with: ")
-            var_name = "AcquisitionFrameRate"
-            print(f"  Framerate: {self.node_map.FindNode(var_name).Value():.2f}")
-            var_name = "Gain"
-            print(f"  Gain: {self.node_map.FindNode(var_name).Value():.2f}")
-            data_streamnode_map = self._datastream.NodeMaps()[0]
-            dropped_before = data_streamnode_map.FindNode("StreamDroppedFrameCount").Value()
-            lost_before = data_streamnode_map.FindNode("StreamLostFrameCount").Value()
-
-        except Exception as e:
-            self.interface.warning(str(e))
-            raise
-
-        print("Recording...")
-        # Set target time
-        limit = timer + time.time()
-        while (limit - time.time()) > 0 and not self.killed:
-            try:
-                # Receive image from datastream
-                # Wait until the image is completed
-                buffer = self._datastream.WaitForFinishedBuffer(500)
-
-                # Get an image from a buffer
-                # NOTE: This still uses the buffer's underlying memory
-                ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
-
-                # Create IDS peak IPL image for debayering and convert it to RGBa8 format
-                # this creates a copy of the image, so the buffer is free to be used again
-                # NOTE: Use `ImageConverter`, since the `ConvertTo` function re-allocates
-                #       the converison buffers on every call
-                converted_ipl_image = self._image_converter.Convert(
-                    ipl_image, TARGET_PIXEL_FORMAT)
-                # Passes the image to the (QT) interface
-                self.interface.on_image_received(converted_ipl_image)
-
-                # Append image to video
-                video.Append(converted_ipl_image)
-                # Give buffer back into the queue so it can be used again
-                self._datastream.QueueBuffer(buffer)
-
-            except Exception as e:
-                print(f"Warning: Exception caught: {str(e)}")
-
-        if self.killed:
-            return
-
-        # See if the acquisition was lossless. Note that between the last
-        # acquisition and the next acquisition some frames will be lost
-        # (seen after the second recording).
-        data_streamnode_map = self._datastream.NodeMaps()[0]
-        dropped_stream_frames = data_streamnode_map.FindNode(
-            "StreamDroppedFrameCount").Value() - dropped_before
-        lost_stream_frames = data_streamnode_map.FindNode(
-            "StreamLostFrameCount").Value() - lost_before
-
-        stats = RecordingStatistics(
-            frames_encoded=video.NumFramesEncoded(),
-            frames_video_dropped=video.NumFramesDropped(),
-            frames_stream_dropped=dropped_stream_frames,
-            frames_lost_stream=lost_stream_frames,
-            duration=timer)
-
-        # AVI framerate sets the playback speed.
-        # You can calculate that with the amount of frames captured in the
-        # time duration the video was recorded
-        video.Container().SetFramerate(stats.fps())
-        # Wait until all frames are written to the file
-        video.WaitUntilFrameDone(10000)
-        video.Close()
-        self.interface.done_recording(stats)
-
-    def acquisition_thread(self):
-        while not self.killed:
-            try:
-                if self.start_recording is True:
-                    # Start recording a 10 seconds long video
-                    self.record(10)
-                    self.start_recording = False
-                else:
-                    # Forward image to interface
-                    image = self.get_data_stream_image()
-                    self.interface.on_image_received(image)
-            except Exception as e:
-                self.interface.warning(str(e))
-                self.start_recording = False
-                self.interface.done_recording(RecordingStatistics(0, 0, 0, 0, 0))
-    """
 
 
     def revoke_and_allocate_buffer(self):
