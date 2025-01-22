@@ -202,13 +202,14 @@ class Camera:
             f"{self._device.ParentInterface().DisplayName()} ; "
             f"{self._device.ParentInterface().ParentSystem().DisplayName()} v."
             f"{self._device.ParentInterface().ParentSystem().version()})")
+    """
 
     def get_data_stream_image(self):
         # Wait until the image is completed
         buffer = self._datastream.WaitForFinishedBuffer(500)
 
         # Create IDS peak IPL image for debayering and convert it to RGBa8 format
-        dpl_image = ids_peak_ipl_extension.BufferToImage(buffer)
+        ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
 
         # This creates a copy the image, so the buffer is free to use again after queuing
         # NOTE: Use `ImageConverter`, since the `ConvertTo` function re-allocates
@@ -219,13 +220,11 @@ class Camera:
         self._datastream.QueueBuffer(buffer)
 
         return converted_ipl_image
-    """
+    
 
     def start_acquisition(self):
-        if self._device is None:
+        if self._device is None or self.acquisition_running:
             return False
-        if self.acquisition_running is True:
-            return True
         
         if self._datastream is None:
             self._init_data_stream()
@@ -233,6 +232,21 @@ class Camera:
         for buffer in self._buffer_list:
             self._datastream.QueueBuffer(buffer)
 
+
+        # Constant Acquisition Test
+        try:
+            # Set trigger mode to 'Off' for continuous acquisition
+            self.node_map.FindNode("TriggerMode").SetCurrentEntry("Off")
+
+            # Start the data stream and acquisition
+            self._datastream.StartAcquisition()
+            self.node_map.FindNode("AcquisitionStart").Execute()
+            self.acquisition_running = True
+        except Exception as e:
+            print(f"Exception during start_acquisition: {e}")
+            return False
+        return True
+        """
         # Lock parameters that should not be accessed during acquisition
         try:
             self.node_map.FindNode("TLParamsLocked").SetValue(1)
@@ -258,7 +272,7 @@ class Camera:
             print(f"Exception (start acquisition): {str(e)}")
             return False
         self.acquisition_running = True
-        return True
+        return True"""
 
     def stop_acquisition(self):
         if self._device is None or self.acquisition_running is False:
@@ -365,3 +379,18 @@ class Camera:
             except Exception as e:
                 self._interface.warning(str(e))
                 self.make_image = False
+
+    def acquisition_thread(self):
+        while not self.killed:
+            try:
+                # Check if acquisition is running
+                if self.acquisition_running:
+                    # Fetch an image from the camera
+                    image = self.get_data_stream_image()
+                    if image:
+                        # Pass the image to the interface for real-time display
+                        self._interface.on_image_received(image)
+                else:
+                    time.sleep(0.01)  # Avoid busy-waiting
+            except Exception as e:
+                self._interface.warning(f"Acquisition error: {str(e)}")
