@@ -37,18 +37,10 @@ if TYPE_CHECKING:
 
 
 def start(camera_device: camera.Camera, ui: 'Interface'):
-    # Start acquisition of the camera stream
-    if not camera_device.start_acquisition():
-        print("Unable to start acquisition!")
-        return
-    else:
-        print("Acquisition started")
-
-    # The acquisition thread takes care of waiting for finished buffers
-    # and either recording the images or passing them to the live view
-    thread = threading.Thread(target=camera_device.acquisition_thread, args=())
-    ui.acquisition_thread = thread
+    ui.start_window()
+    thread = threading.Thread(target=camera_device.wait_for_signal, args=())
     thread.start()
+    ui.acquisition_thread = thread
     ui.start_interface()
 
 
@@ -59,10 +51,11 @@ def main(ui: 'Interface'):
     camera_device = None
     try:
         camera_device = camera.Camera(device_manager, ui)
-
-        ui.start_window()
-
+        camera_device.init_software_trigger()
         start(camera_device, ui)
+    
+    except KeyboardInterrupt:
+        print("User interrupt: Exiting...")
     except Exception as e:
         print(f"Exception (main): {str(e)}")
     finally:
