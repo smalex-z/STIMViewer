@@ -254,7 +254,8 @@ class Interface(QtWidgets.QMainWindow):
         # a copy here
         image_numpy = image.get_numpy_1D().copy()
         qt_image = QtGui.QImage(image_numpy,
-                                image.Width(), image.Height(),
+                                image.Width(), 
+                                image.Height(),
                                 QtGui.QImage.Format_RGB32)
         self.display.on_image_received(qt_image)
         self.display.update()
