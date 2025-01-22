@@ -27,7 +27,7 @@ import time
 
 from typing import Optional
 
-from camera import Camera, RecordingStatistics
+from camera import Camera
 from display import Display
 from ids_peak import ids_peak
 
@@ -82,7 +82,6 @@ class Interface(QtWidgets.QMainWindow):
         self._dropdown_pixel_format = None
 
         self.messagebox_signal[str, str].connect(self.message)
-        self.start_button_signal.connect(self.reenable_button)
 
         self._frame_count = 0
         self._fps_label = None
@@ -105,63 +104,83 @@ class Interface(QtWidgets.QMainWindow):
     
     def set_camera(self, cam_module):
         self._camera = cam_module
+    
+    def _create_button_bar(self):
+        self._checkbox_save = QtWidgets.QCheckBox("save image to computer")
+        self._checkbox_save.setChecked(False)
+
+        self._dropdown_pixel_format = QtWidgets.QComboBox()
+        formats = self._camera.node_map.FindNode("PixelFormat").Entries()
+        for idx in formats:
+            if (idx.AccessStatus() != ids_peak.NodeAccessStatus_NotAvailable
+                    and idx.AccessStatus() != ids_peak.NodeAccessStatus_NotImplemented
+                    and self._camera.conversion_supported(idx.Value())):
+                self._dropdown_pixel_format.addItem(idx.SymbolicValue())
+        self._dropdown_pixel_format.currentIndexChanged.connect(
+            self.change_pixel_format)
+
+        self._button_software_trigger = QtWidgets.QPushButton(
+            "Software Trigger")
+        self._button_software_trigger.clicked.connect(self._trigger_sw_trigger)
+
+        self._button_start_acquisition = QtWidgets.QPushButton(
+            "Start Acquisition")
+        self._button_start_acquisition.clicked.connect(self._start_acquisition)
+        self._button_stop_acquisition = QtWidgets.QPushButton(
+            "Stop Acquisition")
+        self._button_stop_acquisition.clicked.connect(self._stop_acquisition)
+        self._button_stop_acquisition.setEnabled(False)
+        self._button_software_trigger.setEnabled(False)
+
+        button_bar = QtWidgets.QWidget(self.centralWidget())
+        button_bar_layout = QtWidgets.QGridLayout()
+        button_bar_layout.addWidget(self._button_start_acquisition, 0, 0, 1, 2)
+        button_bar_layout.addWidget(self._button_stop_acquisition, 0, 2, 1, 2)
+        button_bar_layout.addWidget(self._button_software_trigger, 1, 0, 1, 2)
+        button_bar_layout.addWidget(self._dropdown_pixel_format, 1, 2, 1, 1)
+        button_bar_layout.addWidget(self._checkbox_save, 1, 3, 1, 1)
+
+        button_bar.setLayout(button_bar_layout)
+        self._layout.addWidget(button_bar)
+
+    def _create_statusbar(self):
+        status_bar = QtWidgets.QWidget(self.centralWidget())
+        status_bar_layout = QtWidgets.QHBoxLayout()
+        status_bar_layout.setContentsMargins(0, 0, 0, 0)
+        status_bar_layout.addStretch()
+
+        self._label_version = QtWidgets.QLabel(status_bar)
+        self._label_version.setText("Version:")
+        self._label_version.setAlignment(Qt.AlignRight)
+        status_bar_layout.addWidget(self._label_version)
+
+        self._label_aboutqt = QtWidgets.QLabel(status_bar)
+        self._label_aboutqt.setObjectName("aboutQt")
+        self._label_aboutqt.setText("<a href='#aboutQt'>About Qt</a>")
+        self._label_aboutqt.setAlignment(Qt.AlignRight)
+        self._label_aboutqt.linkActivated.connect(
+            self.on_aboutqt_link_activated)
+        status_bar_layout.addWidget(self._label_aboutqt)
+        status_bar.setLayout(status_bar_layout)
+
+        self._layout.addWidget(status_bar)
+
+    def _close(self):
+        self._camera.killed = True
+        self.acquisition_thread.join()
+
 
     def start_window(self):
         self.display = Display()
         self._layout.addWidget(self.display)
         self._create_button_bar()
         self._create_statusbar()
-
+    
     def start_interface(self):
-        self._fps_slider.setMaximum(int(self._camera.max_fps * 100))
-        self._fps_slider.setValue(int(self._camera.max_fps * 100))
-        self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
-        self._spinbox_fps.setMaximum(self._camera.max_fps)
-        self._spinbox_fps.setValue(self._camera.max_fps)
-        self._spinbox_gain.setMaximum(self._camera.max_gain)
-        self._spinbox_gain.setMinimum(1.0)
-
-        QtCore.QCoreApplication.setApplicationName("record vid & start stop")
+        QtCore.QCoreApplication.setApplicationName(
+            "start and stop acquisition")
         self.show()
         self._qt_instance.exec()
-
-    def information(self, message: str):
-        self.messagebox_signal.emit("Information", message)
-
-    def warning(self, message: str):
-        self.messagebox_signal.emit("Warning", message)
-
-    def on_image_received(self, image):
-        """
-        Processes the received image for the video stream.
-
-        :param image: takes an image for the video preview seen onscreen
-        """
-        # `get_numpy_1D` uses the image's underlying memory, so we make
-        # a copy here
-        image_numpy = image.get_numpy_1D().copy()
-        qt_image = QtGui.QImage(image_numpy,
-                                image.Width(), image.Height(),
-                                QtGui.QImage.Format_RGB32)
-        self.display.on_image_received(qt_image)
-        self.display.update()
-        if not self._button_start.isEnabled():
-            now = time.time() - self._timer
-            self._button_start.setText(str(now)[:3])
-        else:
-            self._button_start.setText("Start recording")
-
-    def done_recording(self, stats: RecordingStatistics):
-        if stats.frames_encoded != 0:
-            self.messagebox_signal.emit(
-                "Information",
-                "Recording Done:\n"
-                f"  Total Frames recorded: {stats.frames_encoded}\n"
-                f"  Frames dropped by video recorder: {stats.frames_video_dropped}\n"
-                f"  Frames dropped by image stream: {stats.frames_stream_dropped}\n"
-                f"  Frames lost by image stream: {stats.frames_lost_stream}\n"
-                f"  Frame rate: {stats.fps()}")
-        self.start_button_signal.emit()
 
     def _trigger_sw_trigger(self):
         self._camera.make_image = True
@@ -188,6 +207,93 @@ class Interface(QtWidgets.QMainWindow):
         pixel_format = self._dropdown_pixel_format.currentText()
         self._camera.change_pixel_format(pixel_format)
 
+    def on_image_received(self, image):
+        """
+        Processes the received image for the video stream.
+
+        :param image: takes an image for the video preview seen onscreen
+        """
+        # `get_numpy_1D` uses the image's underlying memory, so we make
+        # a copy here
+        image_numpy = image.get_numpy_1D().copy()
+        qt_image = QtGui.QImage(image_numpy,
+                                image.Width(), image.Height(),
+                                QtGui.QImage.Format_RGB32)
+        self.display.on_image_received(qt_image)
+        self.display.update()
+
+    def warning(self, message: str):
+        self.messagebox_signal.emit("Warning", message)
+
+    def information(self, message: str):
+        self.messagebox_signal.emit("Information", message)
+
+    @Slot(str)
+    def on_aboutqt_link_activated(self, link: str):
+        if link == "#aboutQt":
+            QtWidgets.QMessageBox.aboutQt(self, "About Qt")
+
+    @Slot(str, str)
+    def message(self, typ: str, message: str):
+        if typ == "Warning":
+            QtWidgets.QMessageBox.warning(
+                self, "Warning", message, QtWidgets.QMessageBox.Ok)
+        else:
+            QtWidgets.QMessageBox.information(
+                self, "Information", message, QtWidgets.QMessageBox.Ok)
+
+    """
+    TODO: GAIN
+    def start_interface(self):
+        self._fps_slider.setMaximum(int(self._camera.max_fps * 100))
+        self._fps_slider.setValue(int(self._camera.max_fps * 100))
+        self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
+        self._spinbox_fps.setMaximum(self._camera.max_fps)
+        self._spinbox_fps.setValue(self._camera.max_fps)
+        self._spinbox_gain.setMaximum(self._camera.max_gain)
+        self._spinbox_gain.setMinimum(1.0)
+
+        QtCore.QCoreApplication.setApplicationName("record vid & start stop")
+        self.show()
+        self._qt_instance.exec()
+
+    def information(self, message: str):
+        self.messagebox_signal.emit("Information", message)
+
+    def warning(self, message: str):
+        self.messagebox_signal.emit("Warning", message)
+
+    def on_image_received(self, image):
+        
+        #Processes the received image for the video stream.
+
+        :param image: takes an image for the video preview seen onscreen
+        
+        # `get_numpy_1D` uses the image's underlying memory, so we make
+        # a copy here
+        image_numpy = image.get_numpy_1D().copy()
+        qt_image = QtGui.QImage(image_numpy,
+                                image.Width(), image.Height(),
+                                QtGui.QImage.Format_RGB32)
+        self.display.on_image_received(qt_image)
+        self.display.update()
+        if not self._button_start.isEnabled():
+            now = time.time() - self._timer
+            self._button_start.setText(str(now)[:3])
+        else:
+            self._button_start.setText("Start recording")
+
+    def done_recording(self, stats: RecordingStatistics):
+        if stats.frames_encoded != 0:
+            self.messagebox_signal.emit(
+                "Information",
+                "Recording Done:\n"
+                f"  Total Frames recorded: {stats.frames_encoded}\n"
+                f"  Frames dropped by video recorder: {stats.frames_video_dropped}\n"
+                f"  Frames dropped by image stream: {stats.frames_stream_dropped}\n"
+                f"  Frames lost by image stream: {stats.frames_lost_stream}\n"
+                f"  Frame rate: {stats.fps()}")
+        self.start_button_signal.emit()
     # Common interface end
 
     @Slot(int)
@@ -334,18 +440,8 @@ class Interface(QtWidgets.QMainWindow):
         self._camera.start_recording = True
         self._button_start.setEnabled(False)
 
-    @Slot(str)
-    def on_aboutqt_link_activated(self, link: str):
-        if link == "#aboutQt":
-            QtWidgets.QMessageBox.aboutQt(self, "About Qt")
 
     @Slot()
     def reenable_button(self):
         self._button_start.setEnabled(True)
-
-    @Slot(str, str)
-    def message(self, type_: str, message: str):
-        if type_ == "Warning":
-            QtWidgets.QMessageBox.warning(self, "Warning", message, QtWidgets.QMessageBox.Ok)
-        else:
-            QtWidgets.QMessageBox.information(self, "Information", message, QtWidgets.QMessageBox.Ok)
+    """

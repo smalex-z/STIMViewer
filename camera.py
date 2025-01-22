@@ -36,54 +36,30 @@ from ids_peak import ids_peak_ipl_extension
 TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
 
 
-@dataclass
-class RecordingStatistics:
-    frames_encoded: int
-    frames_stream_dropped: int
-    frames_video_dropped: int
-    frames_lost_stream: int
-    duration: int
-
-    def fps(self):
-        return self.frames_encoded / self.duration
-
-
 class Camera:
     """
-    This class showcases the usage of the ids_peak API in
-    setting camera parameters, starting/stopping acquisition and
-    how to record a video using the ids_peak_ipl API.
+    
     """
     def __init__(self, device_manager, interface):
         if interface is None:
             raise ValueError("Interface is None")
-        
+
         self.ipl_image = None
         self.device_manager = device_manager
 
         self._device = None
         self._datastream = None
-        self._acquisition_running = False
+        self.acquisition_running = False
         self.node_map = None
-        self.interface = interface
-
-        self.target_fps = 20000
-        self.max_fps = 0
-        self.target_gain = 1
-        self.max_gain = 1
-        
+        self._interface = interface
         self.make_image = False
         self.keep_image = True
         self._buffer_list = []
 
         self.killed = False
 
-        self.start_recording = False
-        self.interface.set_camera(self)
         self._get_device()
-        if not self._device:
-            print("Error: Device not found")
-        self._setup_device_and_datastream()
+        self._interface.set_camera(self)
 
         self._image_converter = ids_peak_ipl.ImageConverter()
 
@@ -95,7 +71,7 @@ class Camera:
         self.device_manager.Update()
         if self.device_manager.Devices().empty():
             print("No device found. Exiting Program.")
-            return
+            sys.exit(1)
         selected_device = None
 
         # Initialize first device found if only one is available
@@ -126,7 +102,7 @@ class Camera:
             ids_peak.DeviceAccessType_Control)
         self.node_map = self._device.RemoteDevice().NodeMaps()[0]
 
-        self.max_gain = self.node_map.FindNode("Gain").Maximum()
+        #self.max_gain = self.node_map.FindNode("Gain").Maximum() TODO: GAIN
 
         # Load the default settings
         self.node_map.FindNode("UserSetSelector").SetCurrentEntry("Default")
@@ -170,8 +146,9 @@ class Camera:
         self.node_map.FindNode("TriggerMode").SetCurrentEntry("On")
         self.node_map.FindNode("TriggerSource").SetCurrentEntry("Software")
 
-    # Auto Gain and Exposure
+    # Auto Gain and Exposure TODO: GAIN
 
+    """
     def _setup_device_and_datastream(self):
         self._datastream = self._device.DataStreams()[0].OpenDataStream()
         # Disable auto gain and auto exposure to enable custom gain in program
@@ -186,6 +163,7 @@ class Camera:
             buffer = self._datastream.AllocAndAnnounceBuffer(payload_size)
             self._datastream.QueueBuffer(buffer)
         print("Allocated buffers, finished opening device")
+    """
 
     def close(self):
         self.stop_acquisition()
@@ -198,6 +176,8 @@ class Camera:
             except Exception as e:
                 print(f"Exception (close): {str(e)}")
 
+    """
+    TODO: GAIN
     def _find_and_set_remote_device_enumeration(self, name: str, value: str):
         all_entries = self.node_map.FindNode(name).Entries()
         available_entries = []
@@ -226,7 +206,7 @@ class Camera:
         buffer = self._datastream.WaitForFinishedBuffer(500)
 
         # Create IDS peak IPL image for debayering and convert it to RGBa8 format
-        ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
+        dpl_image = ids_peak_ipl_extension.BufferToImage(buffer)
 
         # This creates a copy the image, so the buffer is free to use again after queuing
         # NOTE: Use `ImageConverter`, since the `ConvertTo` function re-allocates
@@ -237,13 +217,22 @@ class Camera:
         self._datastream.QueueBuffer(buffer)
 
         return converted_ipl_image
+    """
 
     def start_acquisition(self):
         if self._device is None:
             return False
-        if self._acquisition_running is True:
+        if self.acquisition_running is True:
             return True
+        
+        if self._datastream is None:
+            self._init_data_stream()
 
+        for buffer in self._buffer_list:
+            self._datastream.QueueBuffer(buffer)
+
+        """
+        TODO: GAIN
         self.target_fps = 0
         try:
             # Get cameras maximums possible FPS
@@ -256,6 +245,7 @@ class Camera:
                 "Warning Unable to limit fps, "
                 "since node AcquisitionFrameRate is not supported."
                 "Program will continue without set limit.")
+        """
 
         # Lock parameters that should not be accessed during acquisition
         try:
@@ -281,30 +271,36 @@ class Camera:
         except Exception as e:
             print(f"Exception (start acquisition): {str(e)}")
             return False
-        self._acquisition_running = True
+        self.acquisition_running = True
         return True
 
     def stop_acquisition(self):
-        if self._device is None or self._acquisition_running is False:
+        if self._device is None or self.acquisition_running is False:
             return
         try:
             self.node_map.FindNode("AcquisitionStop").Execute()
 
             # Kill the datastream to exit out of pending `WaitForFinishedBuffer`
             # calls
-            self._datastream.KillWait()
+            #self._datastream.KillWait() TODO: GAIN (?)
             self._datastream.StopAcquisition(ids_peak.AcquisitionStopMode_Default)
             # Discard all buffers from the acquisition engine
             # They remain in the announced buffer pool
             self._datastream.Flush(ids_peak.DataStreamFlushMode_DiscardAll)
 
-            self._acquisition_running = False
+            self.acquisition_running = False
 
             # Unlock parameters
             self.node_map.FindNode("TLParamsLocked").SetValue(0)
 
         except Exception as e:
             print(f"Exception (stop acquisition): {str(e)}")
+
+    def software_trigger(self):
+        print("Executing software trigger...")
+        self.node_map.FindNode("TriggerSoftware").Execute()
+        self.node_map.FindNode("TriggerSoftware").WaitUntilDone()
+        print("Finished.")
 
     def _valid_name(self, path: str, ext: str):
         num = 0
@@ -316,11 +312,11 @@ class Camera:
             num += 1
         return build_string()
 
+
+    """
+    TODO: GAIN
     def record(self, timer: int):
-        """
-        Records image frames into an AVI-container and saves it to {CWD}/video.avi
-        :param timer: video length in seconds
-        """
+        
 
         # Create video writing object
         video = ids_peak_ipl.VideoWriter()
@@ -425,6 +421,8 @@ class Camera:
                 self.interface.warning(str(e))
                 self.start_recording = False
                 self.interface.done_recording(RecordingStatistics(0, 0, 0, 0, 0))
+    """
+
 
     def revoke_and_allocate_buffer(self):
         if self._datastream is None:
@@ -447,14 +445,14 @@ class Camera:
 
             print("Allocated buffers!")
         except Exception as e:
-            self.interface.warning(str(e))
+            self._interface.warning(str(e))
 
     def change_pixel_format(self, pixel_format: str):
         try:
             self.node_map.FindNode("PixelFormat").SetCurrentEntry(pixel_format)
             self.revoke_and_allocate_buffer()
         except Exception as e:
-            self.interface.warning(f"Cannot change pixelformat: {str(e)}")
+            self._interface.warning(f"Cannot change pixelformat: {str(e)}")
 
     def save_image(self):
         cwd = os.getcwd()
@@ -470,7 +468,7 @@ class Camera:
         #       the converison buffers on every call
         converted_ipl_image = self._image_converter.Convert(
             self.ipl_image, TARGET_PIXEL_FORMAT)
-        self.interface.on_image_received(converted_ipl_image)
+        self._interface.on_image_received(converted_ipl_image)
 
         self._datastream.QueueBuffer(buffer)
 
@@ -490,5 +488,5 @@ class Camera:
                     self.save_image()
                     self.make_image = False
             except Exception as e:
-                self.interface.warning(str(e))
+                self._interface.warning(str(e))
                 self.make_image = False

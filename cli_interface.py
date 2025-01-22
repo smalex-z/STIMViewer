@@ -2,9 +2,8 @@
 # \author  IDS Imaging Development Systems GmbH
 # \date    2024-02-20
 #
-# \brief   This sample showcases the usage of the ids_peak API
-#          in setting camera parameters, starting/stopping the image acquisition
-#          and how to record a video using the ids_peak_ipl API.
+# \brief   This sample shows how to start and stop acquisition as well as
+#          how to capture images using a software trigger
 #
 # \version 1.0
 #
@@ -22,108 +21,144 @@
 #
 # General permission to copy or modify is hereby granted.
 
-import threading
-import time
+from ids_peak import ids_peak
 
-from typing import Optional
-
-from camera import Camera, RecordingStatistics
+from camera import Camera
 
 
 class Interface:
-    """
-    Interface provides methods to interact with the camera on the command line,
-    but it is not necessary to understand how to use the API of ids_peak or
-    ids_peak_ipl.
-    """
-
-    def __init__(self, cam_module: Optional[Camera] = None):
+    def __init__(self, cam_module: Camera = None):
         self._camera = cam_module
-        self._acquisition_thread: Optional[threading.Thread] = None
+        self.acquisition_thread = None
 
-    # Common interface start
+    def is_gui(self):
+        return False
 
-    def set_camera(self, cam_module:Camera):
+    def set_camera(self, cam_module: Camera):
         self._camera = cam_module
+
+    def print_help(self):
+        print(
+            "Available commands:\n"
+            "\"trigger\" capture an image.\n"
+            "\"start\" start acquisition.\n"
+            "\"stop\" stop acquisition.\n"
+            "\"save True|False\" wether captured images should be saved to a file.\n"
+            "\"pixelformat\" change the pixelformat.\n"
+            "\"exit\" close the program\n"
+            "\"help\" display this text"
+        )
+
+    def acquisition_check_and_set(self):
+        if not self._camera.acquisition_running:
+            print("The image acquisition must be running to get an image.")
+            choice = input("Start acquisition now?: [Y|n]")
+            if choice == "" or choice == "y" or choice == "Y":
+                self._camera.start_acquisition()
+                return True
+            return False
+        return True
+
+    def acquisition_check_and_disable(self):
+        if self._camera.acquisition_running:
+            print("Acquisition must NOT be running to set a new pixelformat")
+            choice = input("Stop acquisition now?: [Y|n]")
+            if choice == "" or choice == "y" or choice == "Y":
+                self._camera.stop_acquisition()
+                return True
+            if choice == "n" or choice == "N":
+                return False
+        return True
+
+    def change_pixelformat(self):
+        formats = self._camera.node_map.FindNode("PixelFormat").Entries()
+        available_options = []
+        for idx in formats:
+            if (idx.AccessStatus() != ids_peak.NodeAccessStatus_NotAvailable
+                    and idx.AccessStatus() != ids_peak.NodeAccessStatus_NotImplemented):
+                available_options.append(idx.SymbolicValue())
+        print("Select available option by index:\n")
+        counter = 0
+        for entry in available_options:
+            print(f"[{counter}]: {entry}")
+            counter += 1
+        selected = -1
+        while selected == -1:
+            try:
+                selected = int(input(" >> "))
+            except ValueError:
+                selected = -1
+            if selected < 0 or selected >= len(available_options):
+                print(
+                    f"Please enter a number between 0 and {len(available_options) - 1}")
+                selected = -1
+        self._camera.change_pixel_format(available_options[selected])
+
+    def start_interface(self):
+        self.print_help()
+        try:
+            while True:
+                var = input("> ")
+
+                var = var.split()
+                if not var:
+                    continue
+
+                if var[0] == "trigger":
+                    # trigger an image
+                    if not self.acquisition_check_and_set():
+                        print("Acquisition not started... Skipping trigger command!")
+                        continue
+                    self._camera.make_image = True
+                    # wait until image has been made
+                    while self._camera.make_image:
+                        pass
+
+                elif var[0] == "save":
+                    # enable/disable saving to drive
+                    if len(var) < 2:
+                        print("Missing argument! Usage: save True|False")
+                        continue
+                    if var[1] == "True":
+                        self._camera.keep_image = True
+                        print("Saving images: Enabled")
+                    elif var[1] == "False":
+                        self._camera.keep_image = False
+                        print("Saving images: Disabled")
+
+                elif var[0] == "start":
+                    self._camera.start_acquisition()
+
+                elif var[0] == "stop":
+                    self._camera.stop_acquisition()
+
+                elif var[0] == "help":
+                    self.print_help()
+
+                elif var[0] == "pixelformat":
+                    if not self.acquisition_check_and_disable():
+                        continue
+                    self.change_pixelformat()
+
+                elif var[0] == "exit":
+                    break
+                else:
+                    print(f"Unrecognized command: `{var[0]}`")
+                    self.print_help()
+        finally:
+            # make sure to always stop the acquisition_thread, otherwise
+            # we'd hang, e.g. on KeyboardInterrupt
+            self._camera.killed = True
+            self.acquisition_thread.join()
 
     def start_window(self):
         pass
 
-    def start_interface(self):
-        self.prompt()
-
-    def information(self, message: str):
-        print(message)
-
-    def warning(self, message: str):
-        print("Warning:", message)
-
     def on_image_received(self, image):
         pass
 
-    def done_recording(self, stats: RecordingStatistics):
-        if stats.frames_encoded != 0:
-            print("Recording done!\n"
-                  "Statistics:\n"
-                  f"  Total Frames recorded: {stats.frames_encoded}\n"
-                  f"  Frames dropped by video recorder: {stats.frames_video_dropped}\n"
-                  f"  Frames dropped by image stream: {stats.frames_stream_dropped}\n"
-                  f"  Frames lost by image stream: {stats.frames_lost_stream}\n"
-                  f"  Frame rate: {stats.fps()}")
+    def warning(self, message: str):
+        print(f"Warning: {message}")
 
-    # Common interface end
-
-    def print_help(self):
-        print("Commands:\n"
-              "help: Display help text\n"
-              "exit: Exit the program (alias quit)\n"
-              "set_framerate: Set the target framerate\n"
-              "set_gain: Set the gain\n"
-              "start: Start the image acquisition record a video")
-
-    def get_value(self, prompt_text: str, default: float):
-        while True:
-            string = input(prompt_text)
-            if not string.strip():
-                continue
-
-            try:
-                return float(string)
-            except ValueError:
-                print(f"Error: '{string}' is not convertible to a float!")
-
-    def prompt(self):
-        if self._camera is None:
-            raise RuntimeError("Missing camera!")
-
-        self.print_help()
-        try:
-            while True:
-                command = input("> ").strip()
-                if command in ("quit", "exit"):
-                    break
-                elif command == "help":
-                    self.print_help()
-                elif command == "set_framerate":
-                    self._camera.target_fps = self.get_value(
-                        f"Camera framerate (current: {self._camera.target_fps:.2f}): ",
-                        self._camera.target_fps)
-                elif command == "set_gain":
-                    self._camera.target_gain = self.get_value(
-                        f"Camera gain (current: {self._camera.target_gain:.2f}): ",
-                        self._camera.target_gain)
-                elif command == "start":
-                    print("Will use the following settings for recording:\n"
-                          f"Camera framerate: {self._camera.target_fps:.2f}\n"
-                          f"Camera gain:      {self._camera.target_gain:.2f}")
-                    self._camera.start_recording = True
-                    while self._camera.start_recording:
-                        time.sleep(0.01)
-                else:
-                     print(f"Command: {command} not found!")
-        except KeyboardInterrupt:
-            print("KeyboardInterrupt: Stopping...")
-        finally:
-            self._camera.killed = True
-            if self._acquisition_thread is not None:
-                self._acquisition_thread.join()
+    def information(self, message: str):
+        print(f"Info: {message}")
