@@ -65,17 +65,20 @@ class Interface(QtWidgets.QMainWindow):
         super().__init__()
         self.last_frame_time = time()  # Track time of the last frame
 
+        self.set_camera(cam_module)
 
+        self.gui_init()
+        self._qt_instance = qt_instance
+        self._qt_instance.aboutToQuit.connect(self._close)
 
-        self._camera = cam_module
+        self.setMinimumSize(700, 650)
 
+    def gui_init(self):
         self.widget = QtWidgets.QWidget(self)
         self._layout = QtWidgets.QVBoxLayout()
         self.widget.setLayout(self._layout)
         self.setCentralWidget(self.widget)
         self.display = None
-        self._qt_instance = qt_instance
-        self._qt_instance.aboutToQuit.connect(self._close)
         self.acquisition_thread = None
 
         # Buttons
@@ -93,7 +96,6 @@ class Interface(QtWidgets.QMainWindow):
         self.fps_label.setStyleSheet("font-size: 14px; color: green;")
         self.fps_label.setAlignment(Qt.AlignRight)
 
-
         self.messagebox_signal[str, str].connect(self.message)
 
         self._frame_count = 0
@@ -105,11 +107,7 @@ class Interface(QtWidgets.QMainWindow):
         self._label_version = None
         self._label_aboutqt = None
 
-        self._fps_slider = None
         self._gain_slider = None
-
-        self.recording_time = 10
-        self.setMinimumSize(700, 650)
 
     # Common interface start
     def is_gui(self):
@@ -118,72 +116,65 @@ class Interface(QtWidgets.QMainWindow):
     def set_camera(self, cam_module):
         self._camera = cam_module
     
+    #GUI Creation
     def _create_button_bar(self):
-        #Software Trigger
-        self._checkbox_save = QtWidgets.QCheckBox("save image to computer")
+        """Create the button bar with all necessary controls and widgets."""
+        # Initialize button bar widget and layout
+        button_bar = QtWidgets.QWidget(self.centralWidget())
+        button_bar_layout = QtWidgets.QGridLayout()
+
+        # Save Checkbox
+        self._checkbox_save = QtWidgets.QCheckBox("Save image to computer")
         self._checkbox_save.setChecked(False)
 
+        # Pixel Format Dropdown
         self._dropdown_pixel_format = QtWidgets.QComboBox()
         formats = self._camera.node_map.FindNode("PixelFormat").Entries()
         for idx in formats:
-            if (idx.AccessStatus() != ids_peak.NodeAccessStatus_NotAvailable
-                    and idx.AccessStatus() != ids_peak.NodeAccessStatus_NotImplemented
+            if (idx.AccessStatus() not in [ids_peak.NodeAccessStatus_NotAvailable, ids_peak.NodeAccessStatus_NotImplemented]
                     and self._camera.conversion_supported(idx.Value())):
                 self._dropdown_pixel_format.addItem(idx.SymbolicValue())
-        self._dropdown_pixel_format.currentIndexChanged.connect(
-            self.change_pixel_format)
+        self._dropdown_pixel_format.currentIndexChanged.connect(self.change_pixel_format)
 
-        self._button_software_trigger = QtWidgets.QPushButton(
-            "Software Trigger")
+        # Software Trigger Button
+        self._button_software_trigger = QtWidgets.QPushButton("Software Trigger")
         self._button_software_trigger.clicked.connect(self._trigger_sw_trigger)
-
-        self._button_start_acquisition = QtWidgets.QPushButton(
-            "Start Acquisition")
-        self._button_start_acquisition.clicked.connect(self._start_acquisition)
-        self._button_stop_acquisition = QtWidgets.QPushButton(
-            "Stop Acquisition")
-        self._button_stop_acquisition.clicked.connect(self._stop_acquisition)
-        self._button_stop_acquisition.setEnabled(False)
         self._button_software_trigger.setEnabled(False)
 
-        #Gain:
-        gain_widget = QtWidgets.QWidget(self.centralWidget())
+        # Acquisition Buttons
+        self._button_start_acquisition = QtWidgets.QPushButton("Start Acquisition")
+        self._button_start_acquisition.clicked.connect(self._start_acquisition)
 
-        self._gain_label = QtWidgets.QLabel(gain_widget)
+        self._button_stop_acquisition = QtWidgets.QPushButton("Stop Acquisition")
+        self._button_stop_acquisition.clicked.connect(self._stop_acquisition)
+        self._button_stop_acquisition.setEnabled(False)
+
+        # Gain Controls
+        self._gain_label = QtWidgets.QLabel("<b>Gain:</b>")
         self._gain_label.setMaximumWidth(30)
-        self._gain_label.setText("<b>Gain: </b>")
 
-        self._gain_slider = QtWidgets.QSlider()
-        self._gain_slider.setMaximum(1000)
-        self._gain_slider.setMinimum(100)
+        self._gain_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self._gain_slider.setRange(100, 1000)
         self._gain_slider.setSingleStep(1)
-        self._gain_slider.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self._gain_slider.valueChanged.connect(self._update_gain)
 
         self._spinbox_gain = QtWidgets.QDoubleSpinBox()
+        self._spinbox_gain.valueChanged.connect(self.change_slider_gain)
 
-
-        #Adding Widgets
-        button_bar = QtWidgets.QWidget(self.centralWidget())
-        button_bar_layout = QtWidgets.QGridLayout()
+        # Add Widgets to Layout
         button_bar_layout.addWidget(self._button_start_acquisition, 0, 0, 1, 2)
         button_bar_layout.addWidget(self._button_stop_acquisition, 0, 2, 1, 2)
         button_bar_layout.addWidget(self._button_software_trigger, 1, 0, 1, 2)
-        button_bar_layout.addWidget(self._dropdown_pixel_format, 1, 2, 1, 1)
-        button_bar_layout.addWidget(self._checkbox_save, 1, 3, 1, 1)
+        button_bar_layout.addWidget(self._dropdown_pixel_format, 1, 2)
+        button_bar_layout.addWidget(self._checkbox_save, 1, 3)
+        button_bar_layout.addWidget(self._gain_label, 2, 0)
+        button_bar_layout.addWidget(self._spinbox_gain, 2, 1)
+        button_bar_layout.addWidget(self._gain_slider, 2, 2, 1, 2)
+        button_bar_layout.addWidget(self.fps_label, 3, 0, 1, 4)  # Add FPS label
 
-        button_bar_layout.addWidget(self._gain_label, 6, 0)
-        button_bar_layout.addWidget(self._gain_slider, 6, 2, 1, 2)
-        button_bar_layout.addWidget(self._spinbox_gain, 6, 1, 1, 1)
-        button_bar_layout.addWidget(self.fps_label, 7, 0, 1, 4)  # Add FPS label to the layout
-
-
-
+        # Set Layout and Add to Main Layout
         button_bar.setLayout(button_bar_layout)
         self._layout.addWidget(button_bar)
-        
-        self._spinbox_gain.valueChanged.connect(self.change_slider_gain)
-
 
     def _create_statusbar(self):
         status_bar = QtWidgets.QWidget(self.centralWidget())
