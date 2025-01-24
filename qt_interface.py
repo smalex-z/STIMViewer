@@ -270,10 +270,10 @@ class Interface(QtWidgets.QMainWindow):
         frame_time = current_time - self.last_frame_time
         self.last_frame_time = current_time
 
-        fps = 1 / frame_time if frame_time > 0 else 0
+        fps = round(1 / frame_time) if frame_time > 0 else 0  # Round FPS to nearest integer
 
         # Update the FPS label
-        self.fps_label.setText(f"FPS: {fps:.2f}")
+        self.fps_label.setText(f"FPS: {fps}")  # Display FPS as an integer
 
         # Process and display the image
         image_numpy = image.get_numpy_1D().copy()
