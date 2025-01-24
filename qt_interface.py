@@ -28,6 +28,7 @@ import time
 from typing import Optional
 
 from camera import Camera
+from time import time
 from display import Display
 from ids_peak import ids_peak
 
@@ -35,10 +36,13 @@ try:
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt, QTimer
     from PyQt5.QtCore import pyqtSlot as Slot
+    from PyQt5.QtWidgets import QLabel
 except ImportError:
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt, QTimer
     from PyQt5.QtCore import pyqtSlot as Slot
+    from PyQt5.QtWidgets import QLabel
+
 
 ids_peak.Library.Initialize()
 print("IDS peak library initialized.")
@@ -59,6 +63,9 @@ class Interface(QtWidgets.QMainWindow):
         """
         qt_instance = QtWidgets.QApplication(sys.argv)
         super().__init__()
+        self.last_frame_time = time()  # Track time of the last frame
+
+
 
         self._camera = cam_module
 
@@ -80,6 +87,12 @@ class Interface(QtWidgets.QMainWindow):
         self._checkbox_save = None
         self._button_exit = None
         self._dropdown_pixel_format = None
+
+        #FPS Label
+        self.fps_label = QLabel("FPS: 0.00", self)
+        self.fps_label.setStyleSheet("font-size: 14px; color: green;")
+        self.fps_label.setAlignment(Qt.AlignRight)
+
 
         self.messagebox_signal[str, str].connect(self.message)
 
@@ -162,6 +175,8 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._gain_label, 6, 0)
         button_bar_layout.addWidget(self._gain_slider, 6, 2, 1, 2)
         button_bar_layout.addWidget(self._spinbox_gain, 6, 1, 1, 1)
+        button_bar_layout.addWidget(self.fps_label, 7, 0, 1, 4)  # Add FPS label to the layout
+
 
 
         button_bar.setLayout(button_bar_layout)
@@ -209,7 +224,7 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_gain.setMinimum(1.0)
         
         QtCore.QCoreApplication.setApplicationName(
-            "start and stop acquisition")
+            "Real Time + Hardware Trigger")
         self.show()
         self._qt_instance.exec()
         
@@ -250,14 +265,27 @@ class Interface(QtWidgets.QMainWindow):
 
         :param image: takes an image for the video preview seen onscreen
         """
-        # `get_numpy_1D` uses the image's underlying memory, so we make
-        # a copy here
+        # Calculate FPS
+        current_time = time()
+        frame_time = current_time - self.last_frame_time
+        self.last_frame_time = current_time
+
+        fps = round(1 / frame_time) if frame_time > 0 else 0  # Round FPS to nearest integer
+
+        # Update the FPS label
+        self.fps_label.setText(f"GUI FPS: {fps}")  # Display FPS as an integer
+
+        # Process and display the image
         image_numpy = image.get_numpy_1D().copy()
-        qt_image = QtGui.QImage(image_numpy,
-                                image.Width(), image.Height(),
-                                QtGui.QImage.Format_RGB32)
+        qt_image = QtGui.QImage(
+            image_numpy,
+            image.Width(),
+            image.Height(),
+            QtGui.QImage.Format_RGB32
+        )
         self.display.on_image_received(qt_image)
         self.display.update()
+
 
     def warning(self, message: str):
         self.messagebox_signal.emit("Warning", message)
