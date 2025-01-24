@@ -42,7 +42,7 @@ def start(camera_device: camera.Camera, ui: 'Interface'):
         return
 
     ui.start_window()
-    thread = threading.Thread(target=camera_device.wait_for_signal, args=())
+    thread = threading.Thread(target=camera_device.acquisition_thread, args=())
     thread.start()
     ui.acquisition_thread = thread
     ui.start_interface()

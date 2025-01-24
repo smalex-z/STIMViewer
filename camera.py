@@ -158,6 +158,13 @@ class Camera:
         self._find_and_set_remote_device_enumeration("GainAuto", "Off")
         self._find_and_set_remote_device_enumeration("ExposureAuto", "Off")
         
+        # Set camera frame rate to 60 FPS
+        try:
+            self.node_map.FindNode("AcquisitionFrameRate").SetValue(60)
+            print("Acquisition frame rate set to 60 FPS")
+        except Exception as e:
+            print(f"Failed to set AcquisitionFrameRate: {e}")
+
         # Allocate image buffer for image acquisition
         payload_size = self.node_map.FindNode("PayloadSize").Value()
         # Use more buffers
@@ -205,21 +212,21 @@ class Camera:
     """
 
     def get_data_stream_image(self):
-        # Wait until the image is completed
-        buffer = self._datastream.WaitForFinishedBuffer(500)
+        try:
+            # Use a shorter timeout (e.g., 50ms) to avoid blocking
+            buffer = self._datastream.WaitForFinishedBuffer(500)
 
-        # Create IDS peak IPL image for debayering and convert it to RGBa8 format
-        ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
+            # Process the buffer if it exists
+            ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
+            converted_ipl_image = self._image_converter.Convert(ipl_image, TARGET_PIXEL_FORMAT)
+            self._datastream.QueueBuffer(buffer)
+            return converted_ipl_image
+        except ids_peak.Exception as e:
+            # No buffer available, return None
+            print(f"No buffer available: {e}")
+            return None
 
-        # This creates a copy the image, so the buffer is free to use again after queuing
-        # NOTE: Use `ImageConverter`, since the `ConvertTo` function re-allocates
-        #       the converison buffers on every call
-        converted_ipl_image = self._image_converter.Convert(
-            ipl_image, TARGET_PIXEL_FORMAT)
-
-        self._datastream.QueueBuffer(buffer)
-
-        return converted_ipl_image
+        
     
 
     def start_acquisition(self):
@@ -382,7 +389,7 @@ class Camera:
 
     def acquisition_thread(self):
         while not self.killed:
-            try:
+            try: 
                 # Check if acquisition is running
                 if self.acquisition_running:
                     # Fetch an image from the camera
@@ -394,3 +401,5 @@ class Camera:
                     time.sleep(0.01)  # Avoid busy-waiting
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
+
+
