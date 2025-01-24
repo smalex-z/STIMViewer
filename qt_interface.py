@@ -224,7 +224,7 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_gain.setMinimum(1.0)
         
         QtCore.QCoreApplication.setApplicationName(
-            "start and stop acquisition")
+            "Real Time + Hardware Trigger")
         self.show()
         self._qt_instance.exec()
         
@@ -273,7 +273,7 @@ class Interface(QtWidgets.QMainWindow):
         fps = round(1 / frame_time) if frame_time > 0 else 0  # Round FPS to nearest integer
 
         # Update the FPS label
-        self.fps_label.setText(f"FPS: {fps}")  # Display FPS as an integer
+        self.fps_label.setText(f"GUI FPS: {fps}")  # Display FPS as an integer
 
         # Process and display the image
         image_numpy = image.get_numpy_1D().copy()
