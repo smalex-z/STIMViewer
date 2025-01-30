@@ -85,8 +85,8 @@ class Interface(QtWidgets.QMainWindow):
         self._button_start = None
         self._button_exit = None
         self._button_software_trigger = None
-        self._button_start_acquisition = None
-        self._button_stop_acquisition = None
+        self._button_start_hardware_acquisition = None
+        self._button_stop_hardware_acquisition = None
         self._checkbox_save = None
         self._button_exit = None
         self._dropdown_pixel_format = None
@@ -124,7 +124,7 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout = QtWidgets.QGridLayout()
 
         # Save Checkbox
-        self._checkbox_save = QtWidgets.QCheckBox("Save image to computer")
+        self._checkbox_save = QtWidgets.QCheckBox("Save Hardware Acquisition to computer")
         self._checkbox_save.setChecked(False)
 
         # Pixel Format Dropdown
@@ -139,15 +139,15 @@ class Interface(QtWidgets.QMainWindow):
         # Software Trigger Button
         self._button_software_trigger = QtWidgets.QPushButton("Software Trigger")
         self._button_software_trigger.clicked.connect(self._trigger_sw_trigger)
-        self._button_software_trigger.setEnabled(False)
+        self._button_software_trigger.setEnabled(True)
 
         # Acquisition Buttons
-        self._button_start_acquisition = QtWidgets.QPushButton("Start Acquisition")
-        self._button_start_acquisition.clicked.connect(self._start_acquisition)
+        self._button_start_hardware_acquisition = QtWidgets.QPushButton("Start Hardware Acquisition")
+        self._button_start_hardware_acquisition.clicked.connect(self._start_hardware_acquisition)
 
-        self._button_stop_acquisition = QtWidgets.QPushButton("Stop Acquisition")
-        self._button_stop_acquisition.clicked.connect(self._stop_acquisition)
-        self._button_stop_acquisition.setEnabled(False)
+        self._button_stop_hardware_acquisition = QtWidgets.QPushButton("Stop Hardware Acquisition")
+        self._button_stop_hardware_acquisition.clicked.connect(self._stop_hardware_acquisition)
+        self._button_stop_hardware_acquisition.setEnabled(False)
 
         # Gain Controls
         self._gain_label = QtWidgets.QLabel("<b>Gain:</b>")
@@ -162,8 +162,8 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_gain.valueChanged.connect(self.change_slider_gain)
 
         # Add Widgets to Layout
-        button_bar_layout.addWidget(self._button_start_acquisition, 0, 0, 1, 2)
-        button_bar_layout.addWidget(self._button_stop_acquisition, 0, 2, 1, 2)
+        button_bar_layout.addWidget(self._button_start_hardware_acquisition, 0, 0, 1, 2)
+        button_bar_layout.addWidget(self._button_stop_hardware_acquisition, 0, 2, 1, 2)
         button_bar_layout.addWidget(self._button_software_trigger, 1, 0, 1, 2)
         button_bar_layout.addWidget(self._dropdown_pixel_format, 1, 2)
         button_bar_layout.addWidget(self._checkbox_save, 1, 3)
@@ -232,19 +232,23 @@ class Interface(QtWidgets.QMainWindow):
         else:
             self._camera.keep_image = False
 
-    def _start_acquisition(self):
-        self._camera.start_acquisition()
-        self._button_start_acquisition.setEnabled(False)
+    def _start_hardware_acquisition(self):
+        self._camera.stop_realtime_acquisition()
+        self._camera.init_hardware_trigger()
+        self._camera.start_hardware_acquisition()
+        self._button_start_hardware_acquisition.setEnabled(False)
         self._dropdown_pixel_format.setEnabled(False)
-        self._button_software_trigger.setEnabled(True)
-        self._button_stop_acquisition.setEnabled(True)
+        #self._button_software_trigger.setEnabled(True)
+        self._button_stop_hardware_acquisition.setEnabled(True)
 
-    def _stop_acquisition(self):
-        self._camera.stop_acquisition()
-        self._button_start_acquisition.setEnabled(True)
+    def _stop_hardware_acquisition(self):
+        self._camera.stop_hardware_acquisition()
+        self._camera.init_RT_acquisition()
+        self._camera.start_realtime_acquisition()
+        self._button_start_hardware_acquisition.setEnabled(True)
         self._dropdown_pixel_format.setEnabled(True)
-        self._button_software_trigger.setEnabled(False)
-        self._button_stop_acquisition.setEnabled(False)
+        #self._button_software_trigger.setEnabled(False)
+        self._button_stop_hardware_acquisition.setEnabled(False)
 
     def change_pixel_format(self):
         pixel_format = self._dropdown_pixel_format.currentText()

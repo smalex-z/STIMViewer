@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 
 
 def start(camera_device: camera.Camera, ui: 'Interface'):
-    if not camera_device.start_acquisition():
+    if not camera_device.start_realtime_acquisition():
         print("Failed to start acquisition!")
         return
 
@@ -55,7 +55,7 @@ def main(ui: 'Interface'):
     camera_device = None
     try:
         camera_device = camera.Camera(device_manager, ui)
-        camera_device.init_software_trigger()
+        camera_device.init_RT_acquisition()
         start(camera_device, ui)
     
     except KeyboardInterrupt:
