@@ -87,11 +87,13 @@ class Interface(QtWidgets.QMainWindow):
         self._button_software_trigger = None
         self._button_start_hardware_acquisition = None
         self._button_stop_hardware_acquisition = None
-        self._checkbox_save = None
         self._button_exit = None
         self._dropdown_pixel_format = None
 
         #FPS Label
+        self.GUIfps_label = QLabel("GUI FPS: 0.00", self)
+        self.GUIfps_label.setStyleSheet("font-size: 14px; color: green;")
+        self.GUIfps_label.setAlignment(Qt.AlignRight)
         self.fps_label = QLabel("FPS: 0.00", self)
         self.fps_label.setStyleSheet("font-size: 14px; color: green;")
         self.fps_label.setAlignment(Qt.AlignRight)
@@ -99,6 +101,7 @@ class Interface(QtWidgets.QMainWindow):
         self.messagebox_signal[str, str].connect(self.message)
 
         self._frame_count = 0
+        self._GUIfps_label = None
         self._fps_label = None
         self._error_cont = 0
         self._gain_label = None
@@ -123,10 +126,6 @@ class Interface(QtWidgets.QMainWindow):
         button_bar = QtWidgets.QWidget(self.centralWidget())
         button_bar_layout = QtWidgets.QGridLayout()
 
-        # Save Checkbox
-        self._checkbox_save = QtWidgets.QCheckBox("Save Hardware Acquisition to computer")
-        self._checkbox_save.setChecked(False)
-
         # Pixel Format Dropdown
         self._dropdown_pixel_format = QtWidgets.QComboBox()
         formats = self._camera.node_map.FindNode("PixelFormat").Entries()
@@ -149,6 +148,14 @@ class Interface(QtWidgets.QMainWindow):
         self._button_stop_hardware_acquisition.clicked.connect(self._stop_hardware_acquisition)
         self._button_stop_hardware_acquisition.setEnabled(False)
 
+        # Recording Buttons
+        self._button_start_recording = QtWidgets.QPushButton("Start Recording")
+        self._button_start_recording.clicked.connect(self._start_recording)
+
+        self._button_stop_recording = QtWidgets.QPushButton("Stop Recording")
+        self._button_stop_recording.clicked.connect(self._stop_recording)
+        self._button_stop_recording.setEnabled(False)
+
         # Gain Controls
         self._gain_label = QtWidgets.QLabel("<b>Gain:</b>")
         self._gain_label.setMaximumWidth(30)
@@ -164,13 +171,16 @@ class Interface(QtWidgets.QMainWindow):
         # Add Widgets to Layout
         button_bar_layout.addWidget(self._button_start_hardware_acquisition, 0, 0, 1, 2)
         button_bar_layout.addWidget(self._button_stop_hardware_acquisition, 0, 2, 1, 2)
-        button_bar_layout.addWidget(self._button_software_trigger, 1, 0, 1, 2)
-        button_bar_layout.addWidget(self._dropdown_pixel_format, 1, 2)
-        button_bar_layout.addWidget(self._checkbox_save, 1, 3)
-        button_bar_layout.addWidget(self._gain_label, 2, 0)
-        button_bar_layout.addWidget(self._spinbox_gain, 2, 1)
-        button_bar_layout.addWidget(self._gain_slider, 2, 2, 1, 2)
-        button_bar_layout.addWidget(self.fps_label, 3, 0, 1, 4)  # Add FPS label
+        button_bar_layout.addWidget(self._button_start_recording, 1, 0, 1, 2)
+        button_bar_layout.addWidget(self._button_stop_recording, 1, 2, 1, 2)
+        button_bar_layout.addWidget(self._button_software_trigger, 2, 0, 1, 2)
+        button_bar_layout.addWidget(self._dropdown_pixel_format, 2, 2)
+        button_bar_layout.addWidget(self._gain_label, 3, 0)
+        button_bar_layout.addWidget(self._spinbox_gain, 3, 1)
+        button_bar_layout.addWidget(self._gain_slider, 3, 2, 1, 2)
+        button_bar_layout.addWidget(self.GUIfps_label, 4, 0, 1, 4)  # Add FPS label
+        button_bar_layout.addWidget(self.fps_label, 5, 0, 1, 4)  # Add FPS label
+
 
         # Set Layout and Add to Main Layout
         button_bar.setLayout(button_bar_layout)
@@ -227,10 +237,6 @@ class Interface(QtWidgets.QMainWindow):
         self._camera.target_gain = gain_input
 
         self._camera.make_image = True
-        if self._checkbox_save.isChecked():
-            self._camera.keep_image = True
-        else:
-            self._camera.keep_image = False
 
     def _start_hardware_acquisition(self):
         self._camera.stop_realtime_acquisition()
@@ -250,6 +256,16 @@ class Interface(QtWidgets.QMainWindow):
         #self._button_software_trigger.setEnabled(False)
         self._button_stop_hardware_acquisition.setEnabled(False)
 
+    def _start_recording(self):
+        self._camera.start_recording()
+        self._button_start_recording.setEnabled(False)
+        self._button_stop_recording.setEnabled(True)
+
+    def _stop_recording(self):
+        self._camera.stop_recording()
+        self._button_start_recording.setEnabled(True)
+        self._button_stop_recording.setEnabled(False)
+
     def change_pixel_format(self):
         pixel_format = self._dropdown_pixel_format.currentText()
         self._camera.change_pixel_format(pixel_format)
@@ -265,10 +281,16 @@ class Interface(QtWidgets.QMainWindow):
         frame_time = current_time - self.last_frame_time
         self.last_frame_time = current_time
 
-        fps = round(1 / frame_time) if frame_time > 0 else 0  # Round FPS to nearest integer
+        GUIfps = round(1 / frame_time) if frame_time > 0 else 0  # Round FPS to nearest integer
+        try:
+            fps = int(self._camera.node_map.FindNode("AcquisitionFrameRate").Value())  # Read FPS from camera
+        except Exception as e:
+            print(f"Error retrieving frame rate, defaulting to 30 FPS: {e}")
+            fps = 30  # Default fallback
 
         # Update the FPS label
-        self.fps_label.setText(f"GUI FPS: {fps}")  # Display FPS as an integer
+        self.GUIfps_label.setText(f"GUI FPS: {GUIfps}")  # Display FPS as an integer
+        self.fps_label.setText(f"Acquisition FPS: {fps}")  # Display FPS as an integer
 
         # Process and display the image
         image_numpy = image.get_numpy_1D().copy()

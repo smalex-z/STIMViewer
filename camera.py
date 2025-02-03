@@ -24,6 +24,9 @@
 
 import os
 import time
+import cv2  # OpenCV for video writing
+import numpy as np  # Handling image arrays
+
 
 from os.path import exists
 from dataclasses import dataclass
@@ -54,7 +57,7 @@ class Camera:
         self.node_map = None
         self._interface = interface
         self.make_image = False
-        self.keep_image = True
+        self.keep_image = False
         self._buffer_list = []
 
         self.target_gain = 1
@@ -67,6 +70,9 @@ class Camera:
         self._interface.set_camera(self)
 
         self._image_converter = ids_peak_ipl.ImageConverter()
+        self.recording = False
+        self.video_writer = None
+        self.video_filename = "output.mp4"
 
     def __del__(self):
         self.close()
@@ -199,6 +205,7 @@ class Camera:
     
 
     def close(self):
+        self.stop_recording()
         self.stop_realtime_acquisition()
         self.stop_hardware_acquisition()
 
@@ -236,6 +243,14 @@ class Camera:
             ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
             converted_ipl_image = self._image_converter.Convert(ipl_image, TARGET_PIXEL_FORMAT)
             self._datastream.QueueBuffer(buffer)
+
+            if self.recording and self.video_writer:
+                image_np = np.array(converted_ipl_image.get_numpy_1D(), dtype=np.uint8)
+                image_np = image_np.reshape((converted_ipl_image.Height(), converted_ipl_image.Width(), 4))  # BGRA format
+                image_bgr = cv2.cvtColor(image_np, cv2.COLOR_BGRA2BGR)  # Convert BGRA to BGR for OpenCV
+                self.video_writer.write(image_bgr)
+
+
             return converted_ipl_image
         except ids_peak.Exception as e:
             # No buffer available, return None
@@ -353,6 +368,53 @@ class Camera:
             print(f"Exception (stop hardware acquisition): {str(e)}")
 
 
+    def start_recording(self):
+        
+        if self._device is None or self.recording:
+            return False
+        if self._datastream is None:
+            self._init_data_stream()
+
+        self.recording = True
+
+        # Recording Start
+        try:
+            if self.recording == True:
+                self.init_video_writer()
+                
+
+        except Exception as e:
+            print(f"Exception during start_recording: {e}")
+            return False
+        return True
+
+
+    def stop_recording(self):
+        if self._device is None or self.acquisition_running is False:
+            return
+        try:
+            if self.recording:
+                self.recording = False
+                if self.video_writer is not None:
+                    self.video_writer.release()
+                    self.video_writer = None
+                print(f"Video saved as {self.video_filename}")
+        except Exception as e:
+            print(f"Exception (stop recording): {str(e)}")
+
+    def init_video_writer(self):
+        if self.video_writer is None:
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # MP4 format
+            try:
+                fps = int(self.node_map.FindNode("AcquisitionFrameRate").Value())  # Read FPS from camera
+                print(f"Recording Initiated at {fps} fps.")
+            except Exception as e:
+                print(f"Error retrieving frame rate, defaulting to 30 FPS: {e}")
+                fps = 30  # Default fallback
+            frame_size = (1936, 1096)  # Camera resolution
+            self.video_writer = cv2.VideoWriter(self.video_filename, fourcc, fps, frame_size)
+
+
     def software_trigger(self):
         print("Executing software trigger...")
         self.node_map.FindNode("TriggerSoftware").Execute()
@@ -418,7 +480,7 @@ class Camera:
 
         self._datastream.QueueBuffer(buffer)
 
-        if self.keep_image:
+        if self.acquisition_mode == 2: #Default Save on SW Trigger
             print("Saving image...")
             ids_peak_ipl.ImageWriter.WriteAsPNG(
                 self._valid_name(cwd + "/image", ".png"), converted_ipl_image)
