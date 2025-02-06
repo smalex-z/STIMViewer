@@ -156,7 +156,8 @@ class Camera:
             self.node_map.FindNode(
                 "TriggerSelector").SetCurrentEntry("ExposureStart")
         self.node_map.FindNode("TriggerMode").SetCurrentEntry("On")
-        self.node_map.FindNode("TriggerSource").SetCurrentEntry("Software")
+        self.node_map.FindNode("TriggerSource").SetCurrentEntry("Line0")
+        self.make_image = True
         
     
     def init_RT_acquisition(self):
@@ -328,12 +329,13 @@ class Camera:
         try:
             # Set trigger mode to 'Off' for continuous acquisition
             self.node_map.FindNode("TriggerMode").SetCurrentEntry("On")
-            self.node_map.FindNode("TriggerSource").SetCurrentEntry("Software")
+            self.node_map.FindNode("TriggerSource").SetCurrentEntry("Line0")
 
             # Start the data stream and acquisition
             self._datastream.StartAcquisition()
             self.node_map.FindNode("AcquisitionStart").Execute()
             self.acquisition_running = True
+            self.make_image = True
 
             print("Hardware Acquisition started!")
         except Exception as e:
@@ -343,6 +345,9 @@ class Camera:
 
 
     def stop_hardware_acquisition(self):
+        print("Trigger Mode:", self.node_map.FindNode("TriggerMode").CurrentEntry().SymbolicValue())
+        print("Trigger Source:", self.node_map.FindNode("TriggerSource").CurrentEntry().SymbolicValue())
+
         if self._device is None or self.acquisition_running is False:
             return
         try:
@@ -362,14 +367,13 @@ class Camera:
             self.node_map.FindNode("TLParamsLocked").SetValue(0)
             self.revoke_and_allocate_buffer()
             
+            self.make_image = False
             print("Closed HW Acq")
-
         except Exception as e:
             print(f"Exception (stop hardware acquisition): {str(e)}")
 
 
     def start_recording(self):
-        
         if self._device is None or self.recording:
             return False
         if self._datastream is None:
@@ -381,8 +385,6 @@ class Camera:
         try:
             if self.recording == True:
                 self.init_video_writer()
-                
-
         except Exception as e:
             print(f"Exception during start_recording: {e}")
             return False
@@ -419,6 +421,12 @@ class Camera:
         print("Executing software trigger...")
         self.node_map.FindNode("TriggerSoftware").Execute()
         self.node_map.FindNode("TriggerSoftware").WaitUntilDone()
+        print("Finished.")
+
+    def hardware_trigger(self):
+        print("Executing hardware trigger...")
+        #self.node_map.FindNode("TriggerSoftware").Execute()
+        #self.node_map.FindNode("TriggerSoftware").WaitUntilDone()
         print("Finished.")
 
     def _valid_name(self, path: str, ext: str):
@@ -490,12 +498,13 @@ class Camera:
         while not self.killed:
             try: 
                 # Check for Software Trigger
-                if self.make_image is True:
-                    # Call software trigger to load image
-                    self.software_trigger()
-                    # Get image and save it as file, if that option is enabled
-                    self.save_image()
-                    self.make_image = False
+                if self.acquisition_mode == 2:
+                    if self.make_image is True:
+                        # Call software trigger to load image
+                        self.software_trigger()
+                        # Get image and save it as file, if that option is enabled
+                        self.save_image()
+                        self.make_image = False
 
                 # Live Feed?
                 if self.acquisition_mode == 0: #0: Real Time, #1: HW Trigger, #2: SW Trigger
@@ -511,10 +520,12 @@ class Camera:
                 if self.acquisition_mode == 1:
                     if self.make_image is True:
                         # Call software trigger to load image
-                        self.software_trigger()
+                        self.hardware_trigger()
                         # Get image and save it as file, if that option is enabled
                         self.save_image()
-                        self.make_image = False
+                        #self.make_image = False
+
+                        
 
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
