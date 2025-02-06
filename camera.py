@@ -26,6 +26,9 @@ import os
 import time
 import cv2  # OpenCV for video writing
 import numpy as np  # Handling image arrays
+import datetime
+import threading
+import queue
 
 
 from os.path import exists
@@ -73,6 +76,7 @@ class Camera:
         self.recording = False
         self.video_writer = None
         self.video_filename = "output.mp4"
+        self.video_writer_thread = None
 
     def __del__(self):
         self.close()
@@ -368,10 +372,13 @@ class Camera:
         if self._datastream is None:
             self._init_data_stream()
 
-        self.recording = True
         # Recording Start
         try:
-            if self.recording == True:
+            if not self.recording:
+                self.recording = True
+                self.frame_queue = queue.Queue(maxsize=10)  # ✅ Queue to store frames for processing
+                self.video_writer_thread = threading.Thread(target=self._video_writer_loop, daemon=True)
+                self.video_writer_thread.start()
                 self.init_video_writer()
         except Exception as e:
             print(f"Exception during start_recording: {e}")
@@ -384,6 +391,11 @@ class Camera:
             print("stopping recording")
             if self.recording:
                 self.recording = False
+
+                if self.video_writer_thread is not None:
+                    self.video_writer_thread.join()  # Wait for background thread to finish
+                    self.video_writer_thread = None
+
                 if self.video_writer is not None:
                     self.video_writer.release()
                     self.video_writer = None
@@ -397,7 +409,7 @@ class Camera:
             try:
                 fps = 0
                 if self.acquisition_mode == 1: #Hardware
-                    fps = self.get_actual_fps()  # Read FPS from camera
+                    fps = self.GUIfps  # Read FPS from camera
                 if self.acquisition_mode == 0: #Real Time
                     fps = int(self.node_map.FindNode("AcquisitionFrameRate").Value())  # Read FPS from camera
                 print(f"Recording Initiated at {fps} fps.")
@@ -405,7 +417,28 @@ class Camera:
                 print(f"Error retrieving frame rate, defaulting to 30 FPS: {e}")
                 fps = 30  # Default fallback
             frame_size = (1936, 1096)  # Camera resolution
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+            self.video_filename = f"recording_{timestamp}.mp4"
             self.video_writer = cv2.VideoWriter(self.video_filename, fourcc, fps, frame_size)
+
+    def _video_writer_loop(self):
+        """Continuously process and save frames from the queue."""
+        while self.recording or not self.frame_queue.empty():
+            try:
+                frame = self.frame_queue.get(timeout=1)  # Get a frame from the queue
+
+                # ✅ Convert the frame (Offloaded from the main thread)
+                image_np = np.array(frame.get_numpy_1D(), dtype=np.uint8)
+                image_np = image_np.reshape((frame.Height(), frame.Width(), 4))  # BGRA format
+                image_bgr = cv2.cvtColor(image_np, cv2.COLOR_BGRA2BGR)
+
+                # ✅ Write frame to video file
+                self.video_writer.write(image_bgr)
+            except queue.Empty:
+                continue  # No frames in queue, keep checking
+            except Exception as e:
+                print(f"Error processing video frame: {e}")
+
 
 
     def software_trigger(self):
@@ -474,11 +507,8 @@ class Camera:
 
         self._datastream.QueueBuffer(buffer)
 
-        if self.recording and self.video_writer:
-            image_np = np.array(converted_ipl_image.get_numpy_1D(), dtype=np.uint8)
-            image_np = image_np.reshape((converted_ipl_image.Height(), converted_ipl_image.Width(), 4))  # BGRA format
-            image_bgr = cv2.cvtColor(image_np, cv2.COLOR_BGRA2BGR)  # Convert BGRA to BGR for OpenCV
-            self.video_writer.write(image_bgr)
+        if self.recording:
+            self.frame_queue.put(converted_ipl_image)
 
         if self.acquisition_mode == 2: #Default Save on SW Trigger
             print("Saving image...")
@@ -496,12 +526,8 @@ class Camera:
             converted_ipl_image = self._image_converter.Convert(ipl_image, TARGET_PIXEL_FORMAT)
             self._datastream.QueueBuffer(buffer)
 
-            if self.recording and self.video_writer:
-                image_np = np.array(converted_ipl_image.get_numpy_1D(), dtype=np.uint8)
-                image_np = image_np.reshape((converted_ipl_image.Height(), converted_ipl_image.Width(), 4))  # BGRA format
-                image_bgr = cv2.cvtColor(image_np, cv2.COLOR_BGRA2BGR)  # Convert BGRA to BGR for OpenCV
-                self.video_writer.write(image_bgr)
-
+            if self.recording:
+                self.frame_queue.put(converted_ipl_image)
 
             return converted_ipl_image
         except ids_peak.Exception as e:
