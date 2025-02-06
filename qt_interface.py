@@ -277,11 +277,8 @@ class Interface(QtWidgets.QMainWindow):
         :param image: takes an image for the video preview seen onscreen
         """
         # Calculate FPS
-        current_time = time()
-        frame_time = current_time - self.last_frame_time
-        self.last_frame_time = current_time
+        GUIfps = self._camera.get_actual_fps()
 
-        GUIfps = round(1 / frame_time) if frame_time > 0 else 0  # Round FPS to nearest integer
         try:
             fps = int(self._camera.node_map.FindNode("AcquisitionFrameRate").Value())  # Read FPS from camera
         except Exception as e:
@@ -289,8 +286,12 @@ class Interface(QtWidgets.QMainWindow):
             fps = 30  # Default fallback
 
         # Update the FPS label
-        self.GUIfps_label.setText(f"GUI FPS: {GUIfps}")  # Display FPS as an integer
-        self.fps_label.setText(f"Acquisition FPS: {fps}")  # Display FPS as an integer
+        QtCore.QMetaObject.invokeMethod(self.GUIfps_label, "setText",
+                                    QtCore.Qt.QueuedConnection,
+                                    QtCore.Q_ARG(str, f"GUI FPS: {GUIfps}"))
+        QtCore.QMetaObject.invokeMethod(self.fps_label, "setText",
+                                    QtCore.Qt.QueuedConnection,
+                                    QtCore.Q_ARG(str, f"Acquisition FPS: {fps}"))
 
         # Process and display the image
         image_numpy = image.get_numpy_1D().copy()

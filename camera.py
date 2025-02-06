@@ -120,6 +120,20 @@ class Camera:
         self.node_map.FindNode("UserSetLoad").Execute()
         self.node_map.FindNode("UserSetLoad").WaitUntilDone()
     
+    def get_actual_fps(self):
+        """Retrieve the actual FPS based on frame arrival time (for hardware trigger mode)."""
+        current_time = time.time()
+        
+        if hasattr(self, "last_frame_time") and self.last_frame_time:
+            frame_time = current_time - self.last_frame_time
+            if frame_time > 0.001:  # Prevent division errors
+                self.GUIfps = round(1.0 / frame_time)
+        else:
+            self.GUIfps = 0  # No previous frame
+
+        self.last_frame_time = current_time
+        return self.GUIfps
+
     #Software Trigger
     def _init_data_stream(self):
         # Open device's datastream
@@ -234,29 +248,6 @@ class Camera:
             self.node_map.FindNode(name).SetValue(value)
         except ids_peak.Exception:
             self.interface.warning(f"Could not set value for {name}!")
-
-    def get_data_stream_image(self):
-        try:
-            # Use a shorter timeout (e.g., 50ms) to avoid blocking
-            buffer = self._datastream.WaitForFinishedBuffer(500)
-
-            # Process the buffer if it exists
-            ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
-            converted_ipl_image = self._image_converter.Convert(ipl_image, TARGET_PIXEL_FORMAT)
-            self._datastream.QueueBuffer(buffer)
-
-            if self.recording and self.video_writer:
-                image_np = np.array(converted_ipl_image.get_numpy_1D(), dtype=np.uint8)
-                image_np = image_np.reshape((converted_ipl_image.Height(), converted_ipl_image.Width(), 4))  # BGRA format
-                image_bgr = cv2.cvtColor(image_np, cv2.COLOR_BGRA2BGR)  # Convert BGRA to BGR for OpenCV
-                self.video_writer.write(image_bgr)
-
-
-            return converted_ipl_image
-        except ids_peak.Exception as e:
-            # No buffer available, return None
-            print(f"No buffer available: {e}")
-            return None
 
     
     #RealTime Acquisition
@@ -374,13 +365,10 @@ class Camera:
 
 
     def start_recording(self):
-        if self._device is None or self.recording:
-            return False
         if self._datastream is None:
             self._init_data_stream()
 
         self.recording = True
-
         # Recording Start
         try:
             if self.recording == True:
@@ -392,9 +380,8 @@ class Camera:
 
 
     def stop_recording(self):
-        if self._device is None or self.acquisition_running is False:
-            return
         try:
+            print("stopping recording")
             if self.recording:
                 self.recording = False
                 if self.video_writer is not None:
@@ -408,7 +395,11 @@ class Camera:
         if self.video_writer is None:
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # MP4 format
             try:
-                fps = int(self.node_map.FindNode("AcquisitionFrameRate").Value())  # Read FPS from camera
+                fps = 0
+                if self.acquisition_mode == 1: #Hardware
+                    fps = self.get_actual_fps()  # Read FPS from camera
+                if self.acquisition_mode == 0: #Real Time
+                    fps = int(self.node_map.FindNode("AcquisitionFrameRate").Value())  # Read FPS from camera
                 print(f"Recording Initiated at {fps} fps.")
             except Exception as e:
                 print(f"Error retrieving frame rate, defaulting to 30 FPS: {e}")
@@ -424,10 +415,8 @@ class Camera:
         print("Finished.")
 
     def hardware_trigger(self):
-        print("Executing hardware trigger...")
-        #self.node_map.FindNode("TriggerSoftware").Execute()
-        #self.node_map.FindNode("TriggerSoftware").WaitUntilDone()
-        print("Finished.")
+        #Do nothing for Hardware
+        {}
 
     def _valid_name(self, path: str, ext: str):
         num = 0
@@ -458,8 +447,6 @@ class Camera:
             for _ in range(buffer_amount):
                 buffer = self._datastream.AllocAndAnnounceBuffer(payload_size)
                 self._buffer_list.append(buffer)
-
-            print("Allocated buffers!")
         except Exception as e:
             self._interface.warning(str(e))
 
@@ -474,7 +461,6 @@ class Camera:
         cwd = os.getcwd()
 
         buffer = self._datastream.WaitForFinishedBuffer(1000)
-        print("Buffered image!")
 
         # Get image from buffer (shallow copy)
         self.ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
@@ -488,11 +474,40 @@ class Camera:
 
         self._datastream.QueueBuffer(buffer)
 
+        if self.recording and self.video_writer:
+            image_np = np.array(converted_ipl_image.get_numpy_1D(), dtype=np.uint8)
+            image_np = image_np.reshape((converted_ipl_image.Height(), converted_ipl_image.Width(), 4))  # BGRA format
+            image_bgr = cv2.cvtColor(image_np, cv2.COLOR_BGRA2BGR)  # Convert BGRA to BGR for OpenCV
+            self.video_writer.write(image_bgr)
+
         if self.acquisition_mode == 2: #Default Save on SW Trigger
             print("Saving image...")
             ids_peak_ipl.ImageWriter.WriteAsPNG(
                 self._valid_name(cwd + "/image", ".png"), converted_ipl_image)
             print("Saved!")
+        
+    def get_data_stream_image(self):
+        try:
+            # Use a shorter timeout (e.g., 50ms) to avoid blocking
+            buffer = self._datastream.WaitForFinishedBuffer(500)
+
+            # Process the buffer if it exists
+            ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
+            converted_ipl_image = self._image_converter.Convert(ipl_image, TARGET_PIXEL_FORMAT)
+            self._datastream.QueueBuffer(buffer)
+
+            if self.recording and self.video_writer:
+                image_np = np.array(converted_ipl_image.get_numpy_1D(), dtype=np.uint8)
+                image_np = image_np.reshape((converted_ipl_image.Height(), converted_ipl_image.Width(), 4))  # BGRA format
+                image_bgr = cv2.cvtColor(image_np, cv2.COLOR_BGRA2BGR)  # Convert BGRA to BGR for OpenCV
+                self.video_writer.write(image_bgr)
+
+
+            return converted_ipl_image
+        except ids_peak.Exception as e:
+            # No buffer available, return None
+            print(f"No buffer available: {e}")
+            return None
 
     def acquisition_thread(self):
         while not self.killed:
@@ -513,19 +528,15 @@ class Camera:
                     if image:
                         # Pass the image to the interface for real-time display
                         self._interface.on_image_received(image)
-                else:
-                    time.sleep(0.01)  # Avoid busy-waiting
 
                 # TODO: Hardware Triggering
                 if self.acquisition_mode == 1:
                     if self.make_image is True:
                         # Call software trigger to load image
                         self.hardware_trigger()
-                        # Get image and save it as file, if that option is enabled
                         self.save_image()
-                        #self.make_image = False
-
-                        
+                
+                time.sleep(0.01)  # Avoid busy-waiting
 
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
