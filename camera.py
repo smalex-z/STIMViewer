@@ -33,6 +33,8 @@ import queue
 
 from os.path import exists
 from dataclasses import dataclass
+from PyQt5.QtCore import QTimer
+
 
 from ids_peak import ids_peak
 from ids_peak_ipl import ids_peak_ipl
@@ -376,7 +378,7 @@ class Camera:
         try:
             if not self.recording:
                 self.recording = True
-                self.frame_queue = queue.Queue(maxsize=10)  # ✅ Queue to store frames for processing
+                self.frame_queue = queue.Queue(maxsize=0)  # ✅ Queue to store frames for processing
                 self.video_writer_thread = threading.Thread(target=self._video_writer_loop, daemon=True)
                 self.video_writer_thread.start()
                 self.init_video_writer()
@@ -388,20 +390,26 @@ class Camera:
 
     def stop_recording(self):
         try:
-            print("stopping recording")
             if self.recording:
                 self.recording = False
-
-                if self.video_writer_thread is not None:
-                    self.video_writer_thread.join()  # Wait for background thread to finish
-                    self.video_writer_thread = None
-
-                if self.video_writer is not None:
-                    self.video_writer.release()
-                    self.video_writer = None
-                print(f"Video saved as {self.video_filename}")
+                self.processing_remaining_frames = True
+                QTimer.singleShot(100, self._check_video_writer_status)
         except Exception as e:
             print(f"Exception (stop recording): {str(e)}")
+
+    def _check_video_writer_status(self):
+        """Non-blocking way to stop recording without freezing the GUI."""
+        if self.processing_remaining_frames and (not self.frame_queue.empty()):
+            print(f"Waiting for {self.frame_queue.qsize()} frames to be written...")
+            QTimer.singleShot(100, self._check_video_writer_status)  # ✅ Check again after 100ms
+        else:
+            # ✅ The queue is empty, finalize the video
+            self.video_writer_thread.join()  
+            self.video_writer_thread = None
+            self.video_writer.release()
+            self.video_writer = None
+            print(f"Video saved as {self.video_filename}")
+            self.processing_remaining_frames = False
 
     def init_video_writer(self):
         if self.video_writer is None:
@@ -417,7 +425,7 @@ class Camera:
                 print(f"Error retrieving frame rate, defaulting to 30 FPS: {e}")
                 fps = 30  # Default fallback
             frame_size = (1936, 1096)  # Camera resolution
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             self.video_filename = f"recording_{timestamp}.mp4"
             self.video_writer = cv2.VideoWriter(self.video_filename, fourcc, fps, frame_size)
 
