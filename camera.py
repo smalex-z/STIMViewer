@@ -24,15 +24,13 @@
 
 import os
 import time
-import cv2  # OpenCV for video writing
 import numpy as np  # Handling image arrays
 import datetime
-import threading
 import queue
 
 
 from os.path import exists
-from dataclasses import dataclass
+from video_recorder import VideoRecorder
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QMessageBox
 
@@ -46,39 +44,31 @@ TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
 
 
 class Camera:
-    """
-    
-    """
     def __init__(self, device_manager, interface):
         if interface is None:
             raise ValueError("Interface is None")
 
         self.device_manager = device_manager
-
+        self._interface = interface
         self._device = None
         self._datastream = None
         self.acquisition_mode = 0
         self.acquisition_running = False
         self.node_map = None
-        self._interface = interface
-        self.save_image = False
-        self.keep_image = False
         self._buffer_list = []
 
         self.target_gain = 1
         self.max_gain = 1
-
         self.killed = False
+        self.save_image = False
 
         self._get_device()
         self._setup_device_and_datastream()
         self._interface.set_camera(self)
 
         self._image_converter = ids_peak_ipl.ImageConverter()
-        self.recording = False
-        self.video_writer = None
-        self.video_filename = "output.mp4"
-        self.video_writer_thread = None
+        self.video_recorder = VideoRecorder(interface)  # ✅ Initialize video recorder
+
 
     def __del__(self):
         self.close()
@@ -356,115 +346,11 @@ class Camera:
     def start_recording(self):
         if self._datastream is None:
             self._init_data_stream()
-
-        # Recording Start
-        try:
-            if not self.recording:
-                self.recording = True
-                self.frame_queue = queue.Queue(maxsize=0)  # ✅ Queue to store frames for processing
-                self.video_writer_thread = threading.Thread(target=self._video_writer_loop, daemon=True)
-                self.video_writer_thread.start()
-                self.init_video_writer()
-        except Exception as e:
-            print(f"Exception during start_recording: {e}")
-            return False
-        return True
-
+        fps = int(self.node_map.FindNode("AcquisitionFrameRate").Value()) if self.acquisition_mode == 0 else self.GUIfps
+        self.video_recorder.start_recording(fps)
 
     def stop_recording(self):
-        try:
-            if self.recording:
-                self.recording = False
-
-                remaining_frames = self.frame_queue.qsize()
-                estimated_time = round(remaining_frames / 30, 2)  # Estimate processing time in seconds
-                
-                # ✅ Allow GUI to remain responsive while processing remaining frames
-                self.processing_remaining_frames = True
-                QTimer.singleShot(100, self._check_video_writer_status)
-                
-                # ✅ Show a pop-up message
-                msg_box = QMessageBox()
-                msg_box.setIcon(QMessageBox.Information)
-                msg_box.setWindowTitle("Processing Video")
-                msg_box.setText(
-                    f"Recording stopped.\n"
-                    f"{remaining_frames} frames are remaining to be processed.\n"
-                    f"Estimated processing time: {estimated_time} seconds.\n\n"
-                    f"You won't be able to start a new recording until this one is complete."
-                )
-                msg_box.setStandardButtons(QMessageBox.Ok)
-                msg_box.exec_()
-
-                # ✅ Disable the Start Recording button until processing is done
-                self._interface._button_start_recording.setEnabled(False)
-
-        except Exception as e:
-            print(f"Exception (stop recording): {str(e)}")
-
-    def _check_video_writer_status(self):
-        """Non-blocking way to stop recording without freezing the GUI."""
-        if self.processing_remaining_frames and (not self.frame_queue.empty()):
-            remaining_frames = self.frame_queue.qsize()
-            print(f"Waiting for {remaining_frames} frames to be written...")
-            QTimer.singleShot(100, self._check_video_writer_status)  # ✅ Check again after 100ms
-        else:
-            # ✅ The queue is empty, finalize the video
-            self.video_writer_thread.join()  
-            self.video_writer_thread = None
-            self.video_writer.release()
-            self.video_writer = None
-            print(f"Video saved as {self.video_filename}")
-            self.processing_remaining_frames = False
-
-            # ✅ Re-enable the Start Recording button
-            self._interface._button_start_recording.setEnabled(True)
-
-            # ✅ Show final notification that video is ready
-            msg_box = QMessageBox()
-            msg_box.setIcon(QMessageBox.Information)
-            msg_box.setWindowTitle("Video Processing Complete")
-            msg_box.setText("Your video has finished processing and is ready for use!")
-            msg_box.setStandardButtons(QMessageBox.Ok)
-            msg_box.exec_()
-
-
-    def init_video_writer(self):
-        if self.video_writer is None:
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # MP4 format
-            try:
-                fps = 0
-                if self.acquisition_mode == 1: #Hardware
-                    fps = self.GUIfps  # Read FPS from camera
-                if self.acquisition_mode == 0: #Real Time
-                    fps = int(self.node_map.FindNode("AcquisitionFrameRate").Value())  # Read FPS from camera
-                print(f"Recording Initiated at {fps} fps.")
-            except Exception as e:
-                print(f"Error retrieving frame rate, defaulting to 30 FPS: {e}")
-                fps = 30  # Default fallback
-            frame_size = (1936, 1096)  # Camera resolution
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            self.video_filename = f"recording_{timestamp}.mp4"
-            self.video_writer = cv2.VideoWriter(self.video_filename, fourcc, fps, frame_size)
-
-    def _video_writer_loop(self):
-        """Continuously process and save frames from the queue."""
-        while self.recording or not self.frame_queue.empty():
-            try:
-                frame = self.frame_queue.get(timeout=1)  # Get a frame from the queue
-
-                # ✅ Convert the frame (Offloaded from the main thread)
-                image_np = np.array(frame.get_numpy_1D(), dtype=np.uint8)
-                image_np = image_np.reshape((frame.Height(), frame.Width(), 4))  # BGRA format
-                image_bgr = cv2.cvtColor(image_np, cv2.COLOR_BGRA2BGR)
-
-                # ✅ Write frame to video file
-                self.video_writer.write(image_bgr)
-            except queue.Empty:
-                continue  # No frames in queue, keep checking
-            except Exception as e:
-                print(f"Error processing video frame: {e}")
-
+        self.video_recorder.stop_recording()
 
     def _valid_name(self, path: str, ext: str):
         num = 0
@@ -510,32 +396,26 @@ class Camera:
         try:
             cwd = os.getcwd()
             converted_ipl_image = None
-            buffer = self._datastream.WaitForFinishedBuffer(500) # Use a shorter timeout (e.g., 50ms) to avoid blocking
-            
-            # This creates a deep copy of the image, so the buffer is free to be used again
-                # NOTE: Use `ImageConverter`, since the `ConvertTo` function re-allocates
-                #       the converison buffers on every call
+            buffer = self._datastream.WaitForFinishedBuffer(500)  # Short timeout
+
+            if buffer is None:
+                return None  # No buffer available, skip processing
+
             ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
-            converted_ipl_image = self._image_converter.Convert(
-                    ipl_image, TARGET_PIXEL_FORMAT)
+            converted_ipl_image = self._image_converter.Convert(ipl_image, TARGET_PIXEL_FORMAT)
             self._datastream.QueueBuffer(buffer)
             self._interface.on_image_received(converted_ipl_image)
 
-            if self.recording:
-                self.frame_queue.put(converted_ipl_image)
+            self.video_recorder.add_frame(converted_ipl_image)  # ✅ Use new VideoRecorder
 
-            if self.save_image: #Snapshot
+            if self.save_image:
                 print("Saving image...")
-                ids_peak_ipl.ImageWriter.WriteAsPNG(
-                    self._valid_name(cwd + "/image", ".png"), converted_ipl_image)
+                ids_peak_ipl.ImageWriter.WriteAsPNG(self._valid_name(cwd + "/image", ".png"), converted_ipl_image)
                 print("Saved!")
                 self.save_image = False
 
-
-
-
+            return converted_ipl_image
         except ids_peak.Exception as e:
-            # No buffer available, return None
             print(f"No buffer available: {e}")
             return None
 
