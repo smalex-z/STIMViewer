@@ -24,9 +24,16 @@
 
 import os
 import time
+import numpy as np  # Handling image arrays
+import datetime
+import queue
+
 
 from os.path import exists
-from dataclasses import dataclass
+from video_recorder import VideoRecorder
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QMessageBox
+
 
 from ids_peak import ids_peak
 from ids_peak_ipl import ids_peak_ipl
@@ -37,35 +44,31 @@ TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
 
 
 class Camera:
-    """
-    
-    """
     def __init__(self, device_manager, interface):
         if interface is None:
             raise ValueError("Interface is None")
 
-        self.ipl_image = None
         self.device_manager = device_manager
-
+        self._interface = interface
         self._device = None
         self._datastream = None
+        self.acquisition_mode = 0
         self.acquisition_running = False
         self.node_map = None
-        self._interface = interface
-        self.make_image = False
-        self.keep_image = True
         self._buffer_list = []
 
         self.target_gain = 1
         self.max_gain = 1
-
         self.killed = False
+        self.save_image = False
 
         self._get_device()
         self._setup_device_and_datastream()
         self._interface.set_camera(self)
 
         self._image_converter = ids_peak_ipl.ImageConverter()
+        self.video_recorder = VideoRecorder(interface)  # ✅ Initialize video recorder
+
 
     def __del__(self):
         self.close()
@@ -113,7 +116,20 @@ class Camera:
         self.node_map.FindNode("UserSetLoad").Execute()
         self.node_map.FindNode("UserSetLoad").WaitUntilDone()
     
-    #Software Trigger
+    def get_actual_fps(self):
+        """Retrieve the actual FPS based on frame arrival time (for hardware trigger mode)."""
+        current_time = time.time()
+        
+        if hasattr(self, "last_frame_time") and self.last_frame_time:
+            frame_time = current_time - self.last_frame_time
+            if frame_time > 0.001:  # Prevent division errors
+                self.GUIfps = round(1.0 / frame_time)
+        else:
+            self.GUIfps = 0  # No previous frame
+
+        self.last_frame_time = current_time
+        return self.GUIfps
+
     def _init_data_stream(self):
         # Open device's datastream
         self._datastream = self._device.DataStreams()[0].OpenDataStream()
@@ -130,28 +146,8 @@ class Camera:
             for supported_pixel_format in
             self._image_converter.SupportedOutputPixelFormatNames(
                 source_pixel_format))
+        
 
-    def init_software_trigger(self):
-        allEntries = self.node_map.FindNode("TriggerSelector").Entries()
-        availableEntries = []
-        for entry in allEntries:
-            if (entry.AccessStatus() != ids_peak.NodeAccessStatus_NotAvailable
-                    and entry.AccessStatus() != ids_peak.NodeAccessStatus_NotImplemented):
-                availableEntries.append(entry.SymbolicValue())
-
-        if len(availableEntries) == 0:
-            raise Exception("Software Trigger not supported")
-        elif "ExposureStart" not in availableEntries:
-            self.node_map.FindNode("TriggerSelector").SetCurrentEntry(
-                availableEntries[0])
-        else:
-            self.node_map.FindNode(
-                "TriggerSelector").SetCurrentEntry("ExposureStart")
-        self.node_map.FindNode("TriggerMode").SetCurrentEntry("On")
-        self.node_map.FindNode("TriggerSource").SetCurrentEntry("Software")
-
-
-    # GAIN    
     def _setup_device_and_datastream(self):
         self._datastream = self._device.DataStreams()[0].OpenDataStream()
         # Disable auto gain and auto exposure to enable custom gain in program
@@ -176,7 +172,9 @@ class Camera:
     
 
     def close(self):
-        self.stop_acquisition()
+        self.stop_recording()
+        self.stop_realtime_acquisition()
+        self.stop_hardware_acquisition()
 
         # If datastream has been opened, revoke and deallocate all buffers
         if self._datastream is not None:
@@ -202,34 +200,11 @@ class Camera:
             self.node_map.FindNode(name).SetValue(value)
         except ids_peak.Exception:
             self.interface.warning(f"Could not set value for {name}!")
-    """
-    def print(self):
-        print(
-            f"{self._device.ModelName()}: ("
-            f"{self._device.ParentInterface().DisplayName()} ; "
-            f"{self._device.ParentInterface().ParentSystem().DisplayName()} v."
-            f"{self._device.ParentInterface().ParentSystem().version()})")
-    """
 
-    def get_data_stream_image(self):
-        try:
-            # Use a shorter timeout (e.g., 50ms) to avoid blocking
-            buffer = self._datastream.WaitForFinishedBuffer(500)
+    #RealTime Acquisition
+    def start_realtime_acquisition(self):
+        self.acquisition_mode = 0 #0: Real Time, #1: HW Trigger, #2: SW Trigger
 
-            # Process the buffer if it exists
-            ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
-            converted_ipl_image = self._image_converter.Convert(ipl_image, TARGET_PIXEL_FORMAT)
-            self._datastream.QueueBuffer(buffer)
-            return converted_ipl_image
-        except ids_peak.Exception as e:
-            # No buffer available, return None
-            print(f"No buffer available: {e}")
-            return None
-
-        
-    
-
-    def start_acquisition(self):
         if self._device is None or self.acquisition_running:
             return False
         
@@ -242,6 +217,21 @@ class Camera:
 
         # Constant Acquisition Test
         try:
+            allEntries = self.node_map.FindNode("TriggerSelector").Entries()
+            availableEntries = []
+            for entry in allEntries:
+                if (entry.AccessStatus() != ids_peak.NodeAccessStatus_NotAvailable
+                        and entry.AccessStatus() != ids_peak.NodeAccessStatus_NotImplemented):
+                    availableEntries.append(entry.SymbolicValue())
+
+            if len(availableEntries) == 0:
+                raise Exception("RT Acquisition not supported")
+            elif "ExposureStart" not in availableEntries:
+                self.node_map.FindNode("TriggerSelector").SetCurrentEntry(
+                    availableEntries[0])
+            else:
+                self.node_map.FindNode(
+                    "TriggerSelector").SetCurrentEntry("ExposureStart")
             # Set trigger mode to 'Off' for continuous acquisition
             self.node_map.FindNode("TriggerMode").SetCurrentEntry("Off")
 
@@ -250,38 +240,12 @@ class Camera:
             self.node_map.FindNode("AcquisitionStart").Execute()
             self.acquisition_running = True
         except Exception as e:
-            print(f"Exception during start_acquisition: {e}")
+            print(f"Exception during start_realtime_acquisition: {e}")
             return False
         return True
-        """
-        # Lock parameters that should not be accessed during acquisition
-        try:
-            self.node_map.FindNode("TLParamsLocked").SetValue(1)
 
-            image_width = self.node_map.FindNode("Width").Value()
-            image_height = self.node_map.FindNode("Height").Value()
-            input_pixel_format = ids_peak_ipl.PixelFormat(
-                self.node_map.FindNode("PixelFormat").CurrentEntry().Value())
 
-            # Pre-allocate conversion buffers to speed up first image conversion
-            # while the acquisition is running
-            # NOTE: Re-create the image converter, so old conversion buffers
-            #       get freed
-            self._image_converter = ids_peak_ipl.ImageConverter()
-            self._image_converter.PreAllocateConversion(
-                input_pixel_format, TARGET_PIXEL_FORMAT,
-                image_width, image_height)
-
-            self._datastream.StartAcquisition()
-            self.node_map.FindNode("AcquisitionStart").Execute()
-            self.node_map.FindNode("AcquisitionStart").WaitUntilDone()
-        except Exception as e:
-            print(f"Exception (start acquisition): {str(e)}")
-            return False
-        self.acquisition_running = True
-        return True"""
-
-    def stop_acquisition(self):
+    def stop_realtime_acquisition(self):
         if self._device is None or self.acquisition_running is False:
             return
         try:
@@ -299,15 +263,94 @@ class Camera:
 
             # Unlock parameters
             self.node_map.FindNode("TLParamsLocked").SetValue(0)
+            self.revoke_and_allocate_buffer()
+            
+            print("Closed RT Acq")
 
         except Exception as e:
             print(f"Exception (stop acquisition): {str(e)}")
 
-    def software_trigger(self):
-        print("Executing software trigger...")
-        self.node_map.FindNode("TriggerSoftware").Execute()
-        self.node_map.FindNode("TriggerSoftware").WaitUntilDone()
-        print("Finished.")
+
+    # Hardware Acquisition
+    def start_hardware_acquisition(self):
+        self.acquisition_mode = 1 #0: Real Time, #1: HW Trigger, #2: SW Trigger
+
+        if self._device is None or self.acquisition_running:
+            return False
+        
+        if self._datastream is None:
+            self._init_data_stream()
+
+        for buffer in self._buffer_list:
+            self._datastream.QueueBuffer(buffer)
+
+        # HW Acquisition Test
+        try:
+            allEntries = self.node_map.FindNode("TriggerSelector").Entries()
+            availableEntries = []
+            for entry in allEntries:
+                if (entry.AccessStatus() != ids_peak.NodeAccessStatus_NotAvailable
+                        and entry.AccessStatus() != ids_peak.NodeAccessStatus_NotImplemented):
+                    availableEntries.append(entry.SymbolicValue())
+
+            if len(availableEntries) == 0:
+                raise Exception("Hardware Trigger not supported")
+            elif "ExposureStart" not in availableEntries:
+                self.node_map.FindNode("TriggerSelector").SetCurrentEntry(
+                    availableEntries[0])
+            else:
+                self.node_map.FindNode(
+                    "TriggerSelector").SetCurrentEntry("ExposureStart")
+            self.node_map.FindNode("TriggerMode").SetCurrentEntry("On")
+            self.node_map.FindNode("TriggerSource").SetCurrentEntry("Line0")
+
+            # Start the data stream and acquisition
+            self._datastream.StartAcquisition()
+            self.node_map.FindNode("AcquisitionStart").Execute()
+            self.acquisition_running = True
+
+            print("Hardware Acquisition started!")
+        except Exception as e:
+            print(f"Exception during start_hardware_acquisition: {e}")
+            return False
+        return True
+
+
+    def stop_hardware_acquisition(self):
+        print("Trigger Mode:", self.node_map.FindNode("TriggerMode").CurrentEntry().SymbolicValue())
+        print("Trigger Source:", self.node_map.FindNode("TriggerSource").CurrentEntry().SymbolicValue())
+
+        if self._device is None or self.acquisition_running is False:
+            return
+        try:
+            self.node_map.FindNode("AcquisitionStop").Execute()
+
+            # Kill the datastream to exit out of pending `WaitForFinishedBuffer`
+            # calls
+            #self._datastream.KillWait() TODO: GAIN (?)
+            self._datastream.StopAcquisition(ids_peak.AcquisitionStopMode_Default)
+            # Discard all buffers from the acquisition engine
+            # They remain in the announced buffer pool
+            self._datastream.Flush(ids_peak.DataStreamFlushMode_DiscardAll)
+
+            self.acquisition_running = False
+
+            # Unlock parameters
+            self.node_map.FindNode("TLParamsLocked").SetValue(0)
+            self.revoke_and_allocate_buffer()
+            print("Closed HW Acq")
+        except Exception as e:
+            print(f"Exception (stop hardware acquisition): {str(e)}")
+
+
+    def start_recording(self):
+        if self._datastream is None:
+            self._init_data_stream()
+        fps = int(self.node_map.FindNode("AcquisitionFrameRate").Value()) if self.acquisition_mode == 0 else self.GUIfps
+        self.video_recorder.start_recording(fps)
+
+    def stop_recording(self):
+        self.video_recorder.stop_recording()
 
     def _valid_name(self, path: str, ext: str):
         num = 0
@@ -338,8 +381,6 @@ class Camera:
             for _ in range(buffer_amount):
                 buffer = self._datastream.AllocAndAnnounceBuffer(payload_size)
                 self._buffer_list.append(buffer)
-
-            print("Allocated buffers!")
         except Exception as e:
             self._interface.warning(str(e))
 
@@ -349,57 +390,41 @@ class Camera:
             self.revoke_and_allocate_buffer()
         except Exception as e:
             self._interface.warning(f"Cannot change pixelformat: {str(e)}")
+        
+        
+    def get_data_stream_image(self):
+        try:
+            cwd = os.getcwd()
+            converted_ipl_image = None
+            buffer = self._datastream.WaitForFinishedBuffer(500)  # Short timeout
 
-    def save_image(self):
-        cwd = os.getcwd()
+            if buffer is None:
+                return None  # No buffer available, skip processing
 
-        buffer = self._datastream.WaitForFinishedBuffer(1000)
-        print("Buffered image!")
+            ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
+            converted_ipl_image = self._image_converter.Convert(ipl_image, TARGET_PIXEL_FORMAT)
+            self._datastream.QueueBuffer(buffer)
+            self._interface.on_image_received(converted_ipl_image)
 
-        # Get image from buffer (shallow copy)
-        self.ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
+            self.video_recorder.add_frame(converted_ipl_image)  # ✅ Use new VideoRecorder
 
-        # This creates a deep copy of the image, so the buffer is free to be used again
-        # NOTE: Use `ImageConverter`, since the `ConvertTo` function re-allocates
-        #       the converison buffers on every call
-        converted_ipl_image = self._image_converter.Convert(
-            self.ipl_image, TARGET_PIXEL_FORMAT)
-        self._interface.on_image_received(converted_ipl_image)
+            if self.save_image:
+                print("Saving image...")
+                ids_peak_ipl.ImageWriter.WriteAsPNG(self._valid_name(cwd + "/image", ".png"), converted_ipl_image)
+                print("Saved!")
+                self.save_image = False
 
-        self._datastream.QueueBuffer(buffer)
-
-        if self.keep_image:
-            print("Saving image...")
-            ids_peak_ipl.ImageWriter.WriteAsPNG(
-                self._valid_name(cwd + "/image", ".png"), converted_ipl_image)
-            print("Saved!")
-
-    def wait_for_signal(self):
-        while not self.killed:
-            try:
-                if self.make_image is True:
-                    # Call software trigger to load image
-                    self.software_trigger()
-                    # Get image and save it as file, if that option is enabled
-                    self.save_image()
-                    self.make_image = False
-            except Exception as e:
-                self._interface.warning(str(e))
-                self.make_image = False
+            return converted_ipl_image
+        except ids_peak.Exception as e:
+            print(f"No buffer available: {e}")
+            return None
 
     def acquisition_thread(self):
         while not self.killed:
-            try: 
-                # Check if acquisition is running
-                if self.acquisition_running:
-                    # Fetch an image from the camera
-                    image = self.get_data_stream_image()
-                    if image:
-                        # Pass the image to the interface for real-time display
-                        self._interface.on_image_received(image)
-                else:
-                    time.sleep(0.01)  # Avoid busy-waiting
+            try:
+                self.get_data_stream_image()
+                time.sleep(0.01)
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
-
+                self.save_image = False
 
