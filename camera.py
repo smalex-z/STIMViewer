@@ -53,7 +53,6 @@ class Camera:
         if interface is None:
             raise ValueError("Interface is None")
 
-        self.ipl_image = None
         self.device_manager = device_manager
 
         self._device = None
@@ -62,7 +61,7 @@ class Camera:
         self.acquisition_running = False
         self.node_map = None
         self._interface = interface
-        self.make_image = False
+        self.save_image = False
         self.keep_image = False
         self._buffer_list = []
 
@@ -141,7 +140,6 @@ class Camera:
         self.last_frame_time = current_time
         return self.GUIfps
 
-    #Software Trigger
     def _init_data_stream(self):
         # Open device's datastream
         self._datastream = self._device.DataStreams()[0].OpenDataStream()
@@ -158,27 +156,6 @@ class Camera:
             for supported_pixel_format in
             self._image_converter.SupportedOutputPixelFormatNames(
                 source_pixel_format))
-    
-    def init_hardware_trigger(self):
-        self.acquisition_mode = 1 #0: Real Time, #1: HW Trigger, #2: SW Trigger
-        allEntries = self.node_map.FindNode("TriggerSelector").Entries()
-        availableEntries = []
-        for entry in allEntries:
-            if (entry.AccessStatus() != ids_peak.NodeAccessStatus_NotAvailable
-                    and entry.AccessStatus() != ids_peak.NodeAccessStatus_NotImplemented):
-                availableEntries.append(entry.SymbolicValue())
-
-        if len(availableEntries) == 0:
-            raise Exception("Hardware Trigger not supported")
-        elif "ExposureStart" not in availableEntries:
-            self.node_map.FindNode("TriggerSelector").SetCurrentEntry(
-                availableEntries[0])
-        else:
-            self.node_map.FindNode(
-                "TriggerSelector").SetCurrentEntry("ExposureStart")
-        self.node_map.FindNode("TriggerMode").SetCurrentEntry("On")
-        self.node_map.FindNode("TriggerSource").SetCurrentEntry("Line0")
-        self.make_image = True
         
     
     def init_RT_acquisition(self):
@@ -313,7 +290,8 @@ class Camera:
 
     # Hardware Acquisition
     def start_hardware_acquisition(self):
-        
+        self.acquisition_mode = 1 #0: Real Time, #1: HW Trigger, #2: SW Trigger
+
         if self._device is None or self.acquisition_running:
             return False
         
@@ -325,7 +303,21 @@ class Camera:
 
         # HW Acquisition Test
         try:
-            # Set trigger mode to 'Off' for continuous acquisition
+            allEntries = self.node_map.FindNode("TriggerSelector").Entries()
+            availableEntries = []
+            for entry in allEntries:
+                if (entry.AccessStatus() != ids_peak.NodeAccessStatus_NotAvailable
+                        and entry.AccessStatus() != ids_peak.NodeAccessStatus_NotImplemented):
+                    availableEntries.append(entry.SymbolicValue())
+
+            if len(availableEntries) == 0:
+                raise Exception("Hardware Trigger not supported")
+            elif "ExposureStart" not in availableEntries:
+                self.node_map.FindNode("TriggerSelector").SetCurrentEntry(
+                    availableEntries[0])
+            else:
+                self.node_map.FindNode(
+                    "TriggerSelector").SetCurrentEntry("ExposureStart")
             self.node_map.FindNode("TriggerMode").SetCurrentEntry("On")
             self.node_map.FindNode("TriggerSource").SetCurrentEntry("Line0")
 
@@ -333,7 +325,6 @@ class Camera:
             self._datastream.StartAcquisition()
             self.node_map.FindNode("AcquisitionStart").Execute()
             self.acquisition_running = True
-            self.make_image = True
 
             print("Hardware Acquisition started!")
         except Exception as e:
@@ -364,8 +355,6 @@ class Camera:
             # Unlock parameters
             self.node_map.FindNode("TLParamsLocked").SetValue(0)
             self.revoke_and_allocate_buffer()
-            
-            self.make_image = False
             print("Closed HW Acq")
         except Exception as e:
             print(f"Exception (stop hardware acquisition): {str(e)}")
@@ -484,17 +473,6 @@ class Camera:
                 print(f"Error processing video frame: {e}")
 
 
-
-    def software_trigger(self):
-        print("Executing software trigger...")
-        self.node_map.FindNode("TriggerSoftware").Execute()
-        self.node_map.FindNode("TriggerSoftware").WaitUntilDone()
-        print("Finished.")
-
-    def hardware_trigger(self):
-        #Do nothing for Hardware
-        {}
-
     def _valid_name(self, path: str, ext: str):
         num = 0
 
@@ -533,47 +511,36 @@ class Camera:
             self.revoke_and_allocate_buffer()
         except Exception as e:
             self._interface.warning(f"Cannot change pixelformat: {str(e)}")
-
-    def save_image(self):
-        cwd = os.getcwd()
-
-        buffer = self._datastream.WaitForFinishedBuffer(1000)
-
-        # Get image from buffer (shallow copy)
-        self.ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
-
-        # This creates a deep copy of the image, so the buffer is free to be used again
-        # NOTE: Use `ImageConverter`, since the `ConvertTo` function re-allocates
-        #       the converison buffers on every call
-        converted_ipl_image = self._image_converter.Convert(
-            self.ipl_image, TARGET_PIXEL_FORMAT)
-        self._interface.on_image_received(converted_ipl_image)
-
-        self._datastream.QueueBuffer(buffer)
-
-        if self.recording:
-            self.frame_queue.put(converted_ipl_image)
-
-        if self.acquisition_mode == 2: #Default Save on SW Trigger
-            print("Saving image...")
-            ids_peak_ipl.ImageWriter.WriteAsPNG(
-                self._valid_name(cwd + "/image", ".png"), converted_ipl_image)
-            print("Saved!")
+        
         
     def get_data_stream_image(self):
         try:
-            # Use a shorter timeout (e.g., 50ms) to avoid blocking
-            buffer = self._datastream.WaitForFinishedBuffer(500)
-
-            # Process the buffer if it exists
+            cwd = os.getcwd()
+            converted_ipl_image = None
+            buffer = self._datastream.WaitForFinishedBuffer(500) # Use a shorter timeout (e.g., 50ms) to avoid blocking
+            
+            # This creates a deep copy of the image, so the buffer is free to be used again
+                # NOTE: Use `ImageConverter`, since the `ConvertTo` function re-allocates
+                #       the converison buffers on every call
             ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
-            converted_ipl_image = self._image_converter.Convert(ipl_image, TARGET_PIXEL_FORMAT)
+            converted_ipl_image = self._image_converter.Convert(
+                    ipl_image, TARGET_PIXEL_FORMAT)
             self._datastream.QueueBuffer(buffer)
+            self._interface.on_image_received(converted_ipl_image)
 
             if self.recording:
                 self.frame_queue.put(converted_ipl_image)
 
-            return converted_ipl_image
+            if self.save_image: #Snapshot
+                print("Saving image...")
+                ids_peak_ipl.ImageWriter.WriteAsPNG(
+                    self._valid_name(cwd + "/image", ".png"), converted_ipl_image)
+                print("Saved!")
+                self.save_image = False
+
+
+
+
         except ids_peak.Exception as e:
             # No buffer available, return None
             print(f"No buffer available: {e}")
@@ -581,34 +548,10 @@ class Camera:
 
     def acquisition_thread(self):
         while not self.killed:
-            try: 
-                # Check for Software Trigger
-                if self.acquisition_mode == 2:
-                    if self.make_image is True:
-                        # Call software trigger to load image
-                        self.software_trigger()
-                        # Get image and save it as file, if that option is enabled
-                        self.save_image()
-                        self.make_image = False
-
-                # Live Feed?
-                if self.acquisition_mode == 0: #0: Real Time, #1: HW Trigger, #2: SW Trigger
-                    # Fetch an image from the camera       
-                    image = self.get_data_stream_image()
-                    if image:
-                        # Pass the image to the interface for real-time display
-                        self._interface.on_image_received(image)
-
-                # TODO: Hardware Triggering
-                if self.acquisition_mode == 1:
-                    if self.make_image is True:
-                        # Call software trigger to load image
-                        self.hardware_trigger()
-                        self.save_image()
-                
-                time.sleep(0.01)  # Avoid busy-waiting
-
+            try:
+                self.get_data_stream_image()
+                time.sleep(0.01)
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
-                self.make_image = False
+                self.save_image = False
 
