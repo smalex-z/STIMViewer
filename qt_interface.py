@@ -257,8 +257,11 @@ class Interface(QtWidgets.QMainWindow):
     def _stop_recording(self):
         self._camera.stop_recording()
         self._button_stop_recording.setEnabled(False)
-        self._button_start_hardware_acquisition.setEnabled(True)
-        self._button_stop_hardware_acquisition.setEnabled(True)
+        if self._camera.acquisition_mode == 1: #HW Trigger
+            self._button_stop_hardware_acquisition.setEnabled(True)
+        else:
+            self._button_start_hardware_acquisition.setEnabled(True)
+
 
     def change_pixel_format(self):
         pixel_format = self._dropdown_pixel_format.currentText()
