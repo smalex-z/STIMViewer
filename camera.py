@@ -157,29 +157,7 @@ class Camera:
             self._image_converter.SupportedOutputPixelFormatNames(
                 source_pixel_format))
         
-    
-    def init_RT_acquisition(self):
-        self.acquisition_mode = 0 #0: Real Time, #1: HW Trigger, #2: SW Trigger
-        allEntries = self.node_map.FindNode("TriggerSelector").Entries()
-        availableEntries = []
-        for entry in allEntries:
-            if (entry.AccessStatus() != ids_peak.NodeAccessStatus_NotAvailable
-                    and entry.AccessStatus() != ids_peak.NodeAccessStatus_NotImplemented):
-                availableEntries.append(entry.SymbolicValue())
 
-        if len(availableEntries) == 0:
-            raise Exception("RT Acquisition not supported")
-        elif "ExposureStart" not in availableEntries:
-            self.node_map.FindNode("TriggerSelector").SetCurrentEntry(
-                availableEntries[0])
-        else:
-            self.node_map.FindNode(
-                "TriggerSelector").SetCurrentEntry("ExposureStart")
-        self.node_map.FindNode("TriggerMode").SetCurrentEntry("Off")
-        
-
-
-    # GAIN    
     def _setup_device_and_datastream(self):
         self._datastream = self._device.DataStreams()[0].OpenDataStream()
         # Disable auto gain and auto exposure to enable custom gain in program
@@ -233,10 +211,10 @@ class Camera:
         except ids_peak.Exception:
             self.interface.warning(f"Could not set value for {name}!")
 
-    
     #RealTime Acquisition
     def start_realtime_acquisition(self):
-        
+        self.acquisition_mode = 0 #0: Real Time, #1: HW Trigger, #2: SW Trigger
+
         if self._device is None or self.acquisition_running:
             return False
         
@@ -249,6 +227,21 @@ class Camera:
 
         # Constant Acquisition Test
         try:
+            allEntries = self.node_map.FindNode("TriggerSelector").Entries()
+            availableEntries = []
+            for entry in allEntries:
+                if (entry.AccessStatus() != ids_peak.NodeAccessStatus_NotAvailable
+                        and entry.AccessStatus() != ids_peak.NodeAccessStatus_NotImplemented):
+                    availableEntries.append(entry.SymbolicValue())
+
+            if len(availableEntries) == 0:
+                raise Exception("RT Acquisition not supported")
+            elif "ExposureStart" not in availableEntries:
+                self.node_map.FindNode("TriggerSelector").SetCurrentEntry(
+                    availableEntries[0])
+            else:
+                self.node_map.FindNode(
+                    "TriggerSelector").SetCurrentEntry("ExposureStart")
             # Set trigger mode to 'Off' for continuous acquisition
             self.node_map.FindNode("TriggerMode").SetCurrentEntry("Off")
 
