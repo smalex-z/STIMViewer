@@ -241,7 +241,6 @@ class Interface(QtWidgets.QMainWindow):
 
     def _stop_hardware_acquisition(self):
         self._camera.stop_hardware_acquisition()
-        self._camera.init_RT_acquisition()
         self._camera.start_realtime_acquisition()
         self._button_start_hardware_acquisition.setEnabled(True)
         self._dropdown_pixel_format.setEnabled(True)

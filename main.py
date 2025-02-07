@@ -55,7 +55,6 @@ def main(ui: 'Interface'):
     camera_device = None
     try:
         camera_device = camera.Camera(device_manager, ui)
-        camera_device.init_RT_acquisition()
         start(camera_device, ui)
     
     except KeyboardInterrupt:
