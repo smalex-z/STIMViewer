@@ -54,7 +54,7 @@ class Interface:
             print("The image acquisition must be running to get an image.")
             choice = input("Start acquisition now?: [Y|n]")
             if choice == "" or choice == "y" or choice == "Y":
-                self._camera.start_acquisition()
+                self._camera.start_realtime_acquisition()
                 return True
             return False
         return True
@@ -64,7 +64,7 @@ class Interface:
             print("Acquisition must NOT be running to set a new pixelformat")
             choice = input("Stop acquisition now?: [Y|n]")
             if choice == "" or choice == "y" or choice == "Y":
-                self._camera.stop_acquisition()
+                self._camera.stop_realtime_acquisition()
                 return True
             if choice == "n" or choice == "N":
                 return False
@@ -127,10 +127,10 @@ class Interface:
                         print("Saving images: Disabled")
 
                 elif var[0] == "start":
-                    self._camera.start_acquisition()
+                    self._camera.start_realtime_acquisition()
 
                 elif var[0] == "stop":
-                    self._camera.stop_acquisition()
+                    self._camera.stop_realtime_acquisition()
 
                 elif var[0] == "help":
                     self.print_help()
