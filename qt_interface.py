@@ -263,7 +263,6 @@ class Interface(QtWidgets.QMainWindow):
 
     def _stop_recording(self):
         self._camera.stop_recording()
-        self._button_start_recording.setEnabled(True)
         self._button_stop_recording.setEnabled(False)
 
     def change_pixel_format(self):
