@@ -34,6 +34,7 @@ import queue
 from os.path import exists
 from dataclasses import dataclass
 from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QMessageBox
 
 
 from ids_peak import ids_peak
@@ -392,15 +393,38 @@ class Camera:
         try:
             if self.recording:
                 self.recording = False
+
+                remaining_frames = self.frame_queue.qsize()
+                estimated_time = round(remaining_frames / 30, 2)  # Estimate processing time in seconds
+                
+                # ✅ Allow GUI to remain responsive while processing remaining frames
                 self.processing_remaining_frames = True
                 QTimer.singleShot(100, self._check_video_writer_status)
+                
+                # ✅ Show a pop-up message
+                msg_box = QMessageBox()
+                msg_box.setIcon(QMessageBox.Information)
+                msg_box.setWindowTitle("Processing Video")
+                msg_box.setText(
+                    f"Recording stopped.\n"
+                    f"{remaining_frames} frames are remaining to be processed.\n"
+                    f"Estimated processing time: {estimated_time} seconds.\n\n"
+                    f"You won't be able to start a new recording until this one is complete."
+                )
+                msg_box.setStandardButtons(QMessageBox.Ok)
+                msg_box.exec_()
+
+                # ✅ Disable the Start Recording button until processing is done
+                self._interface._button_start_recording.setEnabled(False)
+
         except Exception as e:
             print(f"Exception (stop recording): {str(e)}")
 
     def _check_video_writer_status(self):
         """Non-blocking way to stop recording without freezing the GUI."""
         if self.processing_remaining_frames and (not self.frame_queue.empty()):
-            print(f"Waiting for {self.frame_queue.qsize()} frames to be written...")
+            remaining_frames = self.frame_queue.qsize()
+            print(f"Waiting for {remaining_frames} frames to be written...")
             QTimer.singleShot(100, self._check_video_writer_status)  # ✅ Check again after 100ms
         else:
             # ✅ The queue is empty, finalize the video
@@ -410,6 +434,18 @@ class Camera:
             self.video_writer = None
             print(f"Video saved as {self.video_filename}")
             self.processing_remaining_frames = False
+
+            # ✅ Re-enable the Start Recording button
+            self._interface._button_start_recording.setEnabled(True)
+
+            # ✅ Show final notification that video is ready
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Information)
+            msg_box.setWindowTitle("Video Processing Complete")
+            msg_box.setText("Your video has finished processing and is ready for use!")
+            msg_box.setStandardButtons(QMessageBox.Ok)
+            msg_box.exec_()
+
 
     def init_video_writer(self):
         if self.video_writer is None:
