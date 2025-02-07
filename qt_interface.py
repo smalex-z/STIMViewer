@@ -135,10 +135,9 @@ class Interface(QtWidgets.QMainWindow):
                 self._dropdown_pixel_format.addItem(idx.SymbolicValue())
         self._dropdown_pixel_format.currentIndexChanged.connect(self.change_pixel_format)
 
-        # Software Trigger Button
-        self._button_software_trigger = QtWidgets.QPushButton("Software Trigger")
+        # Snapshot Button
+        self._button_software_trigger = QtWidgets.QPushButton("Snapshot")
         self._button_software_trigger.clicked.connect(self._trigger_sw_trigger)
-        self._button_software_trigger.setEnabled(True)
 
         # Acquisition Buttons
         self._button_start_hardware_acquisition = QtWidgets.QPushButton("Start Hardware Acquisition")
@@ -231,20 +230,13 @@ class Interface(QtWidgets.QMainWindow):
         
 
     def _trigger_sw_trigger(self):
-        #Gain Implementation
-        gain_input = float(self._gain_slider.value())
-        gain_input = gain_input / 100
-        self._camera.target_gain = gain_input
-
-        self._camera.make_image = True
+        self._camera.save_image = True
 
     def _start_hardware_acquisition(self):
         self._camera.stop_realtime_acquisition()
-        self._camera.init_hardware_trigger()
         self._camera.start_hardware_acquisition()
         self._button_start_hardware_acquisition.setEnabled(False)
         self._dropdown_pixel_format.setEnabled(False)
-        #self._button_software_trigger.setEnabled(True)
         self._button_stop_hardware_acquisition.setEnabled(True)
 
     def _stop_hardware_acquisition(self):
@@ -253,17 +245,21 @@ class Interface(QtWidgets.QMainWindow):
         self._camera.start_realtime_acquisition()
         self._button_start_hardware_acquisition.setEnabled(True)
         self._dropdown_pixel_format.setEnabled(True)
-        #self._button_software_trigger.setEnabled(False)
         self._button_stop_hardware_acquisition.setEnabled(False)
 
     def _start_recording(self):
         self._camera.start_recording()
         self._button_start_recording.setEnabled(False)
         self._button_stop_recording.setEnabled(True)
+        self._button_start_hardware_acquisition.setEnabled(False)
+        self._button_stop_hardware_acquisition.setEnabled(False)
+
 
     def _stop_recording(self):
         self._camera.stop_recording()
         self._button_stop_recording.setEnabled(False)
+        self._button_start_hardware_acquisition.setEnabled(True)
+        self._button_stop_hardware_acquisition.setEnabled(True)
 
     def change_pixel_format(self):
         pixel_format = self._dropdown_pixel_format.currentText()
