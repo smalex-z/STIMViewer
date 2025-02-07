@@ -24,24 +24,17 @@
 
 import os
 import time
-import numpy as np  # Handling image arrays
-import datetime
-import queue
-
 
 from os.path import exists
 from video_recorder import VideoRecorder
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QMessageBox
-
-
 from ids_peak import ids_peak
 from ids_peak_ipl import ids_peak_ipl
 from ids_peak import ids_peak_ipl_extension
 
 
 TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
-
+os.environ["LD_PRELOAD"] = os.environ.get("LD_PRELOAD", "") + ":/lib/aarch64-linux-gnu/libGLdispatch.so.0"
+os.environ["QT_XCB_GL_INTEGRATION"] = "none"
 
 class Camera:
     def __init__(self, device_manager, interface):
