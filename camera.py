@@ -416,7 +416,6 @@ class Camera:
         while not self.killed:
             try:
                 self.get_data_stream_image()
-                time.sleep(0.01)
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
                 self.save_image = False
