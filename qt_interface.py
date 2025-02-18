@@ -298,8 +298,12 @@ class Interface(QtWidgets.QMainWindow):
             image.Height(),
             QtGui.QImage.Format_RGB32
         )
-        self.display.on_image_received(qt_image)
-        self.display.update()
+        
+        try:
+            self.display.on_image_received(qt_image)
+        except Exception as e:
+            print(f"Error updating Display, {e}")
+        
 
 
     def warning(self, message: str):
