@@ -277,7 +277,10 @@ class Interface(QtWidgets.QMainWindow):
         GUIfps = self._camera.get_actual_fps()
 
         try:
-            fps = int(self._camera.node_map.FindNode("AcquisitionFrameRate").Value())  # Read FPS from camera
+            if(self._camera.acquisition_mode == 0):
+                fps = int(self._camera.node_map.FindNode("AcquisitionFrameRate").Value())  # Read FPS from camera
+            elif(self._camera.acquisition_mode == 1):
+                fps = "NA"
         except Exception as e:
             print(f"Error retrieving frame rate, defaulting to 30 FPS: {e}")
             fps = 30  # Default fallback
