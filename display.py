@@ -1,33 +1,9 @@
-# \file    display.py
-# \author  IDS Imaging Development Systems GmbH
-# \date    2024-02-20
-#
-# \brief   This sample showcases the usage of the ids_peak API
-#          in setting camera parameters, starting/stopping the image acquisition
-#          and how to record a video using the ids_peak_ipl API.
-#
-# \version 1.0
-#
-# Copyright (C) 2024, IDS Imaging Development Systems GmbH.
-#
-# The information in this document is subject to change without notice
-# and should not be construed as a commitment by IDS Imaging Development Systems GmbH.
-# IDS Imaging Development Systems GmbH does not assume any responsibility for any errors
-# that may appear in this document.
-#
-# This document, or source code, is provided solely as an example of how to utilize
-# IDS Imaging Development Systems GmbH software libraries in a sample application.
-# IDS Imaging Development Systems GmbH does not assume any responsibility
-# for the use or reliability of any portion of this document.
-#
-# General permission to copy or modify is hereby granted.
-
 import math
 
 try:
-    from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
-    from PyQt5.QtGui import QImage, QPainter
-    from PyQt5.QtCore import QRectF
+    from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QPushButton, QVBoxLayout
+    from PyQt5.QtGui import QImage, QPainter, QPixmap, QTransform
+    from PyQt5.QtCore import QRectF, Qt
     from PyQt5.QtCore import pyqtSlot as Slot
 except ImportError:
     from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
@@ -37,19 +13,40 @@ except ImportError:
 
 
 class Display(QGraphicsView):
-    def __init__(self, parent: QWidget=None):
+    def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.__scene = CustomGraphicsScene(self)
         self.setScene(self.__scene)
+        
+        self.scale_factor = 1.0  # Track zoom level
+        self.min_zoom = 0.5
+        self.max_zoom = 3.0
+
+        self.setRenderHint(QPainter.Antialiasing)
+        self.setRenderHint(QPainter.SmoothPixmapTransform)
+        self.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
     @Slot(QImage)
     def on_image_received(self, image: QImage):
         self.__scene.set_image(image)
         self.update()
 
+    def zoom_in(self):
+        """Increase zoom level with limit check."""
+        if self.scale_factor < self.max_zoom:
+            self.scale_factor *= 1.2  # Increase zoom level
+            self.setTransform(QTransform().scale(self.scale_factor, self.scale_factor))
+
+    def zoom_out(self):
+        """Decrease zoom level with limit check."""
+        if self.scale_factor > self.min_zoom:
+            self.scale_factor /= 1.2  # Decrease zoom level
+            self.setTransform(QTransform().scale(self.scale_factor, self.scale_factor))
+
 
 class CustomGraphicsScene(QGraphicsScene):
-    def __init__(self, parent: Display=None):
+    def __init__(self, parent: Display = None):
         super().__init__(parent)
         self.__parent = parent
         self.__image = QImage()
@@ -77,21 +74,20 @@ class CustomGraphicsScene(QGraphicsScene):
         ratio2 = image_width / image_height
 
         if ratio1 > ratio2:
-            # The height with must fit to the display height.So h remains and w must be scaled down
+            # The height must fit to the display height. So h remains and w must be scaled down
             image_width = display_height * ratio2
             image_height = display_height
         else:
-            # The image with must fit to the display width. So w remains and h must be scaled down
+            # The image width must fit to the display width. So w remains and h must be scaled down
             image_width = display_width
-            image_height = display_height / ratio2
+            image_height = display_width / ratio2
 
         image_pos_x = -1.0 * (image_width / 2.0)
-        image_pox_y = -1.0 * (image_height / 2.0)
+        image_pos_y = -1.0 * (image_height / 2.0)
 
         # Remove digits after point
         image_pos_x = math.trunc(image_pos_x)
-        image_pox_y = math.trunc(image_pox_y)
+        image_pos_y = math.trunc(image_pos_y)
 
-        rect = QRectF(image_pos_x, image_pox_y, image_width, image_height)
-
+        rect = QRectF(image_pos_x, image_pos_y, image_width, image_height)
         painter.drawImage(rect, self.__image)
