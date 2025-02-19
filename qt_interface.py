@@ -167,6 +167,12 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_gain = QtWidgets.QDoubleSpinBox()
         self._spinbox_gain.valueChanged.connect(self.change_slider_gain)
 
+        # Button Zoom In
+        self._button_zoom_in = QtWidgets.QPushButton("Zoom In")
+        self._button_zoom_out = QtWidgets.QPushButton("Zoom Out")
+        self._button_zoom_in.clicked.connect(self.display.zoom_in)
+        self._button_zoom_out.clicked.connect(self.display.zoom_out)
+
         # Add Widgets to Layout
         button_bar_layout.addWidget(self._button_start_hardware_acquisition, 0, 0, 1, 2)
         button_bar_layout.addWidget(self._button_stop_hardware_acquisition, 0, 2, 1, 2)
@@ -179,7 +185,8 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._gain_slider, 3, 2, 1, 2)
         button_bar_layout.addWidget(self.GUIfps_label, 4, 0, 1, 4)  # Add FPS label
         button_bar_layout.addWidget(self.fps_label, 5, 0, 1, 4)  # Add FPS label
-
+        button_bar_layout.addWidget(self._button_zoom_in, 5, 0, 1, 2)
+        button_bar_layout.addWidget(self._button_zoom_out, 5, 2, 1, 2)
 
         # Set Layout and Add to Main Layout
         button_bar.setLayout(button_bar_layout)
