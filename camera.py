@@ -27,6 +27,7 @@ import time
 
 from os.path import exists
 from video_recorder import VideoRecorder
+from collections import deque
 from ids_peak import ids_peak
 from ids_peak_ipl import ids_peak_ipl
 from ids_peak import ids_peak_ipl_extension
@@ -45,7 +46,7 @@ class Camera:
         self._interface = interface
         self._device = None
         self._datastream = None
-        self.acquisition_mode = 0
+        self.acquisition_mode = 0 #0: Real Time, #1: HW Trigger, #2: SW Trigger
         self.acquisition_running = False
         self.node_map = None
         self._buffer_list = []
@@ -54,6 +55,7 @@ class Camera:
         self.max_gain = 1
         self.killed = False
         self.save_image = False
+        self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
 
         self._get_device()
         self._setup_device_and_datastream()
@@ -110,17 +112,20 @@ class Camera:
         self.node_map.FindNode("UserSetLoad").WaitUntilDone()
     
     def get_actual_fps(self):
-        """Retrieve the actual FPS based on frame arrival time (for hardware trigger mode)."""
+        """Calculate FPS as the average over the last 2 seconds."""
         current_time = time.time()
-        
-        if hasattr(self, "last_frame_time") and self.last_frame_time:
-            frame_time = current_time - self.last_frame_time
-            if frame_time > 0.001:  # Prevent division errors
-                self.GUIfps = round(1.0 / frame_time)
-        else:
-            self.GUIfps = 0  # No previous frame
+        self.frame_times.append(current_time)  # ✅ Store current timestamp
 
-        self.last_frame_time = current_time
+        # ✅ Remove timestamps older than 2 seconds
+        while self.frame_times and self.frame_times[0] < current_time - 2:
+            self.frame_times.popleft()
+
+        # ✅ Calculate FPS based on the number of frames in the last 2 seconds
+        if len(self.frame_times) > 1:
+            self.GUIfps = round(len(self.frame_times) / 2)  # Average over 2 seconds
+        else:
+            self.GUIfps = 0  # No frames captured in the last 2 seconds
+
         return self.GUIfps
 
     def _init_data_stream(self):
@@ -416,7 +421,6 @@ class Camera:
         while not self.killed:
             try:
                 self.get_data_stream_image()
-                time.sleep(0.01)
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
                 self.save_image = False
