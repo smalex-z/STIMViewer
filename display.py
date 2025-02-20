@@ -27,22 +27,18 @@ class Display(QGraphicsView):
         self.setDragMode(QGraphicsView.ScrollHandDrag)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
+
+
+    def set_zoom(self, zoom_factor):
+        """Scales the display while keeping aspect ratio."""
+        self.setTransform(QTransform().scale(zoom_factor, zoom_factor))
+
+
     @Slot(QImage)
     def on_image_received(self, image: QImage):
         self.__scene.set_image(image)
         self.update()
 
-    def zoom_in(self):
-        """Increase zoom level with limit check."""
-        if self.scale_factor < self.max_zoom:
-            self.scale_factor *= 1.2  # Increase zoom level
-            self.setTransform(QTransform().scale(self.scale_factor, self.scale_factor))
-
-    def zoom_out(self):
-        """Decrease zoom level with limit check."""
-        if self.scale_factor > self.min_zoom:
-            self.scale_factor /= 1.2  # Decrease zoom level
-            self.setTransform(QTransform().scale(self.scale_factor, self.scale_factor))
 
 
 class CustomGraphicsScene(QGraphicsScene):
