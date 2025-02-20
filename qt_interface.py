@@ -209,10 +209,10 @@ class Interface(QtWidgets.QMainWindow):
         self._button_stop_recording.setToolTip("Stop recording video and save the file.")
         self._button_software_trigger.setToolTip("Save the next processed frame.")
 
-        # Sliders
-        self._gain_slider.setToolTip("Adjust the analog gain level (brightness).")
-        self._dgain_slider.setToolTip("Adjust the digital gain level.")
-        self._zoom_slider.setToolTip("Zoom in and out of the displayed image.")
+        # Slider Lables
+        self._gain_label.setToolTip("Adjust the analog gain level (brightness).")
+        self._dgain_label.setToolTip("Adjust the digital gain level.")
+        self._zoom_label.setToolTip("Zoom in and out of the displayed image.")
 
         # Set Layout and Add to Main Layout
         button_bar.setLayout(button_bar_layout)
@@ -254,7 +254,7 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_zoom.setMinimum(1.0)
         
         QtCore.QCoreApplication.setApplicationName(
-            "Real Time + Hardware Trigger")
+            "STIMViewer")
         self.show()
         self._qt_instance.exec()
         
@@ -357,6 +357,7 @@ class Interface(QtWidgets.QMainWindow):
     def _update_gain(self, val):
         self._spinbox_gain.setValue(val / 100)
         self._camera.target_gain = val / 100
+        self._camera.node_map.FindNode("GainSelector").SetCurrentEntry("AnalogAll")
         self._camera.set_remote_device_value("Gain", val / 100)
 
     #Slot Gain
@@ -368,6 +369,8 @@ class Interface(QtWidgets.QMainWindow):
     def _update_dgain(self, val):
         self._spinbox_dgain.setValue(val / 100)
         self._camera.target_dgain = val / 100
+        self._camera.node_map.FindNode("GainSelector").SetCurrentEntry("DigitalAll")
+        self._camera.set_remote_device_value("Gain", val / 100)
     
     @Slot(float)
     def change_slider_zoom(self, val):

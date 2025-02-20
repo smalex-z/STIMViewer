@@ -53,6 +53,7 @@ class Camera:
 
         self.target_gain = 1
         self.max_gain = 1
+        self.target_dgain = 1
         self.killed = False
         self.save_image = False
         self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
@@ -103,7 +104,7 @@ class Camera:
         self._device = self.device_manager.Devices()[selected_device].OpenDevice(
             ids_peak.DeviceAccessType_Control)
         self.node_map = self._device.RemoteDevice().NodeMaps()[0]
-
+        self.node_map.FindNode("GainSelector").SetCurrentEntry("AnalogAll")
         self.max_gain = self.node_map.FindNode("Gain").Maximum()
 
         # Load the default settings
