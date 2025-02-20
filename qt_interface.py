@@ -93,10 +93,10 @@ class Interface(QtWidgets.QMainWindow):
         #FPS Label
         self.GUIfps_label = QLabel("GUI FPS: 0.00", self)
         self.GUIfps_label.setStyleSheet("font-size: 14px; color: green;")
-        self.GUIfps_label.setAlignment(Qt.AlignRight)
+        self.GUIfps_label.setAlignment(Qt.AlignLeft)
         self.fps_label = QLabel("FPS: 0.00", self)
         self.fps_label.setStyleSheet("font-size: 14px; color: green;")
-        self.fps_label.setAlignment(Qt.AlignRight)
+        self.fps_label.setAlignment(Qt.AlignLeft)
 
         self.messagebox_signal[str, str].connect(self.message)
 
@@ -157,9 +157,9 @@ class Interface(QtWidgets.QMainWindow):
 
         # Gain Controls
         self._gain_label = QtWidgets.QLabel("<b>Gain:</b>")
-        self._gain_label.setMaximumWidth(30)
+        self._gain_label.setMaximumWidth(70)
 
-        self._gain_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self._gain_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Vertical)
         self._gain_slider.setRange(100, 1000)
         self._gain_slider.setSingleStep(1)
         self._gain_slider.valueChanged.connect(self._update_gain)
@@ -167,11 +167,23 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_gain = QtWidgets.QDoubleSpinBox()
         self._spinbox_gain.valueChanged.connect(self.change_slider_gain)
 
+        # Digital Gain Controls
+        self._dgain_label = QtWidgets.QLabel("<b>D-Gain:</b>")
+        self._dgain_label.setMaximumWidth(70)
+
+        self._dgain_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Vertical)
+        self._dgain_slider.setRange(100, 1000)
+        self._dgain_slider.setSingleStep(1)
+        self._dgain_slider.valueChanged.connect(self._update_dgain)
+
+        self._spinbox_dgain = QtWidgets.QDoubleSpinBox()
+        self._spinbox_dgain.valueChanged.connect(self.change_slider_dgain)
+
         # Button Zoom In
         self._zoom_label = QtWidgets.QLabel("<b>Zoom:</b>")
-        self._zoom_label.setMaximumWidth(30)
+        self._zoom_label.setMaximumWidth(70)
 
-        self._zoom_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self._zoom_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Vertical)
         self._zoom_slider.setRange(100, 1000)
         self._zoom_slider.setSingleStep(1)
         self._zoom_slider.valueChanged.connect(self._update_zoom)
@@ -185,15 +197,24 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._button_start_recording, 1, 0, 1, 2)
         button_bar_layout.addWidget(self._button_stop_recording, 1, 2, 1, 2)
         button_bar_layout.addWidget(self._button_software_trigger, 2, 0, 1, 2)
-        button_bar_layout.addWidget(self._dropdown_pixel_format, 2, 2)
-        button_bar_layout.addWidget(self._gain_label, 3, 0)
-        button_bar_layout.addWidget(self._spinbox_gain, 3, 1)
-        button_bar_layout.addWidget(self._gain_slider, 3, 2, 1, 2)
-        button_bar_layout.addWidget(self._zoom_label, 4, 0)
-        button_bar_layout.addWidget(self._spinbox_zoom, 4, 1)
-        button_bar_layout.addWidget(self._zoom_slider, 4, 2, 1, 2)
-        button_bar_layout.addWidget(self.GUIfps_label, 5, 0, 1, 4)  # Add FPS label
-        button_bar_layout.addWidget(self.fps_label, 5, 0, 1, 2)  # Add FPS label
+        button_bar_layout.addWidget(self._dropdown_pixel_format, 2, 2, 1, 2)
+
+        # Move gain controls to the right column
+        button_bar_layout.addWidget(self._gain_label, 0, 4)
+        button_bar_layout.addWidget(self._spinbox_gain, 6, 4)
+        button_bar_layout.addWidget(self._gain_slider, 1, 4, 5, 1, Qt.AlignHCenter)
+
+        button_bar_layout.addWidget(self._dgain_label, 0, 5)
+        button_bar_layout.addWidget(self._spinbox_dgain, 6, 5)
+        button_bar_layout.addWidget(self._dgain_slider, 1, 5, 5, 1, Qt.AlignHCenter)
+
+        button_bar_layout.addWidget(self._zoom_label, 0, 6)
+        button_bar_layout.addWidget(self._spinbox_zoom, 6, 6)
+        button_bar_layout.addWidget(self._zoom_slider, 1, 6, 5, 1, Qt.AlignHCenter)
+
+        # Keep FPS labels at the bottom
+        button_bar_layout.addWidget(self.GUIfps_label, 5, 0, 1, 2)
+        button_bar_layout.addWidget(self.fps_label, 6, 0, 1, 2)
 
         # Set Layout and Add to Main Layout
         button_bar.setLayout(button_bar_layout)
@@ -236,6 +257,8 @@ class Interface(QtWidgets.QMainWindow):
         self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
         self._spinbox_gain.setMaximum(self._camera.max_gain)
         self._spinbox_gain.setMinimum(1.0)
+        self._spinbox_dgain.setMinimum(1.0)
+        self._spinbox_zoom.setMinimum(1.0)
         
         QtCore.QCoreApplication.setApplicationName(
             "Real Time + Hardware Trigger")
@@ -354,6 +377,16 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_gain.setValue(val / 100)
         self._camera.target_gain = val / 100
         self._camera.set_remote_device_value("Gain", val / 100)
+
+    #Slot Gain
+    @Slot(float)
+    def change_slider_dgain(self, val):
+        self._dgain_slider.setValue(int(val * 100))
+
+    @Slot(int)
+    def _update_dgain(self, val):
+        self._spinbox_dgain.setValue(val / 100)
+        self._camera.target_dgain = val / 100
     
     @Slot(float)
     def change_slider_zoom(self, val):

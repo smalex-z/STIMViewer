@@ -251,7 +251,7 @@ class Camera:
 
             # Kill the datastream to exit out of pending `WaitForFinishedBuffer`
             # calls
-            #self._datastream.KillWait() TODO: GAIN (?)
+            self._datastream.KillWait()
             self._datastream.StopAcquisition(ids_peak.AcquisitionStopMode_Default)
             # Discard all buffers from the acquisition engine
             # They remain in the announced buffer pool
@@ -325,7 +325,7 @@ class Camera:
 
             # Kill the datastream to exit out of pending `WaitForFinishedBuffer`
             # calls
-            #self._datastream.KillWait() TODO: GAIN (?)
+            self._datastream.KillWait()
             self._datastream.StopAcquisition(ids_peak.AcquisitionStopMode_Default)
             # Discard all buffers from the acquisition engine
             # They remain in the announced buffer pool
