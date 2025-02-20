@@ -93,22 +93,14 @@ class Interface(QtWidgets.QMainWindow):
         #FPS Label
         self.GUIfps_label = QLabel("GUI FPS: 0.00", self)
         self.GUIfps_label.setStyleSheet("font-size: 14px; color: green;")
-        self.GUIfps_label.setAlignment(Qt.AlignLeft)
-        self.fps_label = QLabel("FPS: 0.00", self)
-        self.fps_label.setStyleSheet("font-size: 14px; color: green;")
-        self.fps_label.setAlignment(Qt.AlignLeft)
+        self.GUIfps_label.setAlignment(Qt.AlignRight)
 
         self.messagebox_signal[str, str].connect(self.message)
 
         self._frame_count = 0
-        self._GUIfps_label = None
-        self._fps_label = None
         self._error_cont = 0
         self._gain_label = None
 
-        self._label_infos = None
-        self._label_version = None
-        self._label_aboutqt = None
 
         self._gain_slider = None
 
@@ -212,10 +204,6 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._spinbox_zoom, 6, 6)
         button_bar_layout.addWidget(self._zoom_slider, 1, 6, 5, 1, Qt.AlignHCenter)
 
-        # Keep FPS labels at the bottom
-        button_bar_layout.addWidget(self.GUIfps_label, 5, 0, 1, 2)
-        button_bar_layout.addWidget(self.fps_label, 6, 0, 1, 2)
-
         # Set Layout and Add to Main Layout
         button_bar.setLayout(button_bar_layout)
         self._layout.addWidget(button_bar)
@@ -226,18 +214,7 @@ class Interface(QtWidgets.QMainWindow):
         status_bar_layout.setContentsMargins(0, 0, 0, 0)
         status_bar_layout.addStretch()
 
-        self._label_version = QtWidgets.QLabel(status_bar)
-        self._label_version.setText("Version:")
-        self._label_version.setAlignment(Qt.AlignRight)
-        status_bar_layout.addWidget(self._label_version)
-
-        self._label_aboutqt = QtWidgets.QLabel(status_bar)
-        self._label_aboutqt.setObjectName("aboutQt")
-        self._label_aboutqt.setText("<a href='#aboutQt'>About Qt</a>")
-        self._label_aboutqt.setAlignment(Qt.AlignRight)
-        self._label_aboutqt.linkActivated.connect(
-            self.on_aboutqt_link_activated)
-        status_bar_layout.addWidget(self._label_aboutqt)
+        status_bar_layout.addWidget(self.GUIfps_label)
         status_bar.setLayout(status_bar_layout)
 
         self._layout.addWidget(status_bar)
@@ -326,9 +303,6 @@ class Interface(QtWidgets.QMainWindow):
         QtCore.QMetaObject.invokeMethod(self.GUIfps_label, "setText",
                                     QtCore.Qt.QueuedConnection,
                                     QtCore.Q_ARG(str, f"GUI FPS: {GUIfps}"))
-        QtCore.QMetaObject.invokeMethod(self.fps_label, "setText",
-                                    QtCore.Qt.QueuedConnection,
-                                    QtCore.Q_ARG(str, f"Acquisition FPS: {fps}"))
 
         # Process and display the image
         image_numpy = image.get_numpy_1D().copy()
