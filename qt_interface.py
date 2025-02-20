@@ -168,10 +168,16 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_gain.valueChanged.connect(self.change_slider_gain)
 
         # Button Zoom In
-        self._button_zoom_in = QtWidgets.QPushButton("Zoom In")
-        self._button_zoom_out = QtWidgets.QPushButton("Zoom Out")
-        self._button_zoom_in.clicked.connect(self.display.zoom_in)
-        self._button_zoom_out.clicked.connect(self.display.zoom_out)
+        self._zoom_label = QtWidgets.QLabel("<b>Zoom:</b>")
+        self._zoom_label.setMaximumWidth(30)
+
+        self._zoom_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self._zoom_slider.setRange(100, 1000)
+        self._zoom_slider.setSingleStep(1)
+        self._zoom_slider.valueChanged.connect(self._update_zoom)
+
+        self._spinbox_zoom = QtWidgets.QDoubleSpinBox()
+        self._spinbox_zoom.valueChanged.connect(self.change_slider_zoom)
 
         # Add Widgets to Layout
         button_bar_layout.addWidget(self._button_start_hardware_acquisition, 0, 0, 1, 2)
@@ -183,10 +189,11 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._gain_label, 3, 0)
         button_bar_layout.addWidget(self._spinbox_gain, 3, 1)
         button_bar_layout.addWidget(self._gain_slider, 3, 2, 1, 2)
-        button_bar_layout.addWidget(self.GUIfps_label, 4, 0, 1, 4)  # Add FPS label
-        button_bar_layout.addWidget(self.fps_label, 5, 0, 1, 4)  # Add FPS label
-        button_bar_layout.addWidget(self._button_zoom_in, 5, 0, 1, 2)
-        button_bar_layout.addWidget(self._button_zoom_out, 5, 2, 1, 2)
+        button_bar_layout.addWidget(self._zoom_label, 4, 0)
+        button_bar_layout.addWidget(self._spinbox_zoom, 4, 1)
+        button_bar_layout.addWidget(self._zoom_slider, 4, 2, 1, 2)
+        button_bar_layout.addWidget(self.GUIfps_label, 5, 0, 1, 4)  # Add FPS label
+        button_bar_layout.addWidget(self.fps_label, 5, 0, 1, 2)  # Add FPS label
 
         # Set Layout and Add to Main Layout
         button_bar.setLayout(button_bar_layout)
@@ -347,3 +354,13 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_gain.setValue(val / 100)
         self._camera.target_gain = val / 100
         self._camera.set_remote_device_value("Gain", val / 100)
+    
+    @Slot(float)
+    def change_slider_zoom(self, val):
+        self._zoom_slider.setValue(int(val * 100))
+
+    @Slot(int)
+    def _update_zoom(self, val):
+        self._spinbox_zoom.setValue(val / 100)
+        self.display.set_zoom(val / 100)
+
