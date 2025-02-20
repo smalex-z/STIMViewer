@@ -24,6 +24,7 @@
 
 import sys
 import time
+import numpy as np
 
 from typing import Optional
 
@@ -90,13 +91,9 @@ class Interface(QtWidgets.QMainWindow):
         self._button_exit = None
         self._dropdown_pixel_format = None
 
-        #FPS Label
-        self.GUIfps_label = QLabel("GUI FPS: 0.00", self)
-        self.GUIfps_label.setStyleSheet("font-size: 14px; color: green;")
-        self.GUIfps_label.setAlignment(Qt.AlignRight)
-
         self.messagebox_signal[str, str].connect(self.message)
 
+        self._GUIfps_label = None
         self._frame_count = 0
         self._error_cont = 0
         self._gain_label = None
@@ -204,6 +201,19 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._spinbox_zoom, 6, 6)
         button_bar_layout.addWidget(self._zoom_slider, 1, 6, 5, 1, Qt.AlignHCenter)
 
+        # ToolTips:
+        # Buttons
+        self._button_start_hardware_acquisition.setToolTip("Start acquiring images using hardware triggering rather than real time(RT) acquisition. Hardware Trigger FPS must stay <45 hz")
+        self._button_stop_hardware_acquisition.setToolTip("Stop hardware-triggered image acquisition, return to real time (RT) acquisition")
+        self._button_start_recording.setToolTip("Start recording video of the live feed.")
+        self._button_stop_recording.setToolTip("Stop recording video and save the file.")
+        self._button_software_trigger.setToolTip("Save the next processed frame.")
+
+        # Sliders
+        self._gain_slider.setToolTip("Adjust the analog gain level (brightness).")
+        self._dgain_slider.setToolTip("Adjust the digital gain level.")
+        self._zoom_slider.setToolTip("Zoom in and out of the displayed image.")
+
         # Set Layout and Add to Main Layout
         button_bar.setLayout(button_bar_layout)
         self._layout.addWidget(button_bar)
@@ -213,6 +223,12 @@ class Interface(QtWidgets.QMainWindow):
         status_bar_layout = QtWidgets.QHBoxLayout()
         status_bar_layout.setContentsMargins(0, 0, 0, 0)
         status_bar_layout.addStretch()
+
+        #FPS Label
+        self.GUIfps_label = QLabel("GUI FPS: 0.00", self)
+        self.GUIfps_label.setStyleSheet("font-size: 14px; color: green;")
+        self.GUIfps_label.setAlignment(Qt.AlignRight)
+        self.GUIfps_label.setToolTip("Calculated FPS over a rolling average of 2 seconds. If set to hardware trigger mode, camera only supports <45 fps.")
 
         status_bar_layout.addWidget(self.GUIfps_label)
         status_bar.setLayout(status_bar_layout)
@@ -290,15 +306,6 @@ class Interface(QtWidgets.QMainWindow):
         # Calculate FPS
         GUIfps = self._camera.get_actual_fps()
 
-        try:
-            if(self._camera.acquisition_mode == 0):
-                fps = int(self._camera.node_map.FindNode("AcquisitionFrameRate").Value())  # Read FPS from camera
-            elif(self._camera.acquisition_mode == 1):
-                fps = "NA"
-        except Exception as e:
-            print(f"Error retrieving frame rate, defaulting to 30 FPS: {e}")
-            fps = 30  # Default fallback
-
         # Update the FPS label
         QtCore.QMetaObject.invokeMethod(self.GUIfps_label, "setText",
                                     QtCore.Qt.QueuedConnection,
@@ -312,7 +319,7 @@ class Interface(QtWidgets.QMainWindow):
             image.Height(),
             QtGui.QImage.Format_RGB32
         )
-        
+             
         try:
             self.display.on_image_received(qt_image)
         except Exception as e:
