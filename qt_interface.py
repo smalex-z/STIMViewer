@@ -115,19 +115,6 @@ class Interface(QtWidgets.QMainWindow):
         button_bar = QtWidgets.QWidget(self.centralWidget())
         button_bar_layout = QtWidgets.QGridLayout()
 
-        # Pixel Format Dropdown
-        self._dropdown_pixel_format = QtWidgets.QComboBox()
-        formats = self._camera.node_map.FindNode("PixelFormat").Entries()
-        for idx in formats:
-            if (idx.AccessStatus() not in [ids_peak.NodeAccessStatus_NotAvailable, ids_peak.NodeAccessStatus_NotImplemented]
-                    and self._camera.conversion_supported(idx.Value())):
-                self._dropdown_pixel_format.addItem(idx.SymbolicValue())
-        self._dropdown_pixel_format.currentIndexChanged.connect(self.change_pixel_format)
-
-        # Snapshot Button
-        self._button_software_trigger = QtWidgets.QPushButton("Snapshot")
-        self._button_software_trigger.clicked.connect(self._trigger_sw_trigger)
-
         # Acquisition Buttons
         self._button_start_hardware_acquisition = QtWidgets.QPushButton("Start Hardware Acquisition")
         self._button_start_hardware_acquisition.clicked.connect(self._start_hardware_acquisition)
@@ -143,6 +130,27 @@ class Interface(QtWidgets.QMainWindow):
         self._button_stop_recording = QtWidgets.QPushButton("Stop Recording")
         self._button_stop_recording.clicked.connect(self._stop_recording)
         self._button_stop_recording.setEnabled(False)
+
+        # Pixel Format Dropdown
+        self._dropdown_pixel_format = QtWidgets.QComboBox()
+        formats = self._camera.node_map.FindNode("PixelFormat").Entries()
+        for idx in formats:
+            if (idx.AccessStatus() not in [ids_peak.NodeAccessStatus_NotAvailable, ids_peak.NodeAccessStatus_NotImplemented]
+                    and self._camera.conversion_supported(idx.Value())):
+                self._dropdown_pixel_format.addItem(idx.SymbolicValue())
+        self._dropdown_pixel_format.currentIndexChanged.connect(self.change_pixel_format)
+
+        # Snapshot Button
+        self._button_software_trigger = QtWidgets.QPushButton("Snapshot")
+        self._button_software_trigger.clicked.connect(self._trigger_sw_trigger)
+        
+        
+        # Projection Buttons
+        self._button_calibrate = QtWidgets.QPushButton("Calibrate")
+        self._button_calibrate.clicked.connect(self._calibrate)
+
+        self._button_project_white = QtWidgets.QPushButton("Project White")
+        self._button_project_white.clicked.connect(self._project_white)
 
         # Gain Controls
         self._gain_label = QtWidgets.QLabel("<b>Gain:</b>")
@@ -187,6 +195,8 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._button_stop_recording, 1, 2, 1, 2)
         button_bar_layout.addWidget(self._button_software_trigger, 2, 0, 1, 2)
         button_bar_layout.addWidget(self._dropdown_pixel_format, 2, 2, 1, 2)
+        button_bar_layout.addWidget(self._button_calibrate, 3, 0, 1, 2)
+        button_bar_layout.addWidget(self._button_project_white, 3, 2, 1, 2)
 
         # Move gain controls to the right column
         button_bar_layout.addWidget(self._gain_label, 0, 4)
@@ -317,6 +327,15 @@ class Interface(QtWidgets.QMainWindow):
             self._button_stop_hardware_acquisition.setEnabled(True)
         else:
             self._button_start_hardware_acquisition.setEnabled(True)
+
+    def _calibrate(self):
+        # TODO: Calibrate
+        self._camera.calibrate = True
+        "PlaceHolder"
+    
+    def _project_white(self):
+        # TODO: Project White
+        "PlaceHolder"
 
 
     def change_pixel_format(self):
