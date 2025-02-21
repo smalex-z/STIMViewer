@@ -24,6 +24,7 @@
 
 import sys
 import time
+import numpy as np
 
 from typing import Optional
 
@@ -90,25 +91,13 @@ class Interface(QtWidgets.QMainWindow):
         self._button_exit = None
         self._dropdown_pixel_format = None
 
-        #FPS Label
-        self.GUIfps_label = QLabel("GUI FPS: 0.00", self)
-        self.GUIfps_label.setStyleSheet("font-size: 14px; color: green;")
-        self.GUIfps_label.setAlignment(Qt.AlignRight)
-        self.fps_label = QLabel("FPS: 0.00", self)
-        self.fps_label.setStyleSheet("font-size: 14px; color: green;")
-        self.fps_label.setAlignment(Qt.AlignRight)
-
         self.messagebox_signal[str, str].connect(self.message)
 
-        self._frame_count = 0
         self._GUIfps_label = None
-        self._fps_label = None
+        self._frame_count = 0
         self._error_cont = 0
         self._gain_label = None
 
-        self._label_infos = None
-        self._label_version = None
-        self._label_aboutqt = None
 
         self._gain_slider = None
 
@@ -157,9 +146,9 @@ class Interface(QtWidgets.QMainWindow):
 
         # Gain Controls
         self._gain_label = QtWidgets.QLabel("<b>Gain:</b>")
-        self._gain_label.setMaximumWidth(30)
+        self._gain_label.setMaximumWidth(70)
 
-        self._gain_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self._gain_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Vertical)
         self._gain_slider.setRange(100, 1000)
         self._gain_slider.setSingleStep(1)
         self._gain_slider.valueChanged.connect(self._update_gain)
@@ -167,11 +156,23 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_gain = QtWidgets.QDoubleSpinBox()
         self._spinbox_gain.valueChanged.connect(self.change_slider_gain)
 
+        # Digital Gain Controls
+        self._dgain_label = QtWidgets.QLabel("<b>D-Gain:</b>")
+        self._dgain_label.setMaximumWidth(70)
+
+        self._dgain_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Vertical)
+        self._dgain_slider.setRange(100, 1000)
+        self._dgain_slider.setSingleStep(1)
+        self._dgain_slider.valueChanged.connect(self._update_dgain)
+
+        self._spinbox_dgain = QtWidgets.QDoubleSpinBox()
+        self._spinbox_dgain.valueChanged.connect(self.change_slider_dgain)
+
         # Button Zoom In
         self._zoom_label = QtWidgets.QLabel("<b>Zoom:</b>")
-        self._zoom_label.setMaximumWidth(30)
+        self._zoom_label.setMaximumWidth(70)
 
-        self._zoom_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self._zoom_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Vertical)
         self._zoom_slider.setRange(100, 1000)
         self._zoom_slider.setSingleStep(1)
         self._zoom_slider.valueChanged.connect(self._update_zoom)
@@ -185,15 +186,33 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._button_start_recording, 1, 0, 1, 2)
         button_bar_layout.addWidget(self._button_stop_recording, 1, 2, 1, 2)
         button_bar_layout.addWidget(self._button_software_trigger, 2, 0, 1, 2)
-        button_bar_layout.addWidget(self._dropdown_pixel_format, 2, 2)
-        button_bar_layout.addWidget(self._gain_label, 3, 0)
-        button_bar_layout.addWidget(self._spinbox_gain, 3, 1)
-        button_bar_layout.addWidget(self._gain_slider, 3, 2, 1, 2)
-        button_bar_layout.addWidget(self._zoom_label, 4, 0)
-        button_bar_layout.addWidget(self._spinbox_zoom, 4, 1)
-        button_bar_layout.addWidget(self._zoom_slider, 4, 2, 1, 2)
-        button_bar_layout.addWidget(self.GUIfps_label, 5, 0, 1, 4)  # Add FPS label
-        button_bar_layout.addWidget(self.fps_label, 5, 0, 1, 2)  # Add FPS label
+        button_bar_layout.addWidget(self._dropdown_pixel_format, 2, 2, 1, 2)
+
+        # Move gain controls to the right column
+        button_bar_layout.addWidget(self._gain_label, 0, 4)
+        button_bar_layout.addWidget(self._spinbox_gain, 6, 4)
+        button_bar_layout.addWidget(self._gain_slider, 1, 4, 5, 1, Qt.AlignHCenter)
+
+        button_bar_layout.addWidget(self._dgain_label, 0, 5)
+        button_bar_layout.addWidget(self._spinbox_dgain, 6, 5)
+        button_bar_layout.addWidget(self._dgain_slider, 1, 5, 5, 1, Qt.AlignHCenter)
+
+        button_bar_layout.addWidget(self._zoom_label, 0, 6)
+        button_bar_layout.addWidget(self._spinbox_zoom, 6, 6)
+        button_bar_layout.addWidget(self._zoom_slider, 1, 6, 5, 1, Qt.AlignHCenter)
+
+        # ToolTips:
+        # Buttons
+        self._button_start_hardware_acquisition.setToolTip("Start acquiring images using hardware triggering rather than real time(RT) acquisition. Hardware Trigger FPS must stay <45 hz")
+        self._button_stop_hardware_acquisition.setToolTip("Stop hardware-triggered image acquisition, return to real time (RT) acquisition")
+        self._button_start_recording.setToolTip("Start recording video of the live feed.")
+        self._button_stop_recording.setToolTip("Stop recording video and save the file.")
+        self._button_software_trigger.setToolTip("Save the next processed frame.")
+
+        # Slider Lables
+        self._gain_label.setToolTip("Adjust the analog gain level (brightness).")
+        self._dgain_label.setToolTip("Adjust the digital gain level.")
+        self._zoom_label.setToolTip("Zoom in and out of the displayed image.")
 
         # Set Layout and Add to Main Layout
         button_bar.setLayout(button_bar_layout)
@@ -205,18 +224,13 @@ class Interface(QtWidgets.QMainWindow):
         status_bar_layout.setContentsMargins(0, 0, 0, 0)
         status_bar_layout.addStretch()
 
-        self._label_version = QtWidgets.QLabel(status_bar)
-        self._label_version.setText("Version:")
-        self._label_version.setAlignment(Qt.AlignRight)
-        status_bar_layout.addWidget(self._label_version)
+        #FPS Label
+        self.GUIfps_label = QLabel("GUI FPS: 0.00", self)
+        self.GUIfps_label.setStyleSheet("font-size: 14px; color: green;")
+        self.GUIfps_label.setAlignment(Qt.AlignRight)
+        self.GUIfps_label.setToolTip("Calculated FPS over a rolling average of 2 seconds. If set to hardware trigger mode, camera only supports <45 fps.")
 
-        self._label_aboutqt = QtWidgets.QLabel(status_bar)
-        self._label_aboutqt.setObjectName("aboutQt")
-        self._label_aboutqt.setText("<a href='#aboutQt'>About Qt</a>")
-        self._label_aboutqt.setAlignment(Qt.AlignRight)
-        self._label_aboutqt.linkActivated.connect(
-            self.on_aboutqt_link_activated)
-        status_bar_layout.addWidget(self._label_aboutqt)
+        status_bar_layout.addWidget(self.GUIfps_label)
         status_bar.setLayout(status_bar_layout)
 
         self._layout.addWidget(status_bar)
@@ -236,9 +250,11 @@ class Interface(QtWidgets.QMainWindow):
         self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
         self._spinbox_gain.setMaximum(self._camera.max_gain)
         self._spinbox_gain.setMinimum(1.0)
+        self._spinbox_dgain.setMinimum(1.0)
+        self._spinbox_zoom.setMinimum(1.0)
         
         QtCore.QCoreApplication.setApplicationName(
-            "Real Time + Hardware Trigger")
+            "STIMViewer")
         self.show()
         self._qt_instance.exec()
         
@@ -290,22 +306,10 @@ class Interface(QtWidgets.QMainWindow):
         # Calculate FPS
         GUIfps = self._camera.get_actual_fps()
 
-        try:
-            if(self._camera.acquisition_mode == 0):
-                fps = int(self._camera.node_map.FindNode("AcquisitionFrameRate").Value())  # Read FPS from camera
-            elif(self._camera.acquisition_mode == 1):
-                fps = "NA"
-        except Exception as e:
-            print(f"Error retrieving frame rate, defaulting to 30 FPS: {e}")
-            fps = 30  # Default fallback
-
         # Update the FPS label
         QtCore.QMetaObject.invokeMethod(self.GUIfps_label, "setText",
                                     QtCore.Qt.QueuedConnection,
                                     QtCore.Q_ARG(str, f"GUI FPS: {GUIfps}"))
-        QtCore.QMetaObject.invokeMethod(self.fps_label, "setText",
-                                    QtCore.Qt.QueuedConnection,
-                                    QtCore.Q_ARG(str, f"Acquisition FPS: {fps}"))
 
         # Process and display the image
         image_numpy = image.get_numpy_1D().copy()
@@ -315,7 +319,7 @@ class Interface(QtWidgets.QMainWindow):
             image.Height(),
             QtGui.QImage.Format_RGB32
         )
-        
+             
         try:
             self.display.on_image_received(qt_image)
         except Exception as e:
@@ -353,6 +357,19 @@ class Interface(QtWidgets.QMainWindow):
     def _update_gain(self, val):
         self._spinbox_gain.setValue(val / 100)
         self._camera.target_gain = val / 100
+        self._camera.node_map.FindNode("GainSelector").SetCurrentEntry("AnalogAll")
+        self._camera.set_remote_device_value("Gain", val / 100)
+
+    #Slot Gain
+    @Slot(float)
+    def change_slider_dgain(self, val):
+        self._dgain_slider.setValue(int(val * 100))
+
+    @Slot(int)
+    def _update_dgain(self, val):
+        self._spinbox_dgain.setValue(val / 100)
+        self._camera.target_dgain = val / 100
+        self._camera.node_map.FindNode("GainSelector").SetCurrentEntry("DigitalAll")
         self._camera.set_remote_device_value("Gain", val / 100)
     
     @Slot(float)
