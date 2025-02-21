@@ -37,7 +37,7 @@ try:
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt, QTimer
     from PyQt5.QtCore import pyqtSlot as Slot
-    from PyQt5.QtWidgets import QLabel
+    from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy
 except ImportError:
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt, QTimer
@@ -222,17 +222,35 @@ class Interface(QtWidgets.QMainWindow):
         status_bar = QtWidgets.QWidget(self.centralWidget())
         status_bar_layout = QtWidgets.QHBoxLayout()
         status_bar_layout.setContentsMargins(0, 0, 0, 0)
-        status_bar_layout.addStretch()
 
-        #FPS Label
+        # Add a horizontal line separator
+        separator = QFrame(self)
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        separator.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self._layout.addWidget(separator)
+
+        # Acquisition Label (Left)
+        self.acq_label = QLabel("Acquisition Mode: RealTime", self)
+        self.acq_label.setStyleSheet("font-size: 14px; color: green;")
+        self.acq_label.setAlignment(Qt.AlignLeft)
+        self.acq_label.setToolTip("Current Acquisition Mode")
+
+        # Spacer to push FPS label to the right
+        spacer = QtWidgets.QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        # FPS Label (Right)
         self.GUIfps_label = QLabel("GUI FPS: 0.00", self)
         self.GUIfps_label.setStyleSheet("font-size: 14px; color: green;")
         self.GUIfps_label.setAlignment(Qt.AlignRight)
         self.GUIfps_label.setToolTip("Calculated FPS over a rolling average of 2 seconds. If set to hardware trigger mode, camera only supports <45 fps.")
 
+        # Add widgets to the layout
+        status_bar_layout.addWidget(self.acq_label)
+        status_bar_layout.addItem(spacer)  # Pushes the FPS label to the right
         status_bar_layout.addWidget(self.GUIfps_label)
-        status_bar.setLayout(status_bar_layout)
 
+        status_bar.setLayout(status_bar_layout)
         self._layout.addWidget(status_bar)
 
     def _close(self):
@@ -268,6 +286,10 @@ class Interface(QtWidgets.QMainWindow):
         self._button_start_hardware_acquisition.setEnabled(False)
         self._dropdown_pixel_format.setEnabled(False)
         self._button_stop_hardware_acquisition.setEnabled(True)
+        
+        QtCore.QMetaObject.invokeMethod(self.acq_label, "setText",
+                                    QtCore.Qt.QueuedConnection,
+                                    QtCore.Q_ARG(str, f"Acquisition Mode: Hardware"))
 
     def _stop_hardware_acquisition(self):
         self._camera.stop_hardware_acquisition()
@@ -275,6 +297,10 @@ class Interface(QtWidgets.QMainWindow):
         self._button_start_hardware_acquisition.setEnabled(True)
         self._dropdown_pixel_format.setEnabled(True)
         self._button_stop_hardware_acquisition.setEnabled(False)
+
+        QtCore.QMetaObject.invokeMethod(self.acq_label, "setText",
+                                    QtCore.Qt.QueuedConnection,
+                                    QtCore.Q_ARG(str, f"Acquisition Mode: RealTime"))
 
     def _start_recording(self):
         self._camera.start_recording()
