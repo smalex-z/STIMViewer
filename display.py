@@ -17,10 +17,6 @@ class Display(QGraphicsView):
         super().__init__(parent)
         self.__scene = CustomGraphicsScene(self)
         self.setScene(self.__scene)
-        
-        self.scale_factor = 1.0  # Track zoom level
-        self.min_zoom = 0.5
-        self.max_zoom = 3.0
 
         self.setRenderHint(QPainter.Antialiasing)
         self.setRenderHint(QPainter.SmoothPixmapTransform)
