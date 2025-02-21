@@ -31,6 +31,7 @@ from collections import deque
 from ids_peak import ids_peak
 from ids_peak_ipl import ids_peak_ipl
 from ids_peak import ids_peak_ipl_extension
+from TellMeImageResolution import show_image_fullscreen_on_second_monitor
 
 
 TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
@@ -56,6 +57,7 @@ class Camera:
         self.target_dgain = 1
         self.killed = False
         self.save_image = False
+        self.calibrate = False
         self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
 
         self._get_device()
@@ -412,6 +414,16 @@ class Camera:
                 ids_peak_ipl.ImageWriter.WriteAsPNG(self._valid_name(cwd + "/image", ".png"), converted_ipl_image)
                 print("Saved!")
                 self.save_image = False
+                
+            if self.calibrate:
+                print("Calibrating:")
+                ids_peak_ipl.ImageWriter.WriteAsPNG("custom_registration_image.png", converted_ipl_image)
+                show_image_fullscreen_on_second_monitor("custom_registration_image.png")
+                time.sleep(.5)
+                #ids_peak_ipl.ImageWriter.WriteAsPNG("custom_registration_image.png", converted_ipl_image)
+                #time.sleep(.5)
+                #show_image_fullscreen_on_second_monitor('ReverseHomedcustom_registration_image_output.jpg')
+                self.calibrate = False
 
             return converted_ipl_image
         except ids_peak.Exception as e:
