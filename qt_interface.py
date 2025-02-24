@@ -335,6 +335,7 @@ class Interface(QtWidgets.QMainWindow):
     
     def _project_white(self):
         # TODO: Project White
+        self._camera.project_white = True
         "PlaceHolder"
 
 

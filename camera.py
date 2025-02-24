@@ -32,6 +32,7 @@ from ids_peak import ids_peak
 from ids_peak_ipl import ids_peak_ipl
 from ids_peak import ids_peak_ipl_extension
 from TellMeImageResolution import show_image_fullscreen_on_second_monitor
+from WhiteBackgroundGen import makeWhite
 
 
 TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
@@ -58,6 +59,7 @@ class Camera:
         self.killed = False
         self.save_image = False
         self.calibrate = False
+        self.project_white = False
         self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
 
         self._get_device()
@@ -424,6 +426,12 @@ class Camera:
                 #time.sleep(.5)
                 #show_image_fullscreen_on_second_monitor('ReverseHomedcustom_registration_image_output.jpg')
                 self.calibrate = False
+
+            if self.project_white:
+                print("Projecting White:")
+                makeWhite(1936, 1096) #resolution
+                show_image_fullscreen_on_second_monitor("solid_white_image.png")
+                self.project_white = False
 
             return converted_ipl_image
         except ids_peak.Exception as e:

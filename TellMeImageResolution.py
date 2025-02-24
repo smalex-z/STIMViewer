@@ -221,6 +221,7 @@ def show_image_fullscreen_on_second_monitor(image_path):
     thread.start()
     
 # Example usage
+"""
 image_path = 'custom_registration_image.png'  # Your image file path
 img = Image.open(image_path)
 width, height = img.size
@@ -229,3 +230,4 @@ fill_color = 'white'   # Color for chessboard fill
 custom_image = create_custom_registration_image(width, height, line_color, fill_color)
 custom_image.save(image_path)  # Save the image
 show_image_fullscreen_on_second_monitor(image_path)  # Open image in full-screen on second monitor
+"""
