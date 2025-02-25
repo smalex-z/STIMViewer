@@ -1,3 +1,4 @@
+import os
 import cv2
 import datetime
 import threading
@@ -18,11 +19,14 @@ class VideoRecorder:
         self.frame_queue = queue.Queue(maxsize=0)
         self.processing_remaining_frames = False
 
+        self.save_dir = "./Saved_Media"
+        os.makedirs(self.save_dir, exist_ok=True)
+
     def init_video_writer(self, fps=30, frame_size=(1936, 1096)):
         """Initialize the video writer."""
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.video_filename = f"recording_{timestamp}.mp4"
+        self.video_filename = os.path.join(self.save_dir, f"recording_{timestamp}.mp4")
         self.video_writer = cv2.VideoWriter(self.video_filename, fourcc, fps, frame_size)
 
     def start_recording(self, fps):

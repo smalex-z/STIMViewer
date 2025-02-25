@@ -62,6 +62,11 @@ class Camera:
         self.project_white = False
         self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
 
+        self.asset_dir = "./Assets"
+        self.save_dir = "./Saved_Media"
+        os.makedirs(self.asset_dir, exist_ok=True)
+        os.makedirs(self.save_dir, exist_ok=True)
+
         self._get_device()
         self._setup_device_and_datastream()
         self._interface.set_camera(self)
@@ -412,15 +417,15 @@ class Camera:
             self.video_recorder.add_frame(converted_ipl_image)  # ✅ Use new VideoRecorder
 
             if self.save_image:
-                print("Saving image...")
-                ids_peak_ipl.ImageWriter.WriteAsPNG(self._valid_name(cwd + "/image", ".png"), converted_ipl_image)
-                print("Saved!")
+                save_path = self._valid_name(os.path.join(self.save_dir, "image"), ".png")
+                ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, converted_ipl_image)
+                print(f"Image Saved at {save_path}")
                 self.save_image = False
                 
             if self.calibrate:
                 print("Calibrating:")
-                ids_peak_ipl.ImageWriter.WriteAsPNG("custom_registration_image.png", converted_ipl_image)
-                show_image_fullscreen_on_second_monitor("custom_registration_image.png")
+                save_path = os.path.join(self.asset_dir, "custom_registration_image.png")
+                ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, converted_ipl_image)
                 time.sleep(.5)
                 #ids_peak_ipl.ImageWriter.WriteAsPNG("custom_registration_image.png", converted_ipl_image)
                 #time.sleep(.5)
