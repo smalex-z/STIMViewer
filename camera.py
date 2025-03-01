@@ -24,6 +24,8 @@
 
 import os
 import time
+import numpy as np
+import cv2
 
 from os.path import exists
 from video_recorder import VideoRecorder
@@ -31,7 +33,7 @@ from collections import deque
 from ids_peak import ids_peak
 from ids_peak_ipl import ids_peak_ipl
 from ids_peak import ids_peak_ipl_extension
-from TellMeImageResolution import show_image_fullscreen_on_second_monitor
+from calibration_and_projection import show_image_fullscreen_on_second_monitor, create_custom_registration_image, find_homography
 from WhiteBackgroundGen import makeWhite
 
 
@@ -61,6 +63,7 @@ class Camera:
         self.calibrate = False
         self.project_white = False
         self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
+        self.translation_matrix = np.eye(3)
 
         self.asset_dir = "./Assets"
         self.save_dir = "./Saved_Media"
@@ -424,18 +427,28 @@ class Camera:
                 
             if self.calibrate:
                 print("Calibrating:")
-                save_path = os.path.join(self.asset_dir, "custom_registration_image.png")
+                save_path = os.path.join(self.asset_dir, "calibration_capture_image.png")
+                
+                #Create Calibration Pattern Image
+                img = create_custom_registration_image(1936, 1096, 'white', 'white')
+                img.save(save_path)
+                show_image_fullscreen_on_second_monitor(np.array(img), self.translation_matrix)
+                
+                # Calculate Homography Matrix
+                #time.sleep(.2) # Make sure projection is on screen
                 ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, converted_ipl_image)
-                time.sleep(.5)
-                #ids_peak_ipl.ImageWriter.WriteAsPNG("custom_registration_image.png", converted_ipl_image)
-                #time.sleep(.5)
-                #show_image_fullscreen_on_second_monitor('ReverseHomedcustom_registration_image_output.jpg')
+
+                try:
+                    self.translation_matrix = find_homography()
+                except Exception as e:
+                    print(f"❌ Error calculating homography: {e}")
+                show_image_fullscreen_on_second_monitor(np.array(img), self.translation_matrix)
                 self.calibrate = False
 
             if self.project_white:
                 print("Projecting White:")
                 makeWhite(1936, 1096) #resolution
-                show_image_fullscreen_on_second_monitor("solid_white_image.png")
+                show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/solid_white_image.png"), self.translation_matrix)
                 self.project_white = False
 
             return converted_ipl_image
