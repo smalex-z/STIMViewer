@@ -427,7 +427,7 @@ class Camera:
                 
             if self.calibrate:
                 print("Calibrating:")
-                save_path = os.path.join(self.asset_dir, "calibration_capture_image.png")
+                save_path = os.path.join(self.asset_dir, "custom_registration_image.png")
                 
                 #Create Calibration Pattern Image
                 img = create_custom_registration_image(1936, 1096, 'white', 'white')
@@ -435,7 +435,8 @@ class Camera:
                 show_image_fullscreen_on_second_monitor(np.array(img), self.translation_matrix)
                 
                 # Calculate Homography Matrix
-                #time.sleep(.2) # Make sure projection is on screen
+                time.sleep(.5) # Make sure projection is on screen
+                save_path = os.path.join(self.asset_dir, "calibration_capture_image.png")
                 ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, converted_ipl_image)
 
                 try:
