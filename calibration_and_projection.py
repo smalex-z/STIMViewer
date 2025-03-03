@@ -254,8 +254,9 @@ def find_homography():
     transformed_img = cv2.warpPerspective(img1, inverse_homography, (width, height))
 
     # Save the transformed image
-    cv2.imwrite('CalibOutput.jpg', transformed_img)
+    cv2.imwrite('./Assets/CalibOutput.jpg', transformed_img)
 
+    """
     # Create a 2x2 subplot layout
     fig, axs = plt.subplots(2, 2, figsize=(10, 10))
 
@@ -287,7 +288,7 @@ def find_homography():
 
     # Show plot
     plt.show()
-
+    """
     # Compute the inverse homography matrix
     inverse_homography = np.linalg.inv(homography)
 
