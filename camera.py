@@ -60,7 +60,7 @@ class Camera:
         self.target_dgain = 1
         self.killed = False
         self.save_image = False
-        self.calibrate = False
+        self.calibrate = 0
         self.project_white = False
         self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
         self.translation_matrix = np.eye(3)
@@ -425,7 +425,7 @@ class Camera:
                 print(f"Image Saved at {save_path}")
                 self.save_image = False
                 
-            if self.calibrate:
+            if self.calibrate == 1: #Part 1 of Calibration:
                 print("Calibrating:")
                 save_path = os.path.join(self.asset_dir, "custom_registration_image.png")
                 
@@ -433,9 +433,9 @@ class Camera:
                 img = create_custom_registration_image(1936, 1096, 'white', 'white')
                 img.save(save_path)
                 show_image_fullscreen_on_second_monitor(np.array(img), self.translation_matrix)
-                
+                self.calibrate = 2
+            elif self.calibrate == 2: #Part 2 of Calibration: (next image)
                 # Calculate Homography Matrix
-                time.sleep(.5) # Make sure projection is on screen
                 save_path = os.path.join(self.asset_dir, "calibration_capture_image.png")
                 ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, converted_ipl_image)
 
@@ -443,8 +443,8 @@ class Camera:
                     self.translation_matrix = find_homography()
                 except Exception as e:
                     print(f"❌ Error calculating homography: {e}")
-                show_image_fullscreen_on_second_monitor(np.array(img), self.translation_matrix)
-                self.calibrate = False
+                #show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/custom_registration_image.png"), self.translation_matrix)
+                self.calibrate = 0
 
             if self.project_white:
                 print("Projecting White:")

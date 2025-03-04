@@ -311,7 +311,7 @@ class Interface(QtWidgets.QMainWindow):
 
     def _calibrate(self):
         # TODO: Calibrate
-        self._camera.calibrate = True
+        self._camera.calibrate = 1
         "PlaceHolder"
     
     def _project_white(self):

@@ -110,6 +110,7 @@ def show_image_fullscreen_on_second_monitor(image, homography_matrix = None):
     def show_image():
         # Get monitor information
         monitors = get_monitors()
+        second_monitor = monitors[1]
         if len(monitors) < 2:
             print("⚠ Second monitor/Projector not detected. Displaying on primary monitor.")
             second_monitor = monitors[0]
