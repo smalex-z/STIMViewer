@@ -33,7 +33,7 @@ from collections import deque
 from ids_peak import ids_peak
 from ids_peak_ipl import ids_peak_ipl
 from ids_peak import ids_peak_ipl_extension
-from calibration_and_projection import show_image_fullscreen_on_second_monitor, create_custom_registration_image, find_homography
+from calibration_and_projection import create_custom_registration_image, find_homography
 from WhiteBackgroundGen import makeWhite
 
 
@@ -61,7 +61,6 @@ class Camera:
         self.killed = False
         self.save_image = False
         self.calibrate = 0
-        self.project_white = False
         self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
         self.translation_matrix = np.eye(3)
 
@@ -432,25 +431,21 @@ class Camera:
                 #Create Calibration Pattern Image
                 img = create_custom_registration_image(1936, 1096, 'white', 'white')
                 img.save(save_path)
-                show_image_fullscreen_on_second_monitor(np.array(img), self.translation_matrix)
+                self._interface.on_projection_received(np.array(img), self.translation_matrix)
                 self.calibrate = 2
             elif self.calibrate == 2: #Part 2 of Calibration: (next image)
+                
                 # Calculate Homography Matrix
                 save_path = os.path.join(self.asset_dir, "calibration_capture_image.png")
                 ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, converted_ipl_image)
-
+                """
                 try:
                     self.translation_matrix = find_homography()
                 except Exception as e:
                     print(f"❌ Error calculating homography: {e}")
                 #show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/custom_registration_image.png"), self.translation_matrix)
+                """
                 self.calibrate = 0
-
-            if self.project_white:
-                print("Projecting White:")
-                makeWhite(1936, 1096) #resolution
-                show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/solid_white_image.png"), self.translation_matrix)
-                self.project_white = False
 
             return converted_ipl_image
         except ids_peak.Exception as e:

@@ -24,6 +24,7 @@
 
 import sys
 import time
+import cv2
 import numpy as np
 
 from typing import Optional
@@ -31,18 +32,24 @@ from typing import Optional
 from camera import Camera
 from time import time
 from display import Display
+from projection import ProjectDisplay
 from ids_peak import ids_peak
+
+from WhiteBackgroundGen import makeWhite
 
 try:
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt, QTimer
     from PyQt5.QtCore import pyqtSlot as Slot
     from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy
+    from PyQt5.QtGui import QGuiApplication
 except ImportError:
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt, QTimer
     from PyQt5.QtCore import pyqtSlot as Slot
     from PyQt5.QtWidgets import QLabel
+    from PyQt5.QtGui import QGuiApplication
+
 
 
 ids_peak.Library.Initialize()
@@ -80,6 +87,7 @@ class Interface(QtWidgets.QMainWindow):
         self.widget.setLayout(self._layout)
         self.setCentralWidget(self.widget)
         self.display = None
+        self.projection = None
         self.acquisition_thread = None
 
         # Buttons
@@ -263,6 +271,14 @@ class Interface(QtWidgets.QMainWindow):
         self._layout.addWidget(self.display)
         self._create_button_bar()
         self._create_statusbar()
+
+        screens = QGuiApplication.screens()
+        if len(screens) > 1:
+            screen = screens[1] 
+        else:
+            screen = screens[0]
+
+        self.projection = ProjectDisplay(screen)
     
     def start_interface(self):
         self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
@@ -316,7 +332,9 @@ class Interface(QtWidgets.QMainWindow):
     
     def _project_white(self):
         # TODO: Project White
-        self._camera.project_white = True
+        print("Projecting White:")
+        makeWhite(1936, 1096) #resolution
+        self.projection.show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/solid_white_image.png"), self._camera.translation_matrix)
         "PlaceHolder"
 
 
@@ -351,6 +369,19 @@ class Interface(QtWidgets.QMainWindow):
             self.display.on_image_received(qt_image)
         except Exception as e:
             print(f"Error updating Display, {e}")
+
+    def on_projection_received(self, image, homography_matrix):
+        """
+        Processes the received image for the video stream.
+
+        :param image: takes an image for the video preview seen onscreen
+        """
+
+        # Process and display the image             
+        try:
+            self.projection.show_image_fullscreen_on_second_monitor(image, homography_matrix)
+        except Exception as e:
+            print(f"Error updating Projection, {e}")
         
 
 
