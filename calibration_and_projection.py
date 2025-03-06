@@ -1,4 +1,5 @@
 import cv2
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -7,6 +8,7 @@ import tkinter as tk
 from tkinter import Toplevel
 from screeninfo import get_monitors
 import threading
+
 
 
 # Example usage
@@ -101,54 +103,6 @@ def create_custom_registration_image(width, height, line_color, fill_color):
     draw_smiley_face(draw, smiley_center, smiley_radius, line_color)
     return img
 
-def show_image_fullscreen_on_second_monitor(image, homography_matrix = None):
-    """Open the image on the second monitor in full screen mode."""
-    if homography_matrix is None:
-        print("No Homography Matrix provided. Defaulting to no transformation")
-        homography_matrix = np.eye(3)
-
-    def show_image():
-        # Get monitor information
-        monitors = get_monitors()
-        second_monitor = monitors[1]
-        if len(monitors) < 2:
-            print("⚠ Second monitor/Projector not detected. Displaying on primary monitor.")
-            second_monitor = monitors[0]
-        
-        x, y, width, height = second_monitor.x, second_monitor.y, second_monitor.width, second_monitor.height
-
-
-        # Initialize the Tkinter window
-        root = tk.Tk()
-        root.withdraw()  # Hide the main window
-        
-        # Create a new top-level window
-        top = Toplevel(root)
-        top.geometry(f"{width}x{height}+{x}+{y}")  # Set the geometry to match the second monitor
-        top.attributes('-fullscreen', True)
-        top.attributes('-topmost', True)  # Keep on top
-        top.bind("<Escape>", lambda e: top.destroy())  # Bind escape key to exit full screen
-
-        # Apply Homography/Translation Matrix, then Load and display the image
-        height, width, _ = image.shape
-        img2 = cv2.warpPerspective(image, homography_matrix, (width, height))
-        fig, ax = plt.subplots()
-        ax.imshow(img2)
-        ax.axis('off')  # Hide axes
-
-        # Use matplotlib's FigureCanvasTkAgg to display the image
-        canvas = FigureCanvasTkAgg(fig, master=top)
-        canvas.draw()
-
-        # Embed the canvas into the Tkinter top-level window
-        canvas.get_tk_widget().pack(fill='both', expand=True)
-
-        root.mainloop()
-
-    # Start the Tkinter event loop in a separate thread
-    
-    thread = threading.Thread(target=show_image)
-    thread.start()
     
 """
 Breaks down a homography matrix into its key geometric transformations: Translation (tx, ty), 
