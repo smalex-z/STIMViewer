@@ -327,8 +327,7 @@ class Interface(QtWidgets.QMainWindow):
 
     def _calibrate(self):
         # TODO: Calibrate
-        self._camera.calibrate = 1
-        "PlaceHolder"
+        self._camera.start_calibration()
     
     def _project_white(self):
         # TODO: Project White
@@ -370,11 +369,9 @@ class Interface(QtWidgets.QMainWindow):
         except Exception as e:
             print(f"Error updating Display, {e}")
 
-    def on_projection_received(self, image, homography_matrix):
+    def on_projection_received(self, image, homography_matrix = None):
         """
-        Processes the received image for the video stream.
-
-        :param image: takes an image for the video preview seen onscreen
+        Update Projection Image
         """
 
         # Process and display the image             

@@ -26,6 +26,7 @@ import os
 import time
 import numpy as np
 import cv2
+import threading
 
 from os.path import exists
 from video_recorder import VideoRecorder
@@ -33,7 +34,7 @@ from collections import deque
 from ids_peak import ids_peak
 from ids_peak_ipl import ids_peak_ipl
 from ids_peak import ids_peak_ipl_extension
-from calibration_and_projection import create_custom_registration_image, find_homography
+from calibration import create_custom_registration_image, find_homography
 from WhiteBackgroundGen import makeWhite
 
 
@@ -372,6 +373,49 @@ class Camera:
             num += 1
         return build_string()
 
+    def start_calibration(self):
+        """Handles the entire calibration process separately from image acquisition."""
+        print("Starting Calibration...")
+
+        """
+        # ✅ Step 1: Generate Calibration Pattern
+        pattern_path = os.path.join(self.asset_dir, "custom_registration_image.png")
+        img = create_custom_registration_image(1936, 1096, 'white', 'white')
+        img.save(pattern_path)
+        """
+
+        # ✅ Step 2: Display Calibration Pattern
+        self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")))
+        
+        # ✅ Step 3: Wait for the Projection to Fully Appear
+        time.sleep(0.5)  # Adjust delay based on projector response time
+
+        # ✅ Step 4: Capture Image After Projection
+        save_path = os.path.join(self.asset_dir, "calibration_capture_image.png")
+        
+        # We need to wait for a new image to be captured
+        latest_image = None
+        while latest_image is None:
+            latest_image = self.get_data_stream_image()  # ✅ Get a new frame
+
+        # Save the captured image
+        ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, latest_image)
+
+        # ✅ Step 5: Compute Homography in a Separate Thread (Non-Blocking)
+        def compute_homography():
+            try:
+                homography_matrix = find_homography()
+                self.translation_matrix = homography_matrix
+                print("✅ Homography Computed Successfully!")
+
+                self._interface.on_projection_received(np.array(cv2.imread("./Assets/CalibOutput.jpg")))
+            except Exception as e:
+                print(f"❌ Error calculating homography: {e}")
+
+        threading.Thread(target=compute_homography, daemon=True).start()
+
+        
+
 
     def revoke_and_allocate_buffer(self):
         if self._datastream is None:
@@ -424,29 +468,6 @@ class Camera:
                 print(f"Image Saved at {save_path}")
                 self.save_image = False
                 
-            if self.calibrate == 1: #Part 1 of Calibration:
-                print("Calibrating:")
-                save_path = os.path.join(self.asset_dir, "custom_registration_image.png")
-                
-                #Create Calibration Pattern Image
-                img = create_custom_registration_image(1936, 1096, 'white', 'white')
-                img.save(save_path)
-                self._interface.on_projection_received(np.array(img), self.translation_matrix)
-                self.calibrate = 2
-            elif self.calibrate == 2: #Part 2 of Calibration: (next image)
-                
-                # Calculate Homography Matrix
-                save_path = os.path.join(self.asset_dir, "calibration_capture_image.png")
-                ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, converted_ipl_image)
-                """
-                try:
-                    self.translation_matrix = find_homography()
-                except Exception as e:
-                    print(f"❌ Error calculating homography: {e}")
-                #show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/custom_registration_image.png"), self.translation_matrix)
-                """
-                self.calibrate = 0
-
             return converted_ipl_image
         except ids_peak.Exception as e:
             print(f"No buffer available: {e}")
