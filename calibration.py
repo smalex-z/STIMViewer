@@ -4,11 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageDraw
-import tkinter as tk
-from tkinter import Toplevel
-from screeninfo import get_monitors
-import threading
-
 
 
 # Example usage
@@ -244,9 +239,6 @@ def find_homography():
     # Show plot
     plt.show()
     """
-    # Compute the inverse homography matrix
-    inverse_homography = np.linalg.inv(homography)
-
     # Print the inverse homography matrix
     print("Inverse Homography matrix:")
     print(inverse_homography)
