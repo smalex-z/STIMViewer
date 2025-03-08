@@ -487,6 +487,7 @@ class Camera:
                 self._interface.warning(f"Acquisition error: {str(e)}")
                 self.save_image = False
 
+    #multithreaded projection lol
     def projection_thread(self):
         while not self.killed:
             try:
