@@ -35,7 +35,6 @@ from display import Display
 from projection import ProjectDisplay
 from ids_peak import ids_peak
 
-from WhiteBackgroundGen import makeWhite
 
 try:
     from PyQt5 import QtCore, QtWidgets, QtGui
@@ -89,6 +88,7 @@ class Interface(QtWidgets.QMainWindow):
         self.display = None
         self.projection = None
         self.acquisition_thread = None
+        self.projection_thread = None
 
         # Buttons
         self._button_start = None
@@ -332,7 +332,6 @@ class Interface(QtWidgets.QMainWindow):
     def _project_white(self):
         # TODO: Project White
         print("Projecting White:")
-        makeWhite(1936, 1096) #resolution
         self.projection.show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/solid_white_image.png"), self._camera.translation_matrix)
         "PlaceHolder"
 
