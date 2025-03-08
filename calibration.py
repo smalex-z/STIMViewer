@@ -170,8 +170,8 @@ def find_homography():
 
     # Check if there are enough matches
     if len(matches) < 4:
-        print("Not enough matches found - at least 4 required")
-        exit()
+        print("Not enough matches found - at least 4 required. Returning Identity Matrix")
+        return np.eye(3)
 
     no_of_matches = len(matches)
 
@@ -187,6 +187,10 @@ def find_homography():
     # Find the homography matrix
     homography, mask = cv2.findHomography(p1_image, p2_image, cv2.RANSAC)
 
+    if homography is None:
+        print("❌ Homography calculation failed. Returning identity matrix.")
+        return np.eye(3)
+
     # Print the homography matrix
     print("Homography matrix:")
     print(homography)
@@ -199,10 +203,22 @@ def find_homography():
     print(f"Rotation angle: {angle} degrees")
 
     # Compute the inverse homography matrix
+    # Alex's note: not too sure what the point of the inverse is here
+    """
     inverse_homography = np.linalg.inv(homography)
-    # Warp the first image to align with the second image
-    transformed_img = cv2.warpPerspective(img1, inverse_homography, (width, height))
 
+    # Decompose the inv. homography matrix
+    print("Inverse Homography matrix:")
+    print(inverse_homography)
+
+    tx, ty, sx, sy, angle = decompose_homography(inverse_homography)
+    
+    print(f"Translation: tx = {tx}, ty = {ty}")
+    print(f"Scaling: sx = {sx}, sy = {sy}")
+    print(f"Rotation angle: {angle} degrees")
+    """
+    # Warp the first image to align with the second image
+    transformed_img = cv2.warpPerspective(img1, homography, (width, height))
     # Save the transformed image
     cv2.imwrite('./Assets/CalibOutput.jpg', transformed_img)
 
@@ -240,9 +256,7 @@ def find_homography():
     plt.show()
     """
     # Print the inverse homography matrix
-    print("Inverse Homography matrix:")
-    print(inverse_homography)
-    return inverse_homography
+    return homography
 
 
 
