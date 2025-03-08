@@ -47,9 +47,6 @@ def start(camera_device: camera.Camera, ui: 'Interface'):
     thread = threading.Thread(target=camera_device.acquisition_thread, args=())
     thread.start()
     ui.acquisition_thread = thread
-    thread2 = threading.Thread(target=camera_device.projection_thread, args=())
-    thread2.start()
-    ui.projection_thread = thread
     ui.start_interface()
 
     # Assets

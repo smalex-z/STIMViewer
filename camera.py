@@ -375,41 +375,35 @@ class Camera:
         return build_string()
 
     def start_calibration(self):
-        def delayed_capture():
-             # ✅ Step 4: Capture Image After Projection
-            save_path = os.path.join(self.asset_dir, "calibration_capture_image.png")
-            
-            # We need to wait for a new image to be captured
-            print("capturing img")
-            latest_image = None
-            while latest_image is None:
-                latest_image = self.get_data_stream_image()  # ✅ Get a new frame
-
-            # Save the captured image
-            ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, latest_image)
-            
-        
-        def compute_homography():
-            try:
-                homography_matrix = find_homography()
-                self.translation_matrix = homography_matrix
-                print("✅ Homography Computed Successfully!")
-
-                self.projection_image = (np.array(cv2.imread("./Assets/CalibOutput.jpg")))
-            except Exception as e:
-                print(f"❌ Error calculating homography: {e}")
-
         
         """Handles the entire calibration process separately from image acquisition."""
         print("Starting Calibration...")
 
         # ✅ Step 1: Display Calibration Pattern
-        self.projection_image = (np.array(cv2.imread("./Assets/custom_registration_image.png")))
+        self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")))
         
         # ✅ Step 2: Wait for the Projection to Fully Appear
         # 600 seems to be the bare minimum amount of time for the projection to properly propogate.
-        QTimer.singleShot(600, delayed_capture)
-        compute_homography()
+        # ✅ Step 4: Capture Image After Projection
+        save_path = os.path.join(self.asset_dir, "calibration_capture_image.png")
+        
+        # We need to wait for a new image to be captured
+        print("capturing img")
+        latest_image = None
+        while latest_image is None:
+            latest_image = self.get_data_stream_image()  # ✅ Get a new frame
+
+        # Save the captured image
+        ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, latest_image)
+        
+        try:
+            homography_matrix = find_homography()
+            self.translation_matrix = homography_matrix
+            print("✅ Homography Computed Successfully!")
+
+            self._interface.on_projection_received(np.array(cv2.imread("./Assets/CalibOutput.jpg")))
+        except Exception as e:
+            print(f"❌ Error calculating homography: {e}")
 
         
 
@@ -463,6 +457,10 @@ class Camera:
                 ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, converted_ipl_image)
                 print(f"Image Saved at {save_path}")
                 self.save_image = False
+
+            if self.calibrate == 1:
+                self.start_calibration()
+                self.calibrate = 0
                 
             return converted_ipl_image
         except ids_peak.Exception as e:

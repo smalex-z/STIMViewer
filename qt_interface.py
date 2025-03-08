@@ -327,7 +327,7 @@ class Interface(QtWidgets.QMainWindow):
 
     def _calibrate(self):
         # TODO: Calibrate
-        self._camera.start_calibration()
+        self._camera.calibrate = 1
     
     def _project_white(self):
         # TODO: Project White
