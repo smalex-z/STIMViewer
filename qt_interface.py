@@ -88,7 +88,6 @@ class Interface(QtWidgets.QMainWindow):
         self.display = None
         self.projection = None
         self.acquisition_thread = None
-        self.projection_thread = None
 
         # Buttons
         self._button_start = None
