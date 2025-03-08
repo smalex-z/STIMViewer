@@ -64,7 +64,6 @@ class Camera:
         self.calibrate = 0
         self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
         self.translation_matrix = np.eye(3)
-        self.projection_image = None
 
         self.asset_dir = "./Assets"
         self.save_dir = "./Saved_Media"
@@ -397,7 +396,7 @@ class Camera:
                 self.translation_matrix = homography_matrix
                 print("✅ Homography Computed Successfully!")
 
-                self.projection_image = (np.array(cv2.imread("./Assets/CalibOutput.jpg")))
+                self._interface.on_projection_received(np.array(cv2.imread("./Assets/CalibOutput.jpg")))
             except Exception as e:
                 print(f"❌ Error calculating homography: {e}")
 
@@ -406,11 +405,10 @@ class Camera:
         print("Starting Calibration...")
 
         # ✅ Step 1: Display Calibration Pattern
-        self.projection_image = (np.array(cv2.imread("./Assets/custom_registration_image.png")))
+        self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")))
         
         # ✅ Step 2: Wait for the Projection to Fully Appear
-        # 600 seems to be the bare minimum amount of time for the projection to properly propogate.
-        QTimer.singleShot(600, delayed_capture)
+        QTimer.singleShot(70, delayed_capture)
 
         
 
@@ -470,14 +468,6 @@ class Camera:
             print(f"No buffer available: {e}")
             return None
         
-    def get_projection_image(self):
-        try:
-            if(self.projection_image is not None):
-                print("New projection received — displaying image...")
-                self._interface.on_projection_received(self.projection_image)
-                self.projection_image = None
-        except ids_peak.Exception as e:
-            print(f"No Projection available: {e}")
 
     def acquisition_thread(self):
         while not self.killed:
@@ -485,12 +475,4 @@ class Camera:
                 self.get_data_stream_image()
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
-                self.save_image = False
-
-    def projection_thread(self):
-        while not self.killed:
-            try:
-                self.get_projection_image()
-            except Exception as e:
-                self._interface.warning(f"Projection error: {str(e)}")
                 self.save_image = False
