@@ -388,9 +388,7 @@ class Camera:
             # Save the captured image
             ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, latest_image)
             
-            #Compute Homography
-            threading.Thread(target=compute_homography, daemon=True).start()
-
+        
         def compute_homography():
             try:
                 homography_matrix = find_homography()
@@ -411,6 +409,7 @@ class Camera:
         # ✅ Step 2: Wait for the Projection to Fully Appear
         # 600 seems to be the bare minimum amount of time for the projection to properly propogate.
         QTimer.singleShot(600, delayed_capture)
+        compute_homography()
 
         
 
