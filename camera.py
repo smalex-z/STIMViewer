@@ -408,7 +408,7 @@ class Camera:
         self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")))
         
         # ✅ Step 2: Wait for the Projection to Fully Appear
-        QTimer.singleShot(70, delayed_capture)
+        QTimer.singleShot(80, delayed_capture)
 
         
 
