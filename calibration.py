@@ -136,9 +136,6 @@ def find_homography():
     img1 = cv2.imread("./Assets/custom_registration_image.png")
     img2 = cv2.imread("./Assets/calibration_capture_image.png")
 
-    # Flip the first image along the x-axis
-    img1 = cv2.flip(img1, 0)
-
     # Convert images to grayscale
     img1_gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
     img2_gray = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
