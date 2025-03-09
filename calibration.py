@@ -133,8 +133,8 @@ def decompose_homography(H):
 
 def find_homography():
     # Read images
-    img1 = cv2.imread("./Assets/custom_registration_image.png")
-    img2 = cv2.imread("./Assets/calibration_capture_image.png")
+    img2 = cv2.imread("./Assets/custom_registration_image.png")
+    img1 = cv2.imread("./Assets/calibration_capture_image.png")
 
     # Convert images to grayscale
     img1_gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
