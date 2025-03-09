@@ -396,7 +396,7 @@ class Camera:
                 self.translation_matrix = homography_matrix
                 print("✅ Homography Computed Successfully!")
 
-                self._interface.on_projection_received(np.array(cv2.imread("./Assets/CalibOutput.jpg")))
+                self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")), self.translation_matrix)
             except Exception as e:
                 print(f"❌ Error calculating homography: {e}")
 

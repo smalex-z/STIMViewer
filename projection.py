@@ -32,8 +32,10 @@ class ProjectDisplay(QMainWindow):
         if homography_matrix is None:
             homography_matrix = np.eye(3)
 
+        image_transformed = cv2.flip(image, 1)
+
         # Apply Homography Transformation
-        image_transformed = cv2.warpPerspective(image, homography_matrix, (image.shape[1], image.shape[0]))
+        image_transformed = cv2.warpPerspective(image_transformed, homography_matrix, (image.shape[1], image.shape[0]))
         image_transformed = cv2.cvtColor(image_transformed, cv2.COLOR_BGR2RGB)  # Convert to RGB
 
         # ✅ Directly update the image (since we're in the GUI thread)
