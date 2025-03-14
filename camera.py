@@ -24,6 +24,9 @@
 
 import os
 import time
+import numpy as np
+import cv2
+import threading
 
 from os.path import exists
 from video_recorder import VideoRecorder
@@ -31,6 +34,8 @@ from collections import deque
 from ids_peak import ids_peak
 from ids_peak_ipl import ids_peak_ipl
 from ids_peak import ids_peak_ipl_extension
+from calibration import find_homography
+from PyQt5.QtCore import QTimer
 
 
 TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
@@ -56,7 +61,14 @@ class Camera:
         self.target_dgain = 1
         self.killed = False
         self.save_image = False
+        self.calibrate = 0
         self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
+        self.translation_matrix = np.eye(3)
+
+        self.asset_dir = "./Assets"
+        self.save_dir = "./Saved_Media"
+        os.makedirs(self.asset_dir, exist_ok=True)
+        os.makedirs(self.save_dir, exist_ok=True)
 
         self._get_device()
         self._setup_device_and_datastream()
@@ -361,6 +373,44 @@ class Camera:
             num += 1
         return build_string()
 
+    def start_calibration(self):
+        def delayed_capture():
+             # ✅ Step 4: Capture Image After Projection
+            save_path = os.path.join(self.asset_dir, "calibration_capture_image.png")
+            
+            # We need to wait for a new image to be captured
+            print("capturing img")
+            latest_image = None
+            while latest_image is None:
+                latest_image = self.get_data_stream_image()  # ✅ Get a new frame
+
+            # Save the captured image
+            ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, latest_image)
+            
+            #Compute Homography
+            threading.Thread(target=compute_homography, daemon=True).start()
+
+        def compute_homography():
+            try:
+                homography_matrix = find_homography()
+                self.translation_matrix = homography_matrix
+                print("✅ Homography Computed Successfully!")
+
+                self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")), self.translation_matrix)
+            except Exception as e:
+                print(f"❌ Error calculating homography: {e}")
+
+        
+        """Handles the entire calibration process separately from image acquisition."""
+        print("Starting Calibration...")
+
+        # ✅ Step 1: Display Calibration Pattern
+        self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")))
+        
+        # ✅ Step 2: Wait for the Projection to Fully Appear
+        QTimer.singleShot(80, delayed_capture)
+
+        
 
     def revoke_and_allocate_buffer(self):
         if self._datastream is None:
@@ -408,15 +458,16 @@ class Camera:
             self.video_recorder.add_frame(converted_ipl_image)  # ✅ Use new VideoRecorder
 
             if self.save_image:
-                print("Saving image...")
-                ids_peak_ipl.ImageWriter.WriteAsPNG(self._valid_name(cwd + "/image", ".png"), converted_ipl_image)
-                print("Saved!")
+                save_path = self._valid_name(os.path.join(self.save_dir, "image"), ".png")
+                ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, converted_ipl_image)
+                print(f"Image Saved at {save_path}")
                 self.save_image = False
-
+                
             return converted_ipl_image
         except ids_peak.Exception as e:
             print(f"No buffer available: {e}")
             return None
+        
 
     def acquisition_thread(self):
         while not self.killed:
@@ -425,4 +476,3 @@ class Camera:
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
                 self.save_image = False
-
