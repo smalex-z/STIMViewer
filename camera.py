@@ -24,6 +24,7 @@
 
 import os
 import time
+import sys
 
 from os.path import exists
 from video_recorder import VideoRecorder
