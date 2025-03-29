@@ -24,7 +24,7 @@
 
 import os
 import time
-import sys
+#import sys
 
 from os.path import exists
 from video_recorder import VideoRecorder
@@ -58,6 +58,9 @@ class Camera:
         self.killed = False
         self.save_image = False
         self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
+
+        # Default the hardware trigger line
+        self.hardware_trigger_line = "Line0"
 
         self._get_device()
         self._setup_device_and_datastream()
@@ -302,14 +305,19 @@ class Camera:
                 self.node_map.FindNode(
                     "TriggerSelector").SetCurrentEntry("ExposureStart")
             self.node_map.FindNode("TriggerMode").SetCurrentEntry("On")
-            self.node_map.FindNode("TriggerSource").SetCurrentEntry("Line0")
+            
+            # Use the hardware_trigger_line variable
+            self.node_map.FindNode("TriggerSource").SetCurrentEntry(self.hardware_trigger_line)
 
             # Start the data stream and acquisition
             self._datastream.StartAcquisition()
             self.node_map.FindNode("AcquisitionStart").Execute()
             self.acquisition_running = True
-
+            # Log after selecting new trigger line
             print("Hardware Acquisition started!")
+            print("Trigger Mode:", self.node_map.FindNode("TriggerMode").CurrentEntry().SymbolicValue())
+            print("Trigger Source:", self.node_map.FindNode("TriggerSource").CurrentEntry().SymbolicValue())
+
         except Exception as e:
             print(f"Exception during start_hardware_acquisition: {e}")
             return False
@@ -317,9 +325,7 @@ class Camera:
 
 
     def stop_hardware_acquisition(self):
-        print("Trigger Mode:", self.node_map.FindNode("TriggerMode").CurrentEntry().SymbolicValue())
-        print("Trigger Source:", self.node_map.FindNode("TriggerSource").CurrentEntry().SymbolicValue())
-
+        
         if self._device is None or self.acquisition_running is False:
             return
         try:
@@ -427,3 +433,14 @@ class Camera:
                 self._interface.warning(f"Acquisition error: {str(e)}")
                 self.save_image = False
 
+    def change_hardware_trigger_line(self, new_line: str):
+        # Change the hardware trigger line
+        self.hardware_trigger_line = new_line
+        print(f"Hardware trigger line set to: {new_line}")
+
+        # Reinitialize the hardware acquisition
+        if self.acquisition_running:
+            self.stop_hardware_acquisition()
+            time.sleep(0.5)
+            self.start_hardware_acquisition()
+        return new_line
