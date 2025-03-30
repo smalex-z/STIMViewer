@@ -25,6 +25,8 @@
 import threading
 
 from ids_peak import ids_peak
+from WhiteBackgroundGen import makeWhite
+from calibration import create_custom_registration_image
 
 import camera
 
@@ -46,6 +48,10 @@ def start(camera_device: camera.Camera, ui: 'Interface'):
     thread.start()
     ui.acquisition_thread = thread
     ui.start_interface()
+
+    # Assets
+    makeWhite(1936, 1096) #resolution
+    create_custom_registration_image()
 
 
 def main(ui: 'Interface'):
