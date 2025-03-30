@@ -25,7 +25,7 @@
 from main import main
 
 try:
-    from PyQt5.QtWidgets import QApplication
+    from PyQt5.QtWidgets import QApplication    
 except ImportError:
     from PyQt5.QtWidgets import QApplication
 

@@ -24,6 +24,7 @@
 
 import sys
 import time
+import cv2
 import numpy as np
 
 from typing import Optional
@@ -31,18 +32,23 @@ from typing import Optional
 from camera import Camera
 from time import time
 from display import Display
+from projection import ProjectDisplay
 from ids_peak import ids_peak
+
 
 try:
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt
     from PyQt5.QtCore import pyqtSlot as Slot
     from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy
+    from PyQt5.QtGui import QGuiApplication
 except ImportError:
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt
     from PyQt5.QtCore import pyqtSlot as Slot
     from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy
+    from PyQt5.QtGui import QGuiApplication
+
 
 
 ids_peak.Library.Initialize()
@@ -80,6 +86,7 @@ class Interface(QtWidgets.QMainWindow):
         self.widget.setLayout(self._layout)
         self.setCentralWidget(self.widget)
         self.display = None
+        self.projection = None
         self.acquisition_thread = None
 
         # Buttons
@@ -87,12 +94,14 @@ class Interface(QtWidgets.QMainWindow):
         self._button_exit = None
         self._button_software_trigger = None
         self._button_start_hardware_acquisition = None
-        self._button_stop_hardware_acquisition = None
+        self._hardware_status = False #False = Display Start, False = End
+        self._recording_status = False #False = Display Start, False = End
+
         self._button_exit = None
 
         # Dropdowns set to None placeholders
         self._dropdown_pixel_format = None
-        self._dropdown_hardware_trigger_line = None # Dropdown for hardware trigger line
+        self._dropdown_trigger_line = None # Dropdown for hardware trigger line
 
         self.messagebox_signal[str, str].connect(self.message)
 
@@ -118,6 +127,14 @@ class Interface(QtWidgets.QMainWindow):
         button_bar = QtWidgets.QWidget(self.centralWidget())
         button_bar_layout = QtWidgets.QGridLayout()
 
+        # Acquisition Buttons
+        self._button_start_hardware_acquisition = QtWidgets.QPushButton("Start Hardware Acquisition")
+        self._button_start_hardware_acquisition.clicked.connect(self._start_hardware_acquisition)
+
+        # Recording Buttons
+        self._button_start_recording = QtWidgets.QPushButton("Start Recording")
+        self._button_start_recording.clicked.connect(self._start_recording)
+
         # Hardware Trigger Dropdown Initialization 
         self._dropdown_trigger_line = QtWidgets.QComboBox()
 
@@ -139,9 +156,21 @@ class Interface(QtWidgets.QMainWindow):
                 self._dropdown_pixel_format.addItem(idx.SymbolicValue())
         self._dropdown_pixel_format.currentIndexChanged.connect(self.change_pixel_format)
 
+        # Enable dropdowns
+        self._dropdown_pixel_format.setEnabled(True)
+        self._dropdown_trigger_line.setEnabled(True)
+
         # Snapshot Button
         self._button_software_trigger = QtWidgets.QPushButton("Snapshot")
         self._button_software_trigger.clicked.connect(self._trigger_sw_trigger)
+        
+        
+        # Projection Buttons
+        self._button_calibrate = QtWidgets.QPushButton("Calibrate")
+        self._button_calibrate.clicked.connect(self._calibrate)
+
+        self._button_project_white = QtWidgets.QPushButton("Project White")
+        self._button_project_white.clicked.connect(self._project_white)
 
         # Acquisition Buttons
         self._button_start_hardware_acquisition = QtWidgets.QPushButton("Start Hardware Acquisition")
@@ -149,7 +178,7 @@ class Interface(QtWidgets.QMainWindow):
         self._button_start_hardware_acquisition.setEnabled(True) # Initialize hardware acquisition button to enabled
 
         self._button_stop_hardware_acquisition = QtWidgets.QPushButton("Stop Hardware Acquisition")
-        self._button_stop_hardware_acquisition.clicked.connect(self._stop_hardware_acquisition)
+        # self._button_stop_hardware_acquisition.clicked.connect(self._stop_hardware_acquisition)
         self._button_stop_hardware_acquisition.setEnabled(False)
 
         # Recording Buttons
@@ -158,7 +187,7 @@ class Interface(QtWidgets.QMainWindow):
         self._button_start_recording.setEnabled(True) # Initialize recording button to enabled
 
         self._button_stop_recording = QtWidgets.QPushButton("Stop Recording")
-        self._button_stop_recording.clicked.connect(self._stop_recording)
+        # self._button_stop_recording.clicked.connect(self._stop_recording)
         self._button_stop_recording.setEnabled(False)
 
         # Gain Controls
@@ -199,11 +228,11 @@ class Interface(QtWidgets.QMainWindow):
 
         # Add Widgets to Layout
         button_bar_layout.addWidget(self._button_start_hardware_acquisition, 0, 0, 1, 2)
-        button_bar_layout.addWidget(self._button_stop_hardware_acquisition, 0, 2, 1, 2)
-        button_bar_layout.addWidget(self._button_start_recording, 1, 0, 1, 2)
-        button_bar_layout.addWidget(self._button_stop_recording, 1, 2, 1, 2)
-        button_bar_layout.addWidget(self._button_software_trigger, 2, 0, 1, 2)
-        button_bar_layout.addWidget(self._dropdown_pixel_format, 2, 2, 1, 2)
+        button_bar_layout.addWidget(self._button_start_recording, 0, 2, 1, 2)
+        button_bar_layout.addWidget(self._button_software_trigger, 1, 0, 1, 2)
+        button_bar_layout.addWidget(self._dropdown_pixel_format, 1, 2, 1, 2)
+        button_bar_layout.addWidget(self._button_calibrate, 2, 0, 1, 2)
+        button_bar_layout.addWidget(self._button_project_white, 2, 2, 1, 2)
         button_bar_layout.addWidget(self._dropdown_trigger_line, 3, 1, 1, 2) # Position trigger line dropdown
 
         # Move gain controls to the right column
@@ -221,10 +250,8 @@ class Interface(QtWidgets.QMainWindow):
 
         # ToolTips:
         # Buttons
-        self._button_start_hardware_acquisition.setToolTip("Start acquiring images using hardware triggering rather than real time(RT) acquisition. Hardware Trigger FPS must stay <45 hz")
-        self._button_stop_hardware_acquisition.setToolTip("Stop hardware-triggered image acquisition, return to real time (RT) acquisition")
-        self._button_start_recording.setToolTip("Start recording video of the live feed.")
-        self._button_stop_recording.setToolTip("Stop recording video and save the file.")
+        self._button_start_hardware_acquisition.setToolTip("Start/Stop acquiring images using hardware triggering rather than real time(RT) acquisition. Hardware Trigger FPS must stay <45 hz")
+        self._button_start_recording.setToolTip("Start/Stop recording video of the live feed.")
         self._button_software_trigger.setToolTip("Save the next processed frame.")
 
         # Slider Lables
@@ -281,6 +308,14 @@ class Interface(QtWidgets.QMainWindow):
         self._layout.addWidget(self.display)
         self._create_button_bar()
         self._create_statusbar()
+
+        screens = QGuiApplication.screens()
+        if len(screens) > 1:
+            screen = screens[1] 
+        else:
+            screen = screens[0]
+
+        self.projection = ProjectDisplay(screen)
     
     def start_interface(self):
         self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
@@ -299,50 +334,49 @@ class Interface(QtWidgets.QMainWindow):
         self._camera.save_image = True
 
     def _start_hardware_acquisition(self):
-        self._camera.stop_realtime_acquisition()
-        self._camera.start_hardware_acquisition()
-        self._button_start_hardware_acquisition.setEnabled(False)
-        self._dropdown_pixel_format.setEnabled(False)
-        self._dropdown_trigger_line.setEnabled(False) # Disable hardware trigger line while acquisition is active
-        self._button_stop_hardware_acquisition.setEnabled(True)
-        
-        QtCore.QMetaObject.invokeMethod(self.acq_label, "setText",
+        if(not self._hardware_status):
+            self._camera.stop_realtime_acquisition()
+            self._camera.start_hardware_acquisition()
+            self._dropdown_trigger_line.setEnabled(False)
+            QtCore.QMetaObject.invokeMethod(self.acq_label, "setText",
                                     QtCore.Qt.QueuedConnection,
                                     QtCore.Q_ARG(str, f"Acquisition Mode: Hardware"))
-
-    def _stop_hardware_acquisition(self):
-        self._camera.stop_hardware_acquisition()
-        self._camera.start_realtime_acquisition()
-        self._button_start_hardware_acquisition.setEnabled(True)
-        self._dropdown_pixel_format.setEnabled(True)
-        if self._button_start_hardware_acquisition.isEnabled():
-            self._dropdown_trigger_line.setEnabled(True) # Enable hardware trigger line while recording and acquisition is stopped
-        elif self._button_start_recording.isEnabled():
-            self._dropdown_trigger_line.setEnabled(False)
-        self._button_stop_hardware_acquisition.setEnabled(False)
-
-        QtCore.QMetaObject.invokeMethod(self.acq_label, "setText",
+            self._button_start_hardware_acquisition.setText("Stop Hardware Acquisition")
+        else:
+            self._camera.stop_hardware_acquisition()
+            self._camera.start_realtime_acquisition()
+            QtCore.QMetaObject.invokeMethod(self.acq_label, "setText",
                                     QtCore.Qt.QueuedConnection,
                                     QtCore.Q_ARG(str, f"Acquisition Mode: RealTime"))
+            self._button_start_hardware_acquisition.setText("Start Hardware Acquisition")
+            if not self._recording_status:
+                self._dropdown_trigger_line.setEnabled(True)
+        self._hardware_status = not self._hardware_status
+        
 
     def _start_recording(self):
-        self._camera.start_recording()
-        self._button_start_recording.setEnabled(False)
-        self._button_stop_recording.setEnabled(True)
-        self._button_start_hardware_acquisition.setEnabled(False)
-        self._button_stop_hardware_acquisition.setEnabled(False)
-        self._dropdown_trigger_line.setEnabled(False) # Disable hardware trigger line changing while recording is started
-
-
-    def _stop_recording(self):
-        self._camera.stop_recording()
-        self._button_stop_recording.setEnabled(False)
-        if self._button_start_hardware_acquisition.isEnabled() == False:
-            self._dropdown_trigger_line.setEnabled(True) # Enable hardware trigger line while recording and hardware acquisition is off
-        if self._camera.acquisition_mode == 1: # HW Trigger is mode 1
-            self._button_stop_hardware_acquisition.setEnabled(True)
+        if(not self._recording_status):
+            self._camera.start_recording()
+            self._button_start_hardware_acquisition.setEnabled(False)
+            self._dropdown_trigger_line.setEnabled(False)
+            self._button_start_recording.setText("Stop Recording")
         else:
+            self._camera.stop_recording()
             self._button_start_hardware_acquisition.setEnabled(True)
+            self._button_start_recording.setText("Start Recording")
+            if not self._hardware_status:
+                self._dropdown_trigger_line.setEnabled(True)
+        self._recording_status = not self._recording_status
+
+    def _calibrate(self):
+        # TODO: Calibrate
+        self._camera.start_calibration()
+    
+    def _project_white(self):
+        # TODO: Project White
+        print("Projecting White:")
+        self.projection.show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/solid_white_image.png"), self._camera.translation_matrix)
+        "PlaceHolder"
 
 
     def change_pixel_format(self):
@@ -385,6 +419,17 @@ class Interface(QtWidgets.QMainWindow):
             self.display.on_image_received(qt_image)
         except Exception as e:
             print(f"Error updating Display, {e}")
+
+    def on_projection_received(self, image, homography_matrix = None):
+        """
+        Update Projection Image
+        """
+
+        # Process and display the image             
+        try:
+            self.projection.show_image_fullscreen_on_second_monitor(image, homography_matrix)
+        except Exception as e:
+            print(f"Error updating Projection, {e}")
         
 
 
@@ -397,11 +442,6 @@ class Interface(QtWidgets.QMainWindow):
 
 
     #Slot SW Trigger
-    @Slot(str)
-    def on_aboutqt_link_activated(self, link: str):
-        if link == "#aboutQt":
-            QtWidgets.QMessageBox.aboutQt(self, "About Qt")
-
     @Slot(str, str)
     def message(self, typ: str, message: str):
         if typ == "Warning":

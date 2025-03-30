@@ -8,7 +8,8 @@ env/
 *.pyc
 *.pyo
 __pycache__/
-
+Saved_Media/
+Assets/
 # Ignore distribution and build directories
 build/
 dist/
