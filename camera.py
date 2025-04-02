@@ -28,7 +28,7 @@ import numpy as np
 import cv2
 import threading
 #import sys
-
+from logbook import Logbook
 from os.path import exists
 from video_recorder import VideoRecorder
 from collections import deque
@@ -89,7 +89,7 @@ class Camera:
         # Update device manager to refresh the camera list
         self.device_manager.Update()
         if self.device_manager.Devices().empty():
-            print("No device found. Exiting Program.")
+            Logbook.log_CRTI("No device found. Exiting Program.")
             sys.exit(1)
         selected_device = None
 
@@ -99,7 +99,7 @@ class Camera:
         else:
             # List all available devices
             for i, device in enumerate(self.device_manager.Devices()):
-                print(
+                Logbook.log_INFO(
                     f"{str(i)}:  {device.ModelName()} ("
                     f"{device.ParentInterface().DisplayName()} ; "
                     f"{device.ParentInterface().ParentSystem().DisplayName()} v." 
@@ -111,9 +111,9 @@ class Camera:
                     if selected_device < len(self.device_manager.Devices()):
                         break
                     else:
-                        print("Invalid ID.")
+                        Logbook.log_ERRO("Invalid ID.")
                 except ValueError:
-                    print("Please enter a correct id.")
+                    Logbook.log_NOTI("Please enter a correct id.")
                     continue
 
         # Opens the selected device in control mode
@@ -172,9 +172,9 @@ class Camera:
         # Set camera frame rate to 60 FPS
         try:
             self.node_map.FindNode("AcquisitionFrameRate").SetValue(60)
-            print("Acquisition frame rate set to 60 FPS")
+            Logbook.log_INFO("Acquisition frame rate set to 60 FPS")
         except Exception as e:
-            print(f"Failed to set AcquisitionFrameRate: {e}")
+            Logbook.log_ERRO(f"Failed to set AcquisitionFrameRate: {e}")
 
         # Allocate image buffer for image acquisition
         payload_size = self.node_map.FindNode("PayloadSize").Value()
@@ -183,7 +183,7 @@ class Camera:
         for idx in range(max_buffer):
             buffer = self._datastream.AllocAndAnnounceBuffer(payload_size)
             self._datastream.QueueBuffer(buffer)
-        print("Allocated buffers, finished opening device")
+        Logbook.log_INFO("Allocated buffers, finished opening device")
     
 
     def close(self):
@@ -197,7 +197,7 @@ class Camera:
                 for buffer in self._datastream.AnnouncedBuffers():
                     self._datastream.RevokeBuffer(buffer)
             except Exception as e:
-                print(f"Exception (close): {str(e)}")
+                Logbook.log_NOTI(f"Exception (close): {str(e)}")
 
     
     def _find_and_set_remote_device_enumeration(self, name: str, value: str):
@@ -255,7 +255,7 @@ class Camera:
             self.node_map.FindNode("AcquisitionStart").Execute()
             self.acquisition_running = True
         except Exception as e:
-            print(f"Exception during start_realtime_acquisition: {e}")
+            Logbook.log_NOTI(f"Exception during start_realtime_acquisition: {e}")
             return False
         return True
 
@@ -280,10 +280,10 @@ class Camera:
             self.node_map.FindNode("TLParamsLocked").SetValue(0)
             self.revoke_and_allocate_buffer()
             
-            print("Closed RT Acq")
+            Logbook.log_NOTI("Closed RT Acq")
 
         except Exception as e:
-            print(f"Exception (stop acquisition): {str(e)}")
+            Logbook.log_NOTI(f"Exception (stop acquisition): {str(e)}")
 
 
     # Hardware Acquisition
@@ -326,12 +326,12 @@ class Camera:
             self.node_map.FindNode("AcquisitionStart").Execute()
             self.acquisition_running = True
             # Log after selecting new trigger line
-            print("Hardware Acquisition started!")
-            print("Trigger Mode:", self.node_map.FindNode("TriggerMode").CurrentEntry().SymbolicValue())
-            print("Trigger Source:", self.node_map.FindNode("TriggerSource").CurrentEntry().SymbolicValue())
+            Logbook.log_INFO("Hardware Acquisition started!")
+            Logbook.log_INFO("Trigger Mode:", self.node_map.FindNode("TriggerMode").CurrentEntry().SymbolicValue())
+            Logbook.log_INFO("Trigger Source:", self.node_map.FindNode("TriggerSource").CurrentEntry().SymbolicValue())
 
         except Exception as e:
-            print(f"Exception during start_hardware_acquisition: {e}")
+            Logbook.log_ALRT(f"Exception during start_hardware_acquisition: {e}")
             return False
         return True
 
@@ -356,9 +356,9 @@ class Camera:
             # Unlock parameters
             self.node_map.FindNode("TLParamsLocked").SetValue(0)
             self.revoke_and_allocate_buffer()
-            print("Closed HW Acq")
+            Logbook.log_INFO("Closed HW Acq")
         except Exception as e:
-            print(f"Exception (stop hardware acquisition): {str(e)}")
+            Logbook.log_NOTI(f"Exception (stop hardware acquisition): {str(e)}")
 
 
     def start_recording(self):
@@ -386,7 +386,7 @@ class Camera:
             save_path = os.path.join(self.asset_dir, "calibration_capture_image.png")
             
             # We need to wait for a new image to be captured
-            print("capturing img")
+            Logbook.log_INFO("capturing img")
             latest_image = None
             while latest_image is None:
                 latest_image = self.get_data_stream_image()  # ✅ Get a new frame
@@ -401,15 +401,15 @@ class Camera:
             try:
                 homography_matrix = find_homography()
                 self.translation_matrix = homography_matrix
-                print("✅ Homography Computed Successfully!")
+                Logbook.log_ALRT("✅ Homography Computed Successfully!")
 
                 self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")), self.translation_matrix)
             except Exception as e:
-                print(f"❌ Error calculating homography: {e}")
+                Logbook.log_ERRO(f"❌ Error calculating homography: {e}")
 
         
         """Handles the entire calibration process separately from image acquisition."""
-        print("Starting Calibration...")
+        Logbook.log_INFO("Starting Calibration...")
 
         # ✅ Step 1: Display Calibration Pattern
         self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")))
@@ -467,12 +467,12 @@ class Camera:
             if self.save_image:
                 save_path = self._valid_name(os.path.join(self.save_dir, "image"), ".png")
                 ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, converted_ipl_image)
-                print(f"Image Saved at {save_path}")
+                Logbook.log_NOTI(f"Image Saved at {save_path}")
                 self.save_image = False
                 
             return converted_ipl_image
         except ids_peak.Exception as e:
-            print(f"No buffer available: {e}")
+            Logbook.log_ALRT(f"No buffer available: {e}")
             return None
         
 
@@ -486,7 +486,7 @@ class Camera:
     def change_hardware_trigger_line(self, new_line: str):
         # Change the hardware trigger line
         self.hardware_trigger_line = new_line
-        print(f"Hardware trigger line set to: {new_line}")
+        Logbook.log_INFO(f"Hardware trigger line set to: {new_line}")
 
         # Reinitialize the hardware acquisition
         if self.acquisition_running:

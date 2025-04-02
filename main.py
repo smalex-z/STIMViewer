@@ -27,7 +27,7 @@ import threading
 from ids_peak import ids_peak
 from WhiteBackgroundGen import makeWhite
 from calibration import create_custom_registration_image
-
+from logbook import Logbook
 import camera
 
 from typing import TYPE_CHECKING, Union
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 def start(camera_device: camera.Camera, ui: 'Interface'):
     if not camera_device.start_realtime_acquisition():
-        print("Failed to start acquisition!")
+        Logbook.log("Failed to start acquisition!")
         return
 
     ui.start_window()
@@ -57,6 +57,7 @@ def start(camera_device: camera.Camera, ui: 'Interface'):
 def main(ui: 'Interface'):
     # Initialize library and create a device manager
     ids_peak.Library.Initialize()
+    
     device_manager = ids_peak.DeviceManager.Instance()
     camera_device = None
     try:
@@ -64,9 +65,9 @@ def main(ui: 'Interface'):
         start(camera_device, ui)
     
     except KeyboardInterrupt:
-        print("User interrupt: Exiting...")
+        Logbook.log_NOTI("User interrupt: Exiting...")
     except Exception as e:
-        print(f"Exception (main): {str(e)}")
+        Logbook.log_ERRO(f"Exception (main): {str(e)}")
     finally:
         # Close camera and library after program ends
         if camera_device is not None:
@@ -75,5 +76,6 @@ def main(ui: 'Interface'):
 
 
 if __name__ == '__main__':
+    logbook = Logbook()
     from qt_interface import Interface
     main(Interface())

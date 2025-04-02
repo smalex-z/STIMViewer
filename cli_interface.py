@@ -24,6 +24,7 @@
 from ids_peak import ids_peak
 
 from camera import Camera
+from logbook import Logbook
 
 
 class Interface:
@@ -38,7 +39,7 @@ class Interface:
         self._camera = cam_module
 
     def print_help(self):
-        print(
+        Logbook.log_INFO(
             "Available commands:\n"
             "\"trigger\" capture an image.\n"
             "\"start\" start acquisition.\n"
@@ -51,7 +52,7 @@ class Interface:
 
     def acquisition_check_and_set(self):
         if not self._camera.acquisition_running:
-            print("The image acquisition must be running to get an image.")
+            Logbook.log_NOTI("The image acquisition must be running to get an image.")
             choice = input("Start acquisition now?: [Y|n]")
             if choice == "" or choice == "y" or choice == "Y":
                 self._camera.start_realtime_acquisition()
@@ -61,7 +62,7 @@ class Interface:
 
     def acquisition_check_and_disable(self):
         if self._camera.acquisition_running:
-            print("Acquisition must NOT be running to set a new pixelformat")
+            Logbook.log_NOTI("Acquisition must NOT be running to set a new pixelformat")
             choice = input("Stop acquisition now?: [Y|n]")
             if choice == "" or choice == "y" or choice == "Y":
                 self._camera.stop_realtime_acquisition()
@@ -77,10 +78,10 @@ class Interface:
             if (idx.AccessStatus() != ids_peak.NodeAccessStatus_NotAvailable
                     and idx.AccessStatus() != ids_peak.NodeAccessStatus_NotImplemented):
                 available_options.append(idx.SymbolicValue())
-        print("Select available option by index:\n")
+        Logbook.log_ALRT("Select available option by index:\n")
         counter = 0
         for entry in available_options:
-            print(f"[{counter}]: {entry}")
+            Logbook.log_INFO(f"[{counter}]: {entry}")
             counter += 1
         selected = -1
         while selected == -1:
@@ -89,7 +90,7 @@ class Interface:
             except ValueError:
                 selected = -1
             if selected < 0 or selected >= len(available_options):
-                print(
+                Logbook.log_NOTI(
                     f"Please enter a number between 0 and {len(available_options) - 1}")
                 selected = -1
         self._camera.change_pixel_format(available_options[selected])
@@ -107,7 +108,7 @@ class Interface:
                 if var[0] == "trigger":
                     # trigger an image
                     if not self.acquisition_check_and_set():
-                        print("Acquisition not started... Skipping trigger command!")
+                        Logbook.log_ALRT("Acquisition not started... Skipping trigger command!")
                         continue
                     self._camera.make_image = True
                     # wait until image has been made
@@ -117,14 +118,14 @@ class Interface:
                 elif var[0] == "save":
                     # enable/disable saving to drive
                     if len(var) < 2:
-                        print("Missing argument! Usage: save True|False")
+                        Logbook.log_NOTI("Missing argument! Usage: save True|False")
                         continue
                     if var[1] == "True":
                         self._camera.keep_image = True
-                        print("Saving images: Enabled")
+                        Logbook.log_NOTI("Saving images: Enabled")
                     elif var[1] == "False":
                         self._camera.keep_image = False
-                        print("Saving images: Disabled")
+                        Logbook.log_NOTI("Saving images: Disabled")
 
                 elif var[0] == "start":
                     self._camera.start_realtime_acquisition()
@@ -143,7 +144,7 @@ class Interface:
                 elif var[0] == "exit":
                     break
                 else:
-                    print(f"Unrecognized command: `{var[0]}`")
+                    Logbook.log_ERRO(f"Unrecognized command: `{var[0]}`")
                     self.print_help()
         finally:
             # make sure to always stop the acquisition_thread, otherwise
@@ -158,7 +159,7 @@ class Interface:
         pass
 
     def warning(self, message: str):
-        print(f"Warning: {message}")
+        Logbook.log_WARN(f"Warning: {message}")
 
     def information(self, message: str):
-        print(f"Info: {message}")
+        Logbook.log_INFO(f"Info: {message}")
