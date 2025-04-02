@@ -34,9 +34,11 @@ from time import time
 from display import Display
 from projection import ProjectDisplay
 from ids_peak import ids_peak
+from logbook import Logbook
 
 
 try:
+    from PyQt5.QtWidgets import QDockWidget
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt
     from PyQt5.QtCore import pyqtSlot as Slot
@@ -50,9 +52,10 @@ except ImportError:
     from PyQt5.QtGui import QGuiApplication
 
 
-
+# Initialize the IDS peak library twice when already done in main_gui.pyw
 ids_peak.Library.Initialize()
-print("IDS peak library initialized.")
+# print("IDS peak library initialized.")
+Logbook.log_buffer.append("IDS peak library initialized.") # add to buffer
 
 class Interface(QtWidgets.QMainWindow):
     """
@@ -73,7 +76,6 @@ class Interface(QtWidgets.QMainWindow):
         self.last_frame_time = time()  # Track time of the last frame
 
         self.set_camera(cam_module)
-
         self.gui_init()
         self._qt_instance = qt_instance
         self._qt_instance.aboutToQuit.connect(self._close)
@@ -102,6 +104,12 @@ class Interface(QtWidgets.QMainWindow):
         # Dropdowns set to None placeholders
         self._dropdown_pixel_format = None
         self._dropdown_trigger_line = None # Dropdown for hardware trigger line
+
+        # Logbook
+        self.logbook = None
+        # Logbook buttons
+        self._button_show_logbook = None
+        
 
         self.messagebox_signal[str, str].connect(self.message)
 
@@ -135,6 +143,11 @@ class Interface(QtWidgets.QMainWindow):
         self._button_start_recording = QtWidgets.QPushButton("Start Recording")
         self._button_start_recording.clicked.connect(self._start_recording)
 
+        # Logbook buttons
+        self._button_show_logbook = QtWidgets.QPushButton("Show Logbook")
+        self._button_show_logbook.clicked.connect(self.show_logbook)
+
+
         # Hardware Trigger Dropdown Initialization 
         self._dropdown_trigger_line = QtWidgets.QComboBox()
 
@@ -159,6 +172,10 @@ class Interface(QtWidgets.QMainWindow):
         # Enable dropdowns
         self._dropdown_pixel_format.setEnabled(True)
         self._dropdown_trigger_line.setEnabled(True)
+
+        # Enable logbook buttons
+        self._button_show_logbook.setEnabled(True)
+
 
         # Snapshot Button
         self._button_software_trigger = QtWidgets.QPushButton("Snapshot")
@@ -233,7 +250,9 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._dropdown_pixel_format, 1, 2, 1, 2)
         button_bar_layout.addWidget(self._button_calibrate, 2, 0, 1, 2)
         button_bar_layout.addWidget(self._button_project_white, 2, 2, 1, 2)
-        button_bar_layout.addWidget(self._dropdown_trigger_line, 3, 1, 1, 2) # Position trigger line dropdown
+        button_bar_layout.addWidget(self._dropdown_trigger_line, 3, 0, 1, 2) # Position trigger line dropdown
+        button_bar_layout.addWidget(self._button_show_logbook, 3, 2, 1, 2) # Position logbook button
+        
 
         # Move gain controls to the right column
         button_bar_layout.addWidget(self._gain_label, 0, 4)
@@ -253,6 +272,7 @@ class Interface(QtWidgets.QMainWindow):
         self._button_start_hardware_acquisition.setToolTip("Start/Stop acquiring images using hardware triggering rather than real time(RT) acquisition. Hardware Trigger FPS must stay <45 hz")
         self._button_start_recording.setToolTip("Start/Stop recording video of the live feed.")
         self._button_software_trigger.setToolTip("Save the next processed frame.")
+        self._button_show_logbook.setToolTip("Show the logbook window.")
 
         # Slider Lables
         self._gain_label.setToolTip("Adjust the analog gain level (brightness).")
@@ -374,7 +394,7 @@ class Interface(QtWidgets.QMainWindow):
     
     def _project_white(self):
         # TODO: Project White
-        print("Projecting White:")
+        Logbook.log_INFO("Projecting White:")
         self.projection.show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/solid_white_image.png"), self._camera.translation_matrix)
         "PlaceHolder"
 
@@ -387,7 +407,7 @@ class Interface(QtWidgets.QMainWindow):
     # Gets selected trigger line and tells Camera to update its trigger source
     def change_hardware_trigger_line(self):
         chosen_line = self._dropdown_trigger_line.currentText()
-        print(f"Chosen hardware trigger line: {chosen_line}")
+        Logbook.log_INFO(f"Chosen hardware trigger line: {chosen_line}")
         if chosen_line == "TriggerLine": # ignore choice if label is chosen
             return
         self._camera.change_hardware_trigger_line(chosen_line)
@@ -418,7 +438,7 @@ class Interface(QtWidgets.QMainWindow):
         try:
             self.display.on_image_received(qt_image)
         except Exception as e:
-            print(f"Error updating Display, {e}")
+            Logbook.log_ERRO(f"Error updating Display, {e}")
 
     def on_projection_received(self, image, homography_matrix = None):
         """
@@ -429,7 +449,7 @@ class Interface(QtWidgets.QMainWindow):
         try:
             self.projection.show_image_fullscreen_on_second_monitor(image, homography_matrix)
         except Exception as e:
-            print(f"Error updating Projection, {e}")
+            Logbook.log_ERRO(f"Error updating Projection, {e}")
         
 
 
@@ -439,7 +459,24 @@ class Interface(QtWidgets.QMainWindow):
     def information(self, message: str):
         self.messagebox_signal.emit("Information", message)
 
-
+    def show_logbook(self):
+        """
+        Show the logbook window.
+        """
+        # self.logbook = Logbook()  # Create a new Logbook instance? or Persist same one?
+        if Logbook.instance is None:
+            self.logbook = Logbook()  # Create a new Logbook instance only if needed.
+        else:
+            self.logbook = Logbook.instance  # Reuse the existing one.
+        # Set the window flags to make it a tool window (it will always stay on top of the main window)
+        self.logbook.setWindowFlags(Qt.Tool)
+        # Position the logbook next to the main window:
+        main_geom = self.geometry()
+        # For example, position it to the right of the main window:
+        self.logbook.move(main_geom.right() + 5, main_geom.top())
+        self.logbook.show()
+        # self._button_show_logbook.setEnabled(False)
+        
 
     #Slot SW Trigger
     @Slot(str, str)

@@ -23,7 +23,14 @@
 # General permission to copy or modify is hereby granted.
 
 from main import main
+import os
 
+export_file = "export_log.txt"
+
+if os.path.exists(export_file):
+    # Clear the file at the beginning of the program
+    open(export_file, "w").close()
+    
 try:
     from PyQt5.QtWidgets import QApplication    
 except ImportError:

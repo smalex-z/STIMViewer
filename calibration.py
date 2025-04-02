@@ -2,6 +2,7 @@ import cv2
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+import logbook as Logbook
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageDraw
 
@@ -151,7 +152,7 @@ def find_homography():
     kp2, d2_image = sift.detectAndCompute(img2_gray, None)
 
 
-    print(f"Keypoints detected: {len(kp1)} in image1, {len(kp2)} in image2")
+    Logbook.log_INFO(f"Keypoints detected: {len(kp1)} in image1, {len(kp2)} in image2")
 
     if d1_image is None or d2_image is None:
         raise RuntimeError("❌ Feature detection failed: No keypoints found in one or both images.")
@@ -167,7 +168,7 @@ def find_homography():
 
     # Check if there are enough matches
     if len(matches) < 4:
-        print("Not enough matches found - at least 4 required. Returning Identity Matrix")
+        Logbook.log_ALRT("Not enough matches found - at least 4 required. Returning Identity Matrix")
         return np.eye(3)
 
     no_of_matches = len(matches)
@@ -185,19 +186,19 @@ def find_homography():
     homography, mask = cv2.findHomography(p1_image, p2_image, cv2.RANSAC)
 
     if homography is None:
-        print("❌ Homography calculation failed. Returning identity matrix.")
+        Logbook.log_ERRO("❌ Homography calculation failed. Returning identity matrix.")
         return np.eye(3)
 
     # Print the homography matrix
-    print("Homography matrix:")
-    print(homography)
+    Logbook.log_INFO("Homography matrix:")
+    Logbook.log_INFO(homography)
 
     # Decompose the homography matrix
     tx, ty, sx, sy, angle = decompose_homography(homography)
 
-    print(f"Translation: tx = {tx}, ty = {ty}")
-    print(f"Scaling: sx = {sx}, sy = {sy}")
-    print(f"Rotation angle: {angle} degrees")
+    Logbook.log_INFO(f"Translation: tx = {tx}, ty = {ty}")
+    Logbook.log_INFO(f"Scaling: sx = {sx}, sy = {sy}")
+    Logbook.log_INFO(f"Rotation angle: {angle} degrees")
 
     # Compute the inverse homography matrix
     # Alex's note: not too sure what the point of the inverse is here

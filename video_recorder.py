@@ -4,6 +4,7 @@ import datetime
 import threading
 import queue
 import numpy as np
+from logbook import Logbook
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QMessageBox
 
@@ -33,7 +34,7 @@ class VideoRecorder:
         """Start video recording in a separate thread."""
         if not self.recording:
             self.recording = True
-            print(f"🔴 Recording started at {fps} FPS...")  # ✅ Print when recording starts
+            Logbook.log_INFO(f"🔴 Recording started at {fps} FPS...")  # ✅ Print when recording starts
             self.video_writer_thread = threading.Thread(target=self._video_writer_loop, daemon=True)
             self.video_writer_thread.start()
             self.init_video_writer(fps)
@@ -44,7 +45,7 @@ class VideoRecorder:
             return
 
         self.recording = False
-        print(f"🛑 Recording stopped. Finalizing {self.video_filename}...")
+        Logbook.log_INFO(f"🛑 Recording stopped. Finalizing {self.video_filename}...")
         remaining_frames = self.frame_queue.qsize()
         estimated_time = round(remaining_frames / 30, 2)
 
@@ -93,7 +94,7 @@ class VideoRecorder:
             except queue.Empty:
                 continue
             except Exception as e:
-                print(f"Error processing video frame: {e}")
+                Logbook.log_ERRO(f"Error processing video frame: {e}")
 
     def add_frame(self, frame):
         """Add a frame to the queue for recording."""
