@@ -137,6 +137,8 @@ class Interface(QtWidgets.QMainWindow):
 
         # Hardware Trigger Dropdown Initialization 
         self._dropdown_trigger_line = QtWidgets.QComboBox()
+        self._label_trigger_line = QtWidgets.QLabel("Change Hardware Trigger Line:")
+
 
         # Populate the dropdown with trigger lines
         self._dropdown_trigger_line.addItem("Line0")
@@ -173,8 +175,8 @@ class Interface(QtWidgets.QMainWindow):
         self._button_project_white.clicked.connect(self._project_white)
 
         # Acquisition Buttons
-        self._button_start_hardware_acquisition = QtWidgets.QPushButton("Start Hardware Acquisition")
-        self._button_start_hardware_acquisition.clicked.connect(self._start_hardware_acquisition)
+        # self._button_start_hardware_acquisition = QtWidgets.QPushButton("Start Hardware Acquisition")
+        # self._button_start_hardware_acquisition.clicked.connect(self._start_hardware_acquisition)
         self._button_start_hardware_acquisition.setEnabled(True) # Initialize hardware acquisition button to enabled
 
         self._button_stop_hardware_acquisition = QtWidgets.QPushButton("Stop Hardware Acquisition")
@@ -233,6 +235,7 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._dropdown_pixel_format, 1, 2, 1, 2)
         button_bar_layout.addWidget(self._button_calibrate, 2, 0, 1, 2)
         button_bar_layout.addWidget(self._button_project_white, 2, 2, 1, 2)
+        button_bar_layout.addWidget(self._label_trigger_line, 3, 0)
         button_bar_layout.addWidget(self._dropdown_trigger_line, 3, 1, 1, 2) # Position trigger line dropdown
 
         # Move gain controls to the right column
@@ -388,8 +391,7 @@ class Interface(QtWidgets.QMainWindow):
     def change_hardware_trigger_line(self):
         chosen_line = self._dropdown_trigger_line.currentText()
         print(f"Chosen hardware trigger line: {chosen_line}")
-        if chosen_line == "TriggerLine": # ignore choice if label is chosen
-            return
+        
         self._camera.change_hardware_trigger_line(chosen_line)
 
     def on_image_received(self, image):
