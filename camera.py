@@ -489,8 +489,8 @@ class Camera:
         print(f"Hardware trigger line set to: {new_line}")
 
         # Reinitialize the hardware acquisition
-        if self.acquisition_running:
+        if self.acquisition_running and self.acquisition_mode == 1:
             self.stop_hardware_acquisition()
-            time.sleep(0.5)
-            self.start_hardware_acquisition()
+            QTimer.singleShot(500, self.start_hardware_acquisition)
+            # self.start_hardware_acquisition()
         return new_line
