@@ -38,7 +38,6 @@ from ids_peak import ids_peak_ipl_extension
 from calibration import find_homography
 from PyQt5.QtCore import QTimer
 
-
 TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
 os.environ["LD_PRELOAD"] = os.environ.get("LD_PRELOAD", "") + ":/lib/aarch64-linux-gnu/libGLdispatch.so.0"
 os.environ["QT_XCB_GL_INTEGRATION"] = "none"
@@ -483,6 +482,7 @@ class Camera:
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
                 self.save_image = False
+
     def change_hardware_trigger_line(self, new_line: str):
         # Change the hardware trigger line
         self.hardware_trigger_line = new_line
@@ -490,7 +490,9 @@ class Camera:
 
         # Reinitialize the hardware acquisition
         if self.acquisition_running and self.acquisition_mode == 1:
+
             self.stop_hardware_acquisition()
+
             QTimer.singleShot(500, self.start_hardware_acquisition)
             # self.start_hardware_acquisition()
         return new_line

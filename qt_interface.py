@@ -174,24 +174,6 @@ class Interface(QtWidgets.QMainWindow):
         self._button_project_white = QtWidgets.QPushButton("Project White")
         self._button_project_white.clicked.connect(self._project_white)
 
-        # Acquisition Buttons
-        # self._button_start_hardware_acquisition = QtWidgets.QPushButton("Start Hardware Acquisition")
-        # self._button_start_hardware_acquisition.clicked.connect(self._start_hardware_acquisition)
-        self._button_start_hardware_acquisition.setEnabled(True) # Initialize hardware acquisition button to enabled
-
-        self._button_stop_hardware_acquisition = QtWidgets.QPushButton("Stop Hardware Acquisition")
-        # self._button_stop_hardware_acquisition.clicked.connect(self._stop_hardware_acquisition)
-        self._button_stop_hardware_acquisition.setEnabled(False)
-
-        # Recording Buttons
-        self._button_start_recording = QtWidgets.QPushButton("Start Recording")
-        self._button_start_recording.clicked.connect(self._start_recording)
-        self._button_start_recording.setEnabled(True) # Initialize recording button to enabled
-
-        self._button_stop_recording = QtWidgets.QPushButton("Stop Recording")
-        # self._button_stop_recording.clicked.connect(self._stop_recording)
-        self._button_stop_recording.setEnabled(False)
-
         # Gain Controls
         self._gain_label = QtWidgets.QLabel("<b>Gain:</b>")
         self._gain_label.setMaximumWidth(70)
