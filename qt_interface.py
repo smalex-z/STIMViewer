@@ -38,15 +38,15 @@ from ids_peak import ids_peak
 
 try:
     from PyQt5 import QtCore, QtWidgets, QtGui
-    from PyQt5.QtCore import Qt, QTimer
+    from PyQt5.QtCore import Qt
     from PyQt5.QtCore import pyqtSlot as Slot
     from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy
     from PyQt5.QtGui import QGuiApplication
 except ImportError:
     from PyQt5 import QtCore, QtWidgets, QtGui
-    from PyQt5.QtCore import Qt, QTimer
+    from PyQt5.QtCore import Qt
     from PyQt5.QtCore import pyqtSlot as Slot
-    from PyQt5.QtWidgets import QLabel
+    from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy
     from PyQt5.QtGui import QGuiApplication
 
 
@@ -98,7 +98,10 @@ class Interface(QtWidgets.QMainWindow):
         self._recording_status = False #False = Display Start, False = End
 
         self._button_exit = None
+
+        # Dropdowns set to None placeholders
         self._dropdown_pixel_format = None
+        self._dropdown_trigger_line = None # Dropdown for hardware trigger line
 
         self.messagebox_signal[str, str].connect(self.message)
 
@@ -132,6 +135,20 @@ class Interface(QtWidgets.QMainWindow):
         self._button_start_recording = QtWidgets.QPushButton("Start Recording")
         self._button_start_recording.clicked.connect(self._start_recording)
 
+        # Hardware Trigger Dropdown Initialization 
+        self._dropdown_trigger_line = QtWidgets.QComboBox()
+        self._label_trigger_line = QtWidgets.QLabel("Change Hardware Trigger Line:")
+
+
+        # Populate the dropdown with trigger lines
+        self._dropdown_trigger_line.addItem("Line0")
+        self._dropdown_trigger_line.addItem("Line1")   
+        self._dropdown_trigger_line.addItem("Line2")
+        self._dropdown_trigger_line.addItem("Line3")
+
+        # Connect a signal to self.change_hardware_trigger_line method
+        self._dropdown_trigger_line.currentIndexChanged.connect(self.change_hardware_trigger_line)
+
         # Pixel Format Dropdown
         self._dropdown_pixel_format = QtWidgets.QComboBox()
         formats = self._camera.node_map.FindNode("PixelFormat").Entries()
@@ -140,6 +157,10 @@ class Interface(QtWidgets.QMainWindow):
                     and self._camera.conversion_supported(idx.Value())):
                 self._dropdown_pixel_format.addItem(idx.SymbolicValue())
         self._dropdown_pixel_format.currentIndexChanged.connect(self.change_pixel_format)
+
+        # Enable dropdowns
+        self._dropdown_pixel_format.setEnabled(True)
+        self._dropdown_trigger_line.setEnabled(True)
 
         # Snapshot Button
         self._button_software_trigger = QtWidgets.QPushButton("Snapshot")
@@ -196,6 +217,8 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._dropdown_pixel_format, 1, 2, 1, 2)
         button_bar_layout.addWidget(self._button_calibrate, 2, 0, 1, 2)
         button_bar_layout.addWidget(self._button_project_white, 2, 2, 1, 2)
+        button_bar_layout.addWidget(self._label_trigger_line, 3, 0)
+        button_bar_layout.addWidget(self._dropdown_trigger_line, 3, 1, 1, 2) # Position trigger line dropdown
 
         # Move gain controls to the right column
         button_bar_layout.addWidget(self._gain_label, 0, 4)
@@ -290,7 +313,7 @@ class Interface(QtWidgets.QMainWindow):
             "STIMViewer")
         self.show()
         self._qt_instance.exec()
-        
+
 
     def _trigger_sw_trigger(self):
         self._camera.save_image = True
@@ -299,6 +322,7 @@ class Interface(QtWidgets.QMainWindow):
         if(not self._hardware_status):
             self._camera.stop_realtime_acquisition()
             self._camera.start_hardware_acquisition()
+            self._dropdown_trigger_line.setEnabled(False)
             QtCore.QMetaObject.invokeMethod(self.acq_label, "setText",
                                     QtCore.Qt.QueuedConnection,
                                     QtCore.Q_ARG(str, f"Acquisition Mode: Hardware"))
@@ -310,6 +334,8 @@ class Interface(QtWidgets.QMainWindow):
                                     QtCore.Qt.QueuedConnection,
                                     QtCore.Q_ARG(str, f"Acquisition Mode: RealTime"))
             self._button_start_hardware_acquisition.setText("Start Hardware Acquisition")
+            if not self._recording_status:
+                self._dropdown_trigger_line.setEnabled(True)
         self._hardware_status = not self._hardware_status
         
 
@@ -317,11 +343,14 @@ class Interface(QtWidgets.QMainWindow):
         if(not self._recording_status):
             self._camera.start_recording()
             self._button_start_hardware_acquisition.setEnabled(False)
+            self._dropdown_trigger_line.setEnabled(False)
             self._button_start_recording.setText("Stop Recording")
         else:
             self._camera.stop_recording()
             self._button_start_hardware_acquisition.setEnabled(True)
             self._button_start_recording.setText("Start Recording")
+            if not self._hardware_status:
+                self._dropdown_trigger_line.setEnabled(True)
         self._recording_status = not self._recording_status
 
     def _calibrate(self):
@@ -338,6 +367,14 @@ class Interface(QtWidgets.QMainWindow):
     def change_pixel_format(self):
         pixel_format = self._dropdown_pixel_format.currentText()
         self._camera.change_pixel_format(pixel_format)
+
+    # Called when hardware trigger line dropdown changes
+    # Gets selected trigger line and tells Camera to update its trigger source
+    def change_hardware_trigger_line(self):
+        chosen_line = self._dropdown_trigger_line.currentText()
+        print(f"Chosen hardware trigger line: {chosen_line}")
+        
+        self._camera.change_hardware_trigger_line(chosen_line)
 
     def on_image_received(self, image):
         """
@@ -385,6 +422,8 @@ class Interface(QtWidgets.QMainWindow):
 
     def information(self, message: str):
         self.messagebox_signal.emit("Information", message)
+
+
 
     #Slot SW Trigger
     @Slot(str, str)

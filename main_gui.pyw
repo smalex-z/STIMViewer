@@ -1,4 +1,4 @@
-# \file    main_gui.pyw
+
 # \author  vapivendorname
 # \date    2024-02-20
 #

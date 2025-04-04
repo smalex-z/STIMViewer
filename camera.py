@@ -27,6 +27,7 @@ import time
 import numpy as np
 import cv2
 import threading
+#import sys
 
 from os.path import exists
 from video_recorder import VideoRecorder
@@ -36,7 +37,6 @@ from ids_peak_ipl import ids_peak_ipl
 from ids_peak import ids_peak_ipl_extension
 from calibration import find_homography
 from PyQt5.QtCore import QTimer
-
 
 TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
 os.environ["LD_PRELOAD"] = os.environ.get("LD_PRELOAD", "") + ":/lib/aarch64-linux-gnu/libGLdispatch.so.0"
@@ -69,6 +69,9 @@ class Camera:
         self.save_dir = "./Saved_Media"
         os.makedirs(self.asset_dir, exist_ok=True)
         os.makedirs(self.save_dir, exist_ok=True)
+
+        # Default the hardware trigger line
+        self.hardware_trigger_line = "Line0"
 
         self._get_device()
         self._setup_device_and_datastream()
@@ -313,14 +316,19 @@ class Camera:
                 self.node_map.FindNode(
                     "TriggerSelector").SetCurrentEntry("ExposureStart")
             self.node_map.FindNode("TriggerMode").SetCurrentEntry("On")
-            self.node_map.FindNode("TriggerSource").SetCurrentEntry("Line0")
+            
+            # Use the hardware_trigger_line variable
+            self.node_map.FindNode("TriggerSource").SetCurrentEntry(self.hardware_trigger_line)
 
             # Start the data stream and acquisition
             self._datastream.StartAcquisition()
             self.node_map.FindNode("AcquisitionStart").Execute()
             self.acquisition_running = True
-
+            # Log after selecting new trigger line
             print("Hardware Acquisition started!")
+            print("Trigger Mode:", self.node_map.FindNode("TriggerMode").CurrentEntry().SymbolicValue())
+            print("Trigger Source:", self.node_map.FindNode("TriggerSource").CurrentEntry().SymbolicValue())
+
         except Exception as e:
             print(f"Exception during start_hardware_acquisition: {e}")
             return False
@@ -328,9 +336,7 @@ class Camera:
 
 
     def stop_hardware_acquisition(self):
-        print("Trigger Mode:", self.node_map.FindNode("TriggerMode").CurrentEntry().SymbolicValue())
-        print("Trigger Source:", self.node_map.FindNode("TriggerSource").CurrentEntry().SymbolicValue())
-
+        
         if self._device is None or self.acquisition_running is False:
             return
         try:
@@ -476,3 +482,17 @@ class Camera:
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
                 self.save_image = False
+
+    def change_hardware_trigger_line(self, new_line: str):
+        # Change the hardware trigger line
+        self.hardware_trigger_line = new_line
+        print(f"Hardware trigger line set to: {new_line}")
+
+        # Reinitialize the hardware acquisition
+        if self.acquisition_running and self.acquisition_mode == 1:
+
+            self.stop_hardware_acquisition()
+
+            QTimer.singleShot(500, self.start_hardware_acquisition)
+            # self.start_hardware_acquisition()
+        return new_line

@@ -1,3 +1,16 @@
+# Ignore virtual environment directories
+venv/
+*.venv
+env/
+*.env
+
+# Ignore Python bytecode files
+*.pyc
+*.pyo
 __pycache__/
 Saved_Media/
 Assets/
+# Ignore distribution and build directories
+build/
+dist/
+*.egg-info/

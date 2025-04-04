@@ -1,0 +1,36 @@
+# ===================================================================
+# SETUP INSTRUCTIONS:
+#
+# 1. Create and activate a Python virtual environment.
+#
+#    Note: On Jetson devices, to access system packages like PyQt5,
+#    either create the venv with system packages or install PyQt5 via pip.
+#
+#    Option A: Without system packages (default, but PyQt5 may not be found)
+#      $ python3 -m venv venv
+#      $ source venv/bin/activate
+#
+#    Option B: With system packages (recommended for Jetson to use apt's PyQt5)
+#      $ python3 -m venv --system-site-packages venv
+#      $ source venv/bin/activate
+#
+# 2. Upgrade pip:
+#      $ python -m pip install --upgrade pip
+#
+# 3. (For Jetson devices) Ensure PyQt5 is installed system-wide:
+#      $ sudo apt install python3-pyqt5
+#
+# 4. Install Python package dependencies using pip:
+#      $ pip install -r requirements-dev.txt
+#
+# 5. When finished, deactivate the virtual environment:
+#      $ deactivate
+# ===================================================================
+
+# Python package dependencies:
+ids_peak
+ids_peak_ipl
+numpy
+PyQt5  # For Jetson devices, it's recommended to install via apt (see step 3).
+opencv-python
+memory_profiler
