@@ -16,3 +16,4 @@ dist/
 *.egg-info/
 otsu/
 export_log.txt
+otsu/
