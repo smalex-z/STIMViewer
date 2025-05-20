@@ -408,7 +408,7 @@ class Interface(QtWidgets.QMainWindow):
     def _project_white(self):
         # TODO: Project White
         print("Projecting White:")
-        self.projection.show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/solid_white_image.png"), self._camera.translation_matrix)
+        self.projection.show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/Generated/solid_white_image.png"), self._camera.translation_matrix)
         "PlaceHolder"
 
 

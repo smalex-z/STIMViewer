@@ -402,7 +402,7 @@ class Camera:
                 self.translation_matrix = homography_matrix
                 print("✅ Homography Computed Successfully!")
 
-                self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")), self.translation_matrix)
+                self._interface.on_projection_received(np.array(cv2.imread("./Assets/Generated/custom_registration_image.png")), self.translation_matrix)
             except Exception as e:
                 print(f"❌ Error calculating homography: {e}")
 
@@ -411,7 +411,7 @@ class Camera:
         print("Starting Calibration...")
 
         # ✅ Step 1: Display Calibration Pattern
-        self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")))
+        self._interface.on_projection_received(np.array(cv2.imread("./Assets/Generated/custom_registration_image.png")))
         
         # ✅ Step 2: Wait for the Projection to Fully Appear
         QTimer.singleShot(80, delayed_capture)
