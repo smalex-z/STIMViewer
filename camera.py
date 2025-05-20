@@ -65,7 +65,7 @@ class Camera:
         self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
         self.translation_matrix = np.eye(3)
 
-        self.asset_dir = "./Assets"
+        self.asset_dir = "./Assets/Generated"
         self.save_dir = "./Saved_Media"
         os.makedirs(self.asset_dir, exist_ok=True)
         os.makedirs(self.save_dir, exist_ok=True)
