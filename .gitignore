@@ -9,7 +9,8 @@ env/
 *.pyo
 __pycache__/
 Saved_Media/
-Assets/
+Assets/Generated/*
+
 # Ignore distribution and build directories
 build/
 dist/

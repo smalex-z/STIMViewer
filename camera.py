@@ -38,7 +38,6 @@ from ids_peak import ids_peak_ipl_extension
 from calibration import find_homography
 from PyQt5.QtCore import QTimer
 
-
 TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
 os.environ["LD_PRELOAD"] = os.environ.get("LD_PRELOAD", "") + ":/lib/aarch64-linux-gnu/libGLdispatch.so.0"
 os.environ["QT_XCB_GL_INTEGRATION"] = "none"
@@ -66,7 +65,7 @@ class Camera:
         self.frame_times = deque(maxlen=120)  # ✅ Store timestamps of the last 120 frames
         self.translation_matrix = np.eye(3)
 
-        self.asset_dir = "./Assets"
+        self.asset_dir = "./Assets/Generated"
         self.save_dir = "./Saved_Media"
         os.makedirs(self.asset_dir, exist_ok=True)
         os.makedirs(self.save_dir, exist_ok=True)
@@ -403,7 +402,7 @@ class Camera:
                 self.translation_matrix = homography_matrix
                 Logbook.log_ALRT("✅ Homography Computed Successfully!")
 
-                self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")), self.translation_matrix)
+                self._interface.on_projection_received(np.array(cv2.imread("./Assets/Generated/custom_registration_image.png")), self.translation_matrix)
             except Exception as e:
                 Logbook.log_ERRO(f"❌ Error calculating homography: {e}")
 
@@ -412,7 +411,7 @@ class Camera:
         Logbook.log_INFO("Starting Calibration...")
 
         # ✅ Step 1: Display Calibration Pattern
-        self._interface.on_projection_received(np.array(cv2.imread("./Assets/custom_registration_image.png")))
+        self._interface.on_projection_received(np.array(cv2.imread("./Assets/Generated/custom_registration_image.png")))
         
         # ✅ Step 2: Wait for the Projection to Fully Appear
         QTimer.singleShot(80, delayed_capture)
@@ -483,14 +482,17 @@ class Camera:
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
                 self.save_image = False
+
     def change_hardware_trigger_line(self, new_line: str):
         # Change the hardware trigger line
         self.hardware_trigger_line = new_line
         Logbook.log_INFO(f"Hardware trigger line set to: {new_line}")
 
         # Reinitialize the hardware acquisition
-        if self.acquisition_running:
+        if self.acquisition_running and self.acquisition_mode == 1:
+
             self.stop_hardware_acquisition()
-            time.sleep(0.5)
-            self.start_hardware_acquisition()
+
+            QTimer.singleShot(500, self.start_hardware_acquisition)
+            # self.start_hardware_acquisition()
         return new_line

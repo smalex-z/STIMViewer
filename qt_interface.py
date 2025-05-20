@@ -42,14 +42,14 @@ try:
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt
     from PyQt5.QtCore import pyqtSlot as Slot
-    from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy
-    from PyQt5.QtGui import QGuiApplication
+    from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy, QDialog, QVBoxLayout, QPushButton
+    from PyQt5.QtGui import QGuiApplication, QPixmap
 except ImportError:
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt
     from PyQt5.QtCore import pyqtSlot as Slot
-    from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy
-    from PyQt5.QtGui import QGuiApplication
+    from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy, QDialog, QVBoxLayout, QPushButton
+    from PyQt5.QtGui import QGuiApplication, QPixmap
 
 
 # Initialize the IDS peak library twice when already done in main_gui.pyw
@@ -68,18 +68,67 @@ class Interface(QtWidgets.QMainWindow):
     start_button_signal = QtCore.pyqtSignal()
 
     def __init__(self, cam_module: Optional[Camera] = None):
-        """
-        :param cam_module: Camera object to access parameters
-        """
+        # 1) Initialize Qt
         qt_instance = QtWidgets.QApplication(sys.argv)
-        super().__init__()
-        self.last_frame_time = time()  # Track time of the last frame
 
+        # 2) Splash/launcher dialog (no parent!)
+        dlg = QDialog()
+        dlg.setWindowTitle("STIMViewer")
+        layout = QVBoxLayout(dlg)
+
+        logo = QLabel()
+        logo.setAlignment(Qt.AlignCenter)
+        logo.setPixmap(QPixmap('./Assets/stimviewer-load.png'))
+        layout.addWidget(logo)
+
+        # Create horizontal layout for camera selection, projector status, and start button
+        hbox = QtWidgets.QHBoxLayout()
+
+        # Camera Type Selection
+        cam_label = QLabel("Camera Type:")
+        self.camera_type_dropdown = QtWidgets.QComboBox()
+        self.camera_type_dropdown.addItems(["IDS_Peak", "MIPI", "Generic Camera"])
+
+        cam_layout = QtWidgets.QVBoxLayout()
+        cam_layout.addWidget(cam_label)
+        cam_layout.addWidget(self.camera_type_dropdown)
+        hbox.addLayout(cam_layout)
+
+        # Projector Detection
+        screens = QGuiApplication.screens()
+        projector_status = QLabel()
+        if len(screens) > 1:
+            projector_status.setText("✅ Projector Connected")
+            projector_status.setStyleSheet("color: green; font-weight: bold;")
+        else:
+            projector_status.setText("❌ No Projector Found")
+            projector_status.setStyleSheet("color: red; font-weight: bold;")
+        projector_status.setAlignment(Qt.AlignCenter)
+        hbox.addWidget(projector_status)
+
+        # Start Button
+        btn = QPushButton('Start STIMViewer')
+        btn.clicked.connect(dlg.accept)
+        hbox.addWidget(btn)
+
+        # Add horizontal layout to main vertical layout
+        layout.addLayout(hbox)
+
+        # Block here until user hits “Start STIMViewer”
+        if dlg.exec_() != QDialog.Accepted:
+            sys.exit(0)
+
+        self.selected_camera_type = self.camera_type_dropdown.currentText()
+
+        
+        self._qt_instance = qt_instance
+
+        # 3) Now actually build your main window
+        super().__init__()
+        self.last_frame_time = time()
         self.set_camera(cam_module)
         self.gui_init()
-        self._qt_instance = qt_instance
         self._qt_instance.aboutToQuit.connect(self._close)
-
         self.setMinimumSize(700, 650)
 
     def gui_init(self):
@@ -150,6 +199,8 @@ class Interface(QtWidgets.QMainWindow):
 
         # Hardware Trigger Dropdown Initialization 
         self._dropdown_trigger_line = QtWidgets.QComboBox()
+        self._label_trigger_line = QtWidgets.QLabel("Change Hardware Trigger Line:")
+
 
         # Populate the dropdown with trigger lines
         self._dropdown_trigger_line.addItem("Line0")
@@ -189,24 +240,6 @@ class Interface(QtWidgets.QMainWindow):
         self._button_project_white = QtWidgets.QPushButton("Project White")
         self._button_project_white.clicked.connect(self._project_white)
 
-        # Acquisition Buttons
-        self._button_start_hardware_acquisition = QtWidgets.QPushButton("Start Hardware Acquisition")
-        self._button_start_hardware_acquisition.clicked.connect(self._start_hardware_acquisition)
-        self._button_start_hardware_acquisition.setEnabled(True) # Initialize hardware acquisition button to enabled
-
-        self._button_stop_hardware_acquisition = QtWidgets.QPushButton("Stop Hardware Acquisition")
-        # self._button_stop_hardware_acquisition.clicked.connect(self._stop_hardware_acquisition)
-        self._button_stop_hardware_acquisition.setEnabled(False)
-
-        # Recording Buttons
-        self._button_start_recording = QtWidgets.QPushButton("Start Recording")
-        self._button_start_recording.clicked.connect(self._start_recording)
-        self._button_start_recording.setEnabled(True) # Initialize recording button to enabled
-
-        self._button_stop_recording = QtWidgets.QPushButton("Stop Recording")
-        # self._button_stop_recording.clicked.connect(self._stop_recording)
-        self._button_stop_recording.setEnabled(False)
-
         # Gain Controls
         self._gain_label = QtWidgets.QLabel("<b>Gain:</b>")
         self._gain_label.setMaximumWidth(70)
@@ -220,7 +253,7 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_gain.valueChanged.connect(self.change_slider_gain)
 
         # Digital Gain Controls
-        self._dgain_label = QtWidgets.QLabel("<b>D-Gain:</b>")
+        self._dgain_label = QtWidgets.QLabel("<b>DGain:</b>")
         self._dgain_label.setMaximumWidth(70)
 
         self._dgain_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Vertical)
@@ -250,22 +283,64 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._dropdown_pixel_format, 1, 2, 1, 2)
         button_bar_layout.addWidget(self._button_calibrate, 2, 0, 1, 2)
         button_bar_layout.addWidget(self._button_project_white, 2, 2, 1, 2)
-        button_bar_layout.addWidget(self._dropdown_trigger_line, 3, 0, 1, 2) # Position trigger line dropdown
-        button_bar_layout.addWidget(self._button_show_logbook, 3, 2, 1, 2) # Position logbook button
-        
+        button_bar_layout.addWidget(self._label_trigger_line, 3, 0)
+        button_bar_layout.addWidget(self._dropdown_trigger_line, 3, 1, 1, 2) # Position trigger line dropdown
 
-        # Move gain controls to the right column
-        button_bar_layout.addWidget(self._gain_label, 0, 4)
-        button_bar_layout.addWidget(self._spinbox_gain, 6, 4)
-        button_bar_layout.addWidget(self._gain_slider, 1, 4, 5, 1, Qt.AlignHCenter)
+        # === Gain/D-Gain/Zoom Controls in GroupBox ===
+        control_group = QtWidgets.QGroupBox("Adjustments")
+        control_group_layout = QtWidgets.QGridLayout()
+        control_group.setLayout(control_group_layout)
+        control_group.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid gray;
+                border-radius: 5px;
+                margin-top: 10px;
+                font-weight: bold;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                padding: 0 3px;
+                font-size: 11px;
+            }
+            QLabel {
+                font-size: 11px;
+            }
+        """)
 
-        button_bar_layout.addWidget(self._dgain_label, 0, 5)
-        button_bar_layout.addWidget(self._spinbox_dgain, 6, 5)
-        button_bar_layout.addWidget(self._dgain_slider, 1, 5, 5, 1, Qt.AlignHCenter)
+        # Gain
+        self._gain_label.setAlignment(Qt.AlignCenter)
+        self._gain_slider.setFixedWidth(25)
+        control_group_layout.addWidget(self._gain_label, 0, 0)
+        control_group_layout.addWidget(self._gain_slider, 1, 0)
+        self._gain_value_label = QtWidgets.QLabel("1.00")
+        self._gain_value_label.setAlignment(Qt.AlignCenter)
+        self._gain_value_label.setStyleSheet("font-size: 10px;")
+        control_group_layout.addWidget(self._gain_value_label, 2, 0)
 
-        button_bar_layout.addWidget(self._zoom_label, 0, 6)
-        button_bar_layout.addWidget(self._spinbox_zoom, 6, 6)
-        button_bar_layout.addWidget(self._zoom_slider, 1, 6, 5, 1, Qt.AlignHCenter)
+        # D-Gain
+        self._dgain_label.setAlignment(Qt.AlignCenter)
+        self._dgain_slider.setFixedWidth(25)
+        control_group_layout.addWidget(self._dgain_label, 0, 1)
+        control_group_layout.addWidget(self._dgain_slider, 1, 1)
+        self._dgain_value_label = QtWidgets.QLabel("1.00")
+        self._dgain_value_label.setAlignment(Qt.AlignCenter)
+        self._dgain_value_label.setStyleSheet("font-size: 10px;")
+        control_group_layout.addWidget(self._dgain_value_label, 2, 1)
+
+        # Zoom
+        self._zoom_label.setAlignment(Qt.AlignCenter)
+        self._zoom_slider.setFixedWidth(25)
+        control_group_layout.addWidget(self._zoom_label, 0, 2)
+        control_group_layout.addWidget(self._zoom_slider, 1, 2)
+        self._zoom_value_label = QtWidgets.QLabel("1.00")
+        self._zoom_value_label.setAlignment(Qt.AlignCenter)
+        self._zoom_value_label.setStyleSheet("font-size: 10px;")
+        control_group_layout.addWidget(self._zoom_value_label, 2, 2)
+
+        # Add group box to the right side of the layout (spanning multiple rows)
+        button_bar_layout.addWidget(control_group, 0, 7, 7, 1)
+
 
         # ToolTips:
         # Buttons
@@ -339,10 +414,6 @@ class Interface(QtWidgets.QMainWindow):
     
     def start_interface(self):
         self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
-        self._spinbox_gain.setMaximum(self._camera.max_gain)
-        self._spinbox_gain.setMinimum(1.0)
-        self._spinbox_dgain.setMinimum(1.0)
-        self._spinbox_zoom.setMinimum(1.0)
         
         QtCore.QCoreApplication.setApplicationName(
             "STIMViewer")
@@ -394,8 +465,8 @@ class Interface(QtWidgets.QMainWindow):
     
     def _project_white(self):
         # TODO: Project White
-        Logbook.log_INFO("Projecting White:")
-        self.projection.show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/solid_white_image.png"), self._camera.translation_matrix)
+        print("Projecting White:")
+        self.projection.show_image_fullscreen_on_second_monitor(cv2.imread("./Assets/Generated/solid_white_image.png"), self._camera.translation_matrix)
         "PlaceHolder"
 
 
@@ -407,9 +478,8 @@ class Interface(QtWidgets.QMainWindow):
     # Gets selected trigger line and tells Camera to update its trigger source
     def change_hardware_trigger_line(self):
         chosen_line = self._dropdown_trigger_line.currentText()
-        Logbook.log_INFO(f"Chosen hardware trigger line: {chosen_line}")
-        if chosen_line == "TriggerLine": # ignore choice if label is chosen
-            return
+        print(f"Chosen hardware trigger line: {chosen_line}")
+        
         self._camera.change_hardware_trigger_line(chosen_line)
 
     def on_image_received(self, image):
@@ -495,10 +565,11 @@ class Interface(QtWidgets.QMainWindow):
 
     @Slot(int)
     def _update_gain(self, val):
-        self._spinbox_gain.setValue(val / 100)
-        self._camera.target_gain = val / 100
+        value = val / 100
+        self._gain_value_label.setText(f"{value:.2f}")
+        self._camera.target_gain = value
         self._camera.node_map.FindNode("GainSelector").SetCurrentEntry("AnalogAll")
-        self._camera.set_remote_device_value("Gain", val / 100)
+        self._camera.set_remote_device_value("Gain", value)
 
     #Slot Gain
     @Slot(float)
@@ -507,10 +578,11 @@ class Interface(QtWidgets.QMainWindow):
 
     @Slot(int)
     def _update_dgain(self, val):
-        self._spinbox_dgain.setValue(val / 100)
-        self._camera.target_dgain = val / 100
+        value = val / 100
+        self._dgain_value_label.setText(f"{value:.2f}")
+        self._camera.target_dgain = value
         self._camera.node_map.FindNode("GainSelector").SetCurrentEntry("DigitalAll")
-        self._camera.set_remote_device_value("Gain", val / 100)
+        self._camera.set_remote_device_value("Gain", value)
     
     @Slot(float)
     def change_slider_zoom(self, val):
@@ -518,6 +590,7 @@ class Interface(QtWidgets.QMainWindow):
 
     @Slot(int)
     def _update_zoom(self, val):
-        self._spinbox_zoom.setValue(val / 100)
-        self.display.set_zoom(val / 100)
+        value = val / 100
+        self._zoom_value_label.setText(f"{value:.2f}")
+        self.display.set_zoom(value)
 
