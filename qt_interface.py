@@ -75,16 +75,48 @@ class Interface(QtWidgets.QMainWindow):
 
         logo = QLabel()
         logo.setAlignment(Qt.AlignCenter)
-        logo.setPixmap(QPixmap('./Assets/stimviewer-loader.png'))
+        logo.setPixmap(QPixmap('./Assets/stimviewer-load.png'))
         layout.addWidget(logo)
 
+        # Create horizontal layout for camera selection, projector status, and start button
+        hbox = QtWidgets.QHBoxLayout()
+
+        # Camera Type Selection
+        cam_label = QLabel("Camera Type:")
+        self.camera_type_dropdown = QtWidgets.QComboBox()
+        self.camera_type_dropdown.addItems(["IDS_Peak", "MIPI", "Generic Camera"])
+
+        cam_layout = QtWidgets.QVBoxLayout()
+        cam_layout.addWidget(cam_label)
+        cam_layout.addWidget(self.camera_type_dropdown)
+        hbox.addLayout(cam_layout)
+
+        # Projector Detection
+        screens = QGuiApplication.screens()
+        projector_status = QLabel()
+        if len(screens) > 1:
+            projector_status.setText("✅ Projector Connected")
+            projector_status.setStyleSheet("color: green; font-weight: bold;")
+        else:
+            projector_status.setText("❌ No Projector Found")
+            projector_status.setStyleSheet("color: red; font-weight: bold;")
+        projector_status.setAlignment(Qt.AlignCenter)
+        hbox.addWidget(projector_status)
+
+        # Start Button
         btn = QPushButton('Start STIMViewer')
         btn.clicked.connect(dlg.accept)
-        layout.addWidget(btn, alignment=Qt.AlignCenter)
+        hbox.addWidget(btn)
+
+        # Add horizontal layout to main vertical layout
+        layout.addLayout(hbox)
 
         # Block here until user hits “Start STIMViewer”
         if dlg.exec_() != QDialog.Accepted:
             sys.exit(0)
+
+        self.selected_camera_type = self.camera_type_dropdown.currentText()
+
         
         self._qt_instance = qt_instance
 
