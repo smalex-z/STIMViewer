@@ -40,14 +40,14 @@ try:
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt
     from PyQt5.QtCore import pyqtSlot as Slot
-    from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy
-    from PyQt5.QtGui import QGuiApplication
+    from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy, QDialog, QVBoxLayout, QPushButton
+    from PyQt5.QtGui import QGuiApplication, QPixmap
 except ImportError:
     from PyQt5 import QtCore, QtWidgets, QtGui
     from PyQt5.QtCore import Qt
     from PyQt5.QtCore import pyqtSlot as Slot
-    from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy
-    from PyQt5.QtGui import QGuiApplication
+    from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy, QDialog, QVBoxLayout, QPushButton
+    from PyQt5.QtGui import QGuiApplication, QPixmap
 
 
 
@@ -65,19 +65,35 @@ class Interface(QtWidgets.QMainWindow):
     start_button_signal = QtCore.pyqtSignal()
 
     def __init__(self, cam_module: Optional[Camera] = None):
-        """
-        :param cam_module: Camera object to access parameters
-        """
+        # 1) Initialize Qt
         qt_instance = QtWidgets.QApplication(sys.argv)
-        super().__init__()
-        self.last_frame_time = time()  # Track time of the last frame
 
-        self.set_camera(cam_module)
+        # 2) Splash/launcher dialog (no parent!)
+        dlg = QDialog()
+        dlg.setWindowTitle("STIMViewer")
+        layout = QVBoxLayout(dlg)
 
-        self.gui_init()
+        logo = QLabel()
+        logo.setAlignment(Qt.AlignCenter)
+        logo.setPixmap(QPixmap('./Assets/stimviewer-loader.png'))
+        layout.addWidget(logo)
+
+        btn = QPushButton('Start STIMViewer')
+        btn.clicked.connect(dlg.accept)
+        layout.addWidget(btn, alignment=Qt.AlignCenter)
+
+        # Block here until user hits “Start STIMViewer”
+        if dlg.exec_() != QDialog.Accepted:
+            sys.exit(0)
+        
         self._qt_instance = qt_instance
-        self._qt_instance.aboutToQuit.connect(self._close)
 
+        # 3) Now actually build your main window
+        super().__init__()
+        self.last_frame_time = time()
+        self.set_camera(cam_module)
+        self.gui_init()
+        self._qt_instance.aboutToQuit.connect(self._close)
         self.setMinimumSize(700, 650)
 
     def gui_init(self):
