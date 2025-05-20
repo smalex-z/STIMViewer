@@ -14,5 +14,5 @@ Assets/
 build/
 dist/
 *.egg-info/
-
+otsu/
 export_log.txt
