@@ -235,7 +235,7 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_gain.valueChanged.connect(self.change_slider_gain)
 
         # Digital Gain Controls
-        self._dgain_label = QtWidgets.QLabel("<b>D-Gain:</b>")
+        self._dgain_label = QtWidgets.QLabel("<b>DGain:</b>")
         self._dgain_label.setMaximumWidth(70)
 
         self._dgain_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Vertical)
@@ -268,18 +268,61 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._label_trigger_line, 3, 0)
         button_bar_layout.addWidget(self._dropdown_trigger_line, 3, 1, 1, 2) # Position trigger line dropdown
 
-        # Move gain controls to the right column
-        button_bar_layout.addWidget(self._gain_label, 0, 4)
-        button_bar_layout.addWidget(self._spinbox_gain, 6, 4)
-        button_bar_layout.addWidget(self._gain_slider, 1, 4, 5, 1, Qt.AlignHCenter)
+        # === Gain/D-Gain/Zoom Controls in GroupBox ===
+        control_group = QtWidgets.QGroupBox("Adjustments")
+        control_group_layout = QtWidgets.QGridLayout()
+        control_group.setLayout(control_group_layout)
+        control_group.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid gray;
+                border-radius: 5px;
+                margin-top: 10px;
+                font-weight: bold;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                padding: 0 3px;
+                font-size: 11px;
+            }
+            QLabel {
+                font-size: 11px;
+            }
+        """)
 
-        button_bar_layout.addWidget(self._dgain_label, 0, 5)
-        button_bar_layout.addWidget(self._spinbox_dgain, 6, 5)
-        button_bar_layout.addWidget(self._dgain_slider, 1, 5, 5, 1, Qt.AlignHCenter)
+        # Gain
+        self._gain_label.setAlignment(Qt.AlignCenter)
+        self._gain_slider.setFixedWidth(25)
+        control_group_layout.addWidget(self._gain_label, 0, 0)
+        control_group_layout.addWidget(self._gain_slider, 1, 0)
+        self._gain_value_label = QtWidgets.QLabel("1.00")
+        self._gain_value_label.setAlignment(Qt.AlignCenter)
+        self._gain_value_label.setStyleSheet("font-size: 10px;")
+        control_group_layout.addWidget(self._gain_value_label, 2, 0)
 
-        button_bar_layout.addWidget(self._zoom_label, 0, 6)
-        button_bar_layout.addWidget(self._spinbox_zoom, 6, 6)
-        button_bar_layout.addWidget(self._zoom_slider, 1, 6, 5, 1, Qt.AlignHCenter)
+        # D-Gain
+        self._dgain_label.setAlignment(Qt.AlignCenter)
+        self._dgain_slider.setFixedWidth(25)
+        control_group_layout.addWidget(self._dgain_label, 0, 1)
+        control_group_layout.addWidget(self._dgain_slider, 1, 1)
+        self._dgain_value_label = QtWidgets.QLabel("1.00")
+        self._dgain_value_label.setAlignment(Qt.AlignCenter)
+        self._dgain_value_label.setStyleSheet("font-size: 10px;")
+        control_group_layout.addWidget(self._dgain_value_label, 2, 1)
+
+        # Zoom
+        self._zoom_label.setAlignment(Qt.AlignCenter)
+        self._zoom_slider.setFixedWidth(25)
+        control_group_layout.addWidget(self._zoom_label, 0, 2)
+        control_group_layout.addWidget(self._zoom_slider, 1, 2)
+        self._zoom_value_label = QtWidgets.QLabel("1.00")
+        self._zoom_value_label.setAlignment(Qt.AlignCenter)
+        self._zoom_value_label.setStyleSheet("font-size: 10px;")
+        control_group_layout.addWidget(self._zoom_value_label, 2, 2)
+
+        # Add group box to the right side of the layout (spanning multiple rows)
+        button_bar_layout.addWidget(control_group, 0, 7, 7, 1)
+
 
         # ToolTips:
         # Buttons
@@ -352,10 +395,6 @@ class Interface(QtWidgets.QMainWindow):
     
     def start_interface(self):
         self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
-        self._spinbox_gain.setMaximum(self._camera.max_gain)
-        self._spinbox_gain.setMinimum(1.0)
-        self._spinbox_dgain.setMinimum(1.0)
-        self._spinbox_zoom.setMinimum(1.0)
         
         QtCore.QCoreApplication.setApplicationName(
             "STIMViewer")
@@ -490,10 +529,11 @@ class Interface(QtWidgets.QMainWindow):
 
     @Slot(int)
     def _update_gain(self, val):
-        self._spinbox_gain.setValue(val / 100)
-        self._camera.target_gain = val / 100
+        value = val / 100
+        self._gain_value_label.setText(f"{value:.2f}")
+        self._camera.target_gain = value
         self._camera.node_map.FindNode("GainSelector").SetCurrentEntry("AnalogAll")
-        self._camera.set_remote_device_value("Gain", val / 100)
+        self._camera.set_remote_device_value("Gain", value)
 
     #Slot Gain
     @Slot(float)
@@ -502,10 +542,11 @@ class Interface(QtWidgets.QMainWindow):
 
     @Slot(int)
     def _update_dgain(self, val):
-        self._spinbox_dgain.setValue(val / 100)
-        self._camera.target_dgain = val / 100
+        value = val / 100
+        self._dgain_value_label.setText(f"{value:.2f}")
+        self._camera.target_dgain = value
         self._camera.node_map.FindNode("GainSelector").SetCurrentEntry("DigitalAll")
-        self._camera.set_remote_device_value("Gain", val / 100)
+        self._camera.set_remote_device_value("Gain", value)
     
     @Slot(float)
     def change_slider_zoom(self, val):
@@ -513,6 +554,7 @@ class Interface(QtWidgets.QMainWindow):
 
     @Slot(int)
     def _update_zoom(self, val):
-        self._spinbox_zoom.setValue(val / 100)
-        self.display.set_zoom(val / 100)
+        value = val / 100
+        self._zoom_value_label.setText(f"{value:.2f}")
+        self.display.set_zoom(value)
 
