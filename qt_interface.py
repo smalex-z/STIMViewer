@@ -63,6 +63,7 @@ class Interface(QtWidgets.QMainWindow):
 
     messagebox_signal = QtCore.pyqtSignal((str, str))
     start_button_signal = QtCore.pyqtSignal()
+    image_update_signal = QtCore.pyqtSignal(QtGui.QImage)
 
     def __init__(self, cam_module: Optional[Camera] = None):
         # 1) Initialize Qt
@@ -384,6 +385,8 @@ class Interface(QtWidgets.QMainWindow):
         self._layout.addWidget(self.display)
         self._create_button_bar()
         self._create_statusbar()
+        
+        self.image_update_signal.connect(self.display.on_image_received, QtCore.Qt.QueuedConnection)
 
         screens = QGuiApplication.screens()
         if len(screens) > 1:
@@ -487,7 +490,7 @@ class Interface(QtWidgets.QMainWindow):
         )
              
         try:
-            self.display.on_image_received(qt_image)
+            self.image_update_signal.emit(qt_image)
         except Exception as e:
             print(f"Error updating Display, {e}")
 
