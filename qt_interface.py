@@ -379,6 +379,32 @@ class Interface(QtWidgets.QMainWindow):
         self._camera.killed = True
         self.acquisition_thread.join()
 
+    def closeEvent(self, event):
+        """
+        Ensure the projection window is closed,
+        the acquisition thread is stopped, and the
+        whole QApplication exits when the main window is closed.
+        """
+        # 1) Close projection window if open
+        if hasattr(self, "projection") and self.projection is not None:
+            try:
+                self.projection.close()
+            except Exception as e:
+                print(f"Error closing projection: {e}")
+
+        # 2) Stop camera threads and clean up
+        try:
+            self._close()
+        except Exception as e:
+            print(f"Error during acquisition shutdown: {e}")
+
+        # 3) Quit the Qt event loop
+        QtWidgets.QApplication.instance().quit()
+
+        # Accept the close so the window actually goes away
+        event.accept()
+
+
 
     def start_window(self):
         self.display = Display()
