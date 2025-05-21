@@ -35,6 +35,11 @@ class Display(QGraphicsView):
         self.__scene.set_image(image)
         self.update()
 
+    @Slot(QImage, object)
+    def on_mask_received(self, mask, _=None):
+        self.__scene.set_mask(mask)
+    
+
 
 
 class CustomGraphicsScene(QGraphicsScene):
@@ -42,9 +47,15 @@ class CustomGraphicsScene(QGraphicsScene):
         super().__init__(parent)
         self.__parent = parent
         self.__image = QImage()
+        # Add new layer for mask
+        self.__mask = QImage()
 
     def set_image(self, image: QImage):
         self.__image = image
+        self.update()
+    
+    def set_mask(self, mask: QImage):
+        self.__mask = mask
         self.update()
 
     def drawBackground(self, painter: QPainter, rect: QRectF):
@@ -83,3 +94,12 @@ class CustomGraphicsScene(QGraphicsScene):
 
         rect = QRectF(image_pos_x, image_pos_y, image_width, image_height)
         painter.drawImage(rect, self.__image)
+
+        # then draw the mask on top, with a translucent red tint
+        if not self.__mask.isNull():
+            mask_scaled = self.__mask.scaled(
+                int(rect.width()), int(rect.height()),
+                Qt.KeepAspectRatio, Qt.FastTransformation)
+            painter.setOpacity(0.3)
+            painter.drawImage(rect.topLeft(), mask_scaled)
+            painter.setOpacity(1.0)

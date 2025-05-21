@@ -2,7 +2,7 @@
 # ran once from main.py per movie
 import numpy as np
 import cv2
-import h5py
+# import h5py
 import os
 import time
 from skimage.feature import peak_local_max
@@ -38,11 +38,11 @@ def load_movie(movie_path, dataset_name=None):
           - Video: cv2.VideoCapture
     """
     ext = os.path.splitext(movie_path)[1].lower()
-    if ext == '.h5':
-        f = h5py.File(movie_path, 'r')
-        dset = f[dataset_name] if dataset_name else next(iter(f.values()))
-        return (f, dset)
-    elif ext in ('.npy', '.npz'):
+    # if ext == '.h5':
+    #     f = h5py.File(movie_path, 'r')
+    #     dset = f[dataset_name] if dataset_name else next(iter(f.values()))
+    #     return (f, dset)
+    if ext in ('.npy', '.npz'):
         return np.load(movie_path, mmap_mode='r')
     elif ext in ('.avi', '.mp4', '.mov', '.mkv'):
         cap = cv2.VideoCapture(movie_path)

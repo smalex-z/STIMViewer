@@ -1,4 +1,4 @@
-# main.py
+# online_main.py
 import time # For timer
 from otsu_thresh import ( # Import helper functions from otsu_thresh.py
     load_movie, 

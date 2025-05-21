@@ -37,5 +37,6 @@ except ImportError:
     from PyQt5.QtWidgets import QApplication
 
 if __name__ == "__main__":
+    print("[DEBUG] main_gui.py: __main__ hit", flush=True)
     from qt_interface import Interface
     main(Interface())

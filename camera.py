@@ -46,7 +46,7 @@ class Camera:
     def __init__(self, device_manager, interface):
         if interface is None:
             raise ValueError("Interface is None")
-
+        self.video_recorder = None
         self.device_manager = device_manager
         self._interface = interface
         self._device = None
@@ -76,7 +76,8 @@ class Camera:
         self._get_device()
         self._setup_device_and_datastream()
         self._interface.set_camera(self)
-
+        self._interface.on_image_received = self.get_data_stream_image
+        self._interface.on_mask_received  = self._interface.display_widget.on_mask_received
         self._image_converter = ids_peak_ipl.ImageConverter()
         self.video_recorder = VideoRecorder(interface)  # ✅ Initialize video recorder
 
@@ -87,34 +88,37 @@ class Camera:
     def _get_device(self):
         # Update device manager to refresh the camera list
         self.device_manager.Update()
+        # if self.device_manager.Devices().empty():
+        #     Logbook.log_CRTI("No device found. Exiting Program.")
+        #     #sys.exit(1)
         if self.device_manager.Devices().empty():
-            Logbook.log_CRTI("No device found. Exiting Program.")
-            sys.exit(1)
-        selected_device = None
+            Logbook.log_CRIT("No device found.  (If you don’t have an IDS camera plugged in, this will always fail.)")
+            raise RuntimeError("No camera devices")
+        selected_device = 0
 
         # Initialize first device found if only one is available
-        if len(self.device_manager.Devices()) == 1:
-            selected_device = 0
-        else:
-            # List all available devices
-            for i, device in enumerate(self.device_manager.Devices()):
-                Logbook.log_INFO(
-                    f"{str(i)}:  {device.ModelName()} ("
-                    f"{device.ParentInterface().DisplayName()} ; "
-                    f"{device.ParentInterface().ParentSystem().DisplayName()} v." 
-                    f"{device.ParentInterface().ParentSystem().version()})")
-            while True:
-                try:
-                    # Let the user decide which device to open
-                    selected_device = int(input("Select device to open: "))
-                    if selected_device < len(self.device_manager.Devices()):
-                        break
-                    else:
-                        Logbook.log_ERRO("Invalid ID.")
-                except ValueError:
-                    Logbook.log_NOTI("Please enter a correct id.")
-                    continue
-
+        # if len(self.device_manager.Devices()) == 1:
+        #     selected_device = 0
+        # else:
+        #     # List all available devices
+        #     for i, device in enumerate(self.device_manager.Devices()):
+        #         Logbook.log_INFO(
+        #             f"{str(i)}:  {device.ModelName()} ("
+        #             f"{device.ParentInterface().DisplayName()} ; "
+        #             f"{device.ParentInterface().ParentSystem().DisplayName()} v." 
+        #             f"{device.ParentInterface().ParentSystem().version()})")
+        #     while True:
+        #         try:
+        #             # Let the user decide which device to open
+        #             selected_device = int(input("Select device to open: "))
+        #             if selected_device < len(self.device_manager.Devices()):
+        #                 break
+        #             else:
+        #                 Logbook.log_ERRO("Invalid ID.")
+        #         except ValueError:
+        #             Logbook.log_NOTI("Please enter a correct id.")
+        #             continue
+        # selected_device = 0
         # Opens the selected device in control mode
         self._device = self.device_manager.Devices()[selected_device].OpenDevice(
             ids_peak.DeviceAccessType_Control)
@@ -186,9 +190,9 @@ class Camera:
     
 
     def close(self):
-        self.stop_recording()
-        self.stop_realtime_acquisition()
-        self.stop_hardware_acquisition()
+        # self.stop_recording()
+        # self.stop_realtime_acquisition()
+        # self.stop_hardware_acquisition()
 
         # If datastream has been opened, revoke and deallocate all buffers
         if self._datastream is not None:
@@ -197,6 +201,13 @@ class Camera:
                     self._datastream.RevokeBuffer(buffer)
             except Exception as e:
                 Logbook.log_NOTI(f"Exception (close): {str(e)}")
+        if getattr(self, "video_recorder", None) is not None:
+            try:
+                self.video_recorder.stop_recording()
+            except Exception:
+                pass
+        self.stop_realtime_acquisition()
+        self.stop_hardware_acquisition()
 
     
     def _find_and_set_remote_device_enumeration(self, name: str, value: str):

@@ -35,7 +35,7 @@ from display import Display
 from projection import ProjectDisplay
 from ids_peak import ids_peak
 from logbook import Logbook
-
+from gpu_ui import GPU
 
 try:
     from PyQt5.QtWidgets import QDockWidget
@@ -127,6 +127,7 @@ class Interface(QtWidgets.QMainWindow):
         super().__init__()
         self.last_frame_time = time()
         self.set_camera(cam_module)
+        self.gpu_ui = GPU(camera=self._camera)
         self.gui_init()
         self._qt_instance.aboutToQuit.connect(self._close)
         self.setMinimumSize(700, 650)
@@ -159,6 +160,8 @@ class Interface(QtWidgets.QMainWindow):
         # Logbook buttons
         self._button_show_logbook = None
         
+        #self.gpu_ui = None
+        self._button_show_gpu_ui = None
 
         self.messagebox_signal[str, str].connect(self.message)
 
@@ -195,7 +198,9 @@ class Interface(QtWidgets.QMainWindow):
         # Logbook buttons
         self._button_show_logbook = QtWidgets.QPushButton("Show Logbook")
         self._button_show_logbook.clicked.connect(self.show_logbook)
-
+        
+        self._button_show_gpu_ui = QtWidgets.QPushButton("Show GPU UI")
+        self._button_show_gpu_ui.clicked.connect(self.show_gpu_ui)
 
         # Hardware Trigger Dropdown Initialization 
         self._dropdown_trigger_line = QtWidgets.QComboBox()
@@ -226,8 +231,8 @@ class Interface(QtWidgets.QMainWindow):
 
         # Enable logbook buttons
         self._button_show_logbook.setEnabled(True)
-
-
+        self._button_show_gpu_ui.setEnabled(True)
+        
         # Snapshot Button
         self._button_software_trigger = QtWidgets.QPushButton("Snapshot")
         self._button_software_trigger.clicked.connect(self._trigger_sw_trigger)
@@ -285,6 +290,7 @@ class Interface(QtWidgets.QMainWindow):
         button_bar_layout.addWidget(self._button_project_white, 2, 2, 1, 2)
         button_bar_layout.addWidget(self._label_trigger_line, 3, 0)
         button_bar_layout.addWidget(self._dropdown_trigger_line, 3, 1, 1, 2) # Position trigger line dropdown
+        #button_bar_layout.addWidget(self._)
 
         # === Gain/D-Gain/Zoom Controls in GroupBox ===
         control_group = QtWidgets.QGroupBox("Adjustments")
@@ -348,7 +354,7 @@ class Interface(QtWidgets.QMainWindow):
         self._button_start_recording.setToolTip("Start/Stop recording video of the live feed.")
         self._button_software_trigger.setToolTip("Save the next processed frame.")
         self._button_show_logbook.setToolTip("Show the logbook window.")
-
+        self._button_show_gpu_ui.setToolTip("Show the GPU UI Window")
         # Slider Lables
         self._gain_label.setToolTip("Adjust the analog gain level (brightness).")
         self._dgain_label.setToolTip("Adjust the digital gain level.")
@@ -546,7 +552,14 @@ class Interface(QtWidgets.QMainWindow):
         self.logbook.move(main_geom.right() + 5, main_geom.top())
         self.logbook.show()
         # self._button_show_logbook.setEnabled(False)
-        
+    
+    def show_gpu_ui(self):
+        if self.gpu_ui is None:
+            self.gpu_ui = GPU(camera=self._camera)
+        self.gpu_ui.setWindowFlags(Qt.Tool)
+        self.gpu_ui.move(self.geometry().right() + 5, self.geometry().top())
+        self.gpu_ui.show()
+
 
     #Slot SW Trigger
     @Slot(str, str)

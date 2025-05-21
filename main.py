@@ -21,6 +21,60 @@
 # for the use or reliability of any portion of this document.
 #
 # General permission to copy or modify is hereby granted.
+# main.py
+
+# import threading
+# from ids_peak import ids_peak
+# from WhiteBackgroundGen import makeWhite
+# from calibration import create_custom_registration_image
+# from logbook import Logbook
+# from camera import Camera
+
+# def start(camera_device, ui):
+#     if not camera_device.start_realtime_acquisition():
+#         Logbook.log_ERRO("Failed to start acquisition!")
+#         return
+
+#     ui.start_window()
+#     thread = threading.Thread(
+#         target=camera_device.acquisition_thread,
+#         daemon=True
+#     )
+#     thread.start()
+#     ui.acquisition_thread = thread
+#     ui.start_interface()
+
+# def main(ui):
+#     # 1) Initialize IDS-Peak
+#     ids_peak.Library.Initialize()
+#     Logbook.log_INFO("IDS-Peak library initialized.")
+
+#     # 2) Generate projector assets
+#     makeWhite(1936, 1096)
+#     create_custom_registration_image()
+
+#     # 3) Build device + UI
+#     device_manager = ids_peak.DeviceManager.Instance()
+#     camera_device = Camera(device_manager, interface=ui)
+
+#     try:
+#         start(camera_device, ui)
+#     except KeyboardInterrupt:
+#         Logbook.log_NOTI("User interrupt: Exiting…")
+#     except Exception as e:
+#         Logbook.log_ERRO(f"Exception in main: {e}")
+#     finally:
+#         camera_device.killed = True
+#         if ui.acquisition_thread is not None:
+#             ui.acquisition_thread.join()
+#         camera_device.close()
+#         ids_peak.Library.Close()
+
+# if __name__ == "__main__":
+#     from qt_interface import Interface
+#     logbook = Logbook()        # pop up the logbook window
+#     ui = Interface()           # your Qt-based GUI
+#     main(ui)
 
 import threading
 
@@ -38,31 +92,58 @@ if TYPE_CHECKING:
     Interface = Union[CLIInterface, QtInterface]
 
 
-def start(camera_device: camera.Camera, ui: 'Interface'):
-    if not camera_device.start_realtime_acquisition():
-        Logbook.log("Failed to start acquisition!")
-        return
+# def start(camera_device: camera.Camera, ui: 'Interface'):
+#     if not camera_device.start_realtime_acquisition():
+#         Logbook.log("Failed to start acquisition!")
+#         return
 
+#     ui.start_window()
+#     thread = threading.Thread(target=camera_device.acquisition_thread, args=())
+#     thread.start()
+#     ui.acquisition_thread = thread
+#     ui.start_interface()
+
+#     # Assets
+#     makeWhite(1936, 1096) #resolution
+#     create_custom_registration_image()
+def start(camera_device: camera.Camera, ui: 'Interface'):
+    print("[DEBUG] start() entry", flush=True)
+    ok = camera_device.start_realtime_acquisition()
+    print(f"[DEBUG] start_realtime_acquisition → {ok}", flush=True)
+
+    if not ok:
+        print("‼ [DEBUG] acquisition failed, continuing anyway for UI test", flush=True)
+        # return   ← comment this out while debugging
+
+    print("[DEBUG] about to ui.start_window()", flush=True)
     ui.start_window()
-    thread = threading.Thread(target=camera_device.acquisition_thread, args=())
+    print("[DEBUG] ui.start_window() done", flush=True)
+
+    thread = threading.Thread(target=camera_device.acquisition_thread, daemon=True)
     thread.start()
     ui.acquisition_thread = thread
-    ui.start_interface()
 
-    # Assets
-    makeWhite(1936, 1096) #resolution
-    create_custom_registration_image()
+    print("[DEBUG] about to ui.start_interface()", flush=True)
+    ui.start_interface()
+    print("[DEBUG] ui.start_interface() returned", flush=True)
+
 
 
 def main(ui: 'Interface'):
+    print("[DEBUG] main() entry", flush=True)
     # Initialize library and create a device manager
     ids_peak.Library.Initialize()
-    
+    print("[DEBUG] IDS-Peak library initialized", flush=True)
     device_manager = ids_peak.DeviceManager.Instance()
     camera_device = None
     try:
+        print("[DEBUG] about to create Camera", flush=True)
         camera_device = camera.Camera(device_manager, ui)
+        print("[DEBUG] Camera created", flush=True)
+
+        print("[DEBUG] calling start()", flush=True)
         start(camera_device, ui)
+        print("[DEBUG] start() returned", flush=True)
     
     except KeyboardInterrupt:
         Logbook.log_NOTI("User interrupt: Exiting...")
