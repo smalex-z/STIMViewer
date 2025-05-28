@@ -259,15 +259,61 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_zoom = QtWidgets.QDoubleSpinBox()
         self._spinbox_zoom.valueChanged.connect(self.change_slider_zoom)
 
-        # Add Widgets to Layout
-        button_bar_layout.addWidget(self._button_start_hardware_acquisition, 0, 0, 1, 2)
-        button_bar_layout.addWidget(self._button_start_recording, 0, 2, 1, 2)
-        button_bar_layout.addWidget(self._button_software_trigger, 1, 0, 1, 2)
-        button_bar_layout.addWidget(self._dropdown_pixel_format, 1, 2, 1, 2)
-        button_bar_layout.addWidget(self._button_calibrate, 2, 0, 1, 2)
-        button_bar_layout.addWidget(self._button_project_white, 2, 2, 1, 2)
-        button_bar_layout.addWidget(self._label_trigger_line, 3, 0)
-        button_bar_layout.addWidget(self._dropdown_trigger_line, 3, 1, 1, 2) # Position trigger line dropdown
+        # === Config GroupBox ===
+        config_group = QtWidgets.QGroupBox("Config")
+        config_layout = QtWidgets.QGridLayout()
+        config_group.setLayout(config_layout)
+        config_group.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid gray;
+                border-radius: 5px;
+                margin-top: 10px;
+                font-weight: bold;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                padding: 0 3px;
+                font-size: 11px;
+            }
+            QLabel {
+                font-size: 11px;
+            }
+        """)
+
+        # Add the four config widgets
+        config_layout.addWidget(self._button_start_hardware_acquisition, 0, 0, 1, 2)
+        config_layout.addWidget(self._button_calibrate,                 1, 0)
+        config_layout.addWidget(self._button_project_white,            1, 1)
+        config_layout.addWidget(self._label_trigger_line,              2, 0)
+        config_layout.addWidget(self._dropdown_trigger_line,           2, 1)    
+
+        # === Capture GroupBox ===
+        capture_group = QtWidgets.QGroupBox("Capture")
+        capture_layout = QtWidgets.QGridLayout()
+        capture_group.setLayout(capture_layout)
+        capture_group.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid gray;
+                border-radius: 5px;
+                margin-top: 10px;
+                font-weight: bold;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                padding: 0 3px;
+                font-size: 11px;
+            }
+            QLabel, QPushButton {
+                font-size: 11px;
+            }
+        """)
+
+        # Add the two capture widgets
+        capture_layout.addWidget(self._button_start_recording, 0, 0)
+        capture_layout.addWidget(self._button_software_trigger, 0, 1)
+        capture_layout.addWidget(self._dropdown_pixel_format, 1, 0)
 
         # === Gain/D-Gain/Zoom Controls in GroupBox ===
         control_group = QtWidgets.QGroupBox("Adjustments")
@@ -321,9 +367,27 @@ class Interface(QtWidgets.QMainWindow):
         self._zoom_value_label.setStyleSheet("font-size: 10px;")
         control_group_layout.addWidget(self._zoom_value_label, 2, 2)
 
+
+        # Group Box size policies
+        control_group.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed,
+            QtWidgets.QSizePolicy.Preferred
+        )
+        for grp in (config_group, capture_group):
+            grp.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding,
+                QtWidgets.QSizePolicy.Preferred
+            )
+
+        # column stretches
+        button_bar_layout.setColumnStretch(4, 1)
+        button_bar_layout.setColumnStretch(5, 1)
+        button_bar_layout.setColumnStretch(7, 0)
+
         # Add group box to the right side of the layout (spanning multiple rows)
         button_bar_layout.addWidget(control_group, 0, 7, 7, 1)
-
+        button_bar_layout.addWidget(config_group, 0, 4, 4, 2)
+        button_bar_layout.addWidget(capture_group, 4, 4, 1, 2)
 
         # ToolTips:
         # Buttons
