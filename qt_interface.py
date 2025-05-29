@@ -234,7 +234,7 @@ class Interface(QtWidgets.QMainWindow):
         # 1) Initialize Qt
         
         # qt_instance = QtWidgets.QApplication(sys.argv)
-        # super().__init__()
+        super().__init__()
 
         # 2) Splash/launcher dialog (no parent!)
         dlg = QDialog()
@@ -289,16 +289,17 @@ class Interface(QtWidgets.QMainWindow):
         #self._qt_instance = qt_instance
        
         # 3) Now actually build your main window
-        super().__init__()
-        self.setWindowTitle("STIMViewer")
+        #super().__init__()
+        #self.setWindowTitle("STIMViewer")
         self.last_frame_time = time()
         self.set_camera(cam_module)
         self.gpu_ui = GPU(camera=self._camera)
         self.gui_init()
         from PyQt5.QtWidgets import QApplication
-
         app = QApplication.instance()
-        app.aboutToQuit.connect(self._close)
+        self._qt_instance = app
+        
+        self._qt_instance.aboutToQuit.connect(self._close)
         self.setMinimumSize(700, 650)
 
     def gui_init(self):
@@ -601,7 +602,7 @@ class Interface(QtWidgets.QMainWindow):
             "STIMViewer")
         print(">> now in start_interface(), about to exec()")
         self.show()
-        self._qt_instance.exec()
+        self._qt_instance.exec_()
 
 
     def _trigger_sw_trigger(self):

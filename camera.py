@@ -599,8 +599,8 @@ from calibration import find_homography
 from PyQt5.QtCore import QTimer
 
 TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
-os.environ["LD_PRELOAD"] = os.environ.get("LD_PRELOAD", "") + ":/lib/aarch64-linux-gnu/libGLdispatch.so.0"
-os.environ["QT_XCB_GL_INTEGRATION"] = "none"
+# os.environ["LD_PRELOAD"] = os.environ.get("LD_PRELOAD", "") + ":/lib/aarch64-linux-gnu/libGLdispatch.so.0"
+# os.environ["QT_XCB_GL_INTEGRATION"] = "none"
 
 class Camera:
     def __init__(self, device_manager, interface):

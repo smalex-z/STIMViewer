@@ -1,0 +1,74 @@
+Module                  Size  Used by
+fuse                  118784  5
+nvidia_modeset       1093632  4
+lzo_rle                16384  144
+lzo_compress           16384  1 lzo_rle
+zram                   32768  12
+ramoops                28672  0
+reed_solomon           20480  1 ramoops
+bnep                   28672  2
+hid_logitech_hidpp     45056  0
+snd_soc_tegra186_asrc    36864  1
+snd_soc_tegra186_dspk    20480  2
+snd_soc_tegra186_arad    24576  2 snd_soc_tegra186_asrc
+snd_soc_tegra210_iqc    16384  0
+snd_soc_tegra210_ope    32768  1
+snd_soc_tegra210_mvc    20480  2
+snd_soc_tegra210_afc    20480  6
+snd_soc_tegra210_dmic    20480  4
+snd_soc_tegra210_adx    28672  4
+snd_soc_tegra210_admaif   118784  1
+snd_soc_tegra210_amx    32768  4
+snd_soc_tegra210_mixer    45056  1
+snd_soc_tegra210_sfc    57344  4
+snd_soc_tegra210_i2s    24576  6
+snd_soc_tegra_pcm      16384  1 snd_soc_tegra210_admaif
+ftdi_sio               57344  0
+usbserial              40960  1 ftdi_sio
+input_leds             16384  0
+hid_logitech_dj        28672  0
+aes_ce_blk             36864  1
+crypto_simd            24576  1 aes_ce_blk
+cryptd                 28672  1 crypto_simd
+aes_ce_cipher          20480  1 aes_ce_blk
+ghash_ce               28672  0
+sha2_ce                20480  0
+rtk_btusb              65536  0
+binfmt_misc            24576  1
+sha256_arm64           28672  1 sha2_ce
+sha1_ce                20480  0
+btusb                  53248  0
+snd_soc_tegra210_adsp   753664  1
+btrtl                  24576  1 btusb
+btbcm                  24576  1 btusb
+ucsi_ccg               28672  0
+btintel                28672  1 btusb
+typec_ucsi             32768  1 ucsi_ccg
+snd_soc_tegra_machine_driver    16384  0
+snd_soc_spdif_tx       16384  0
+snd_soc_tegra_utils    28672  3 snd_soc_tegra210_admaif,snd_soc_tegra_machine_driver,snd_soc_tegra210_adsp
+rtl8822ce            2994176  0
+typec                  40960  1 typec_ucsi
+snd_hda_codec_hdmi     57344  1
+snd_soc_simple_card_utils    24576  1 snd_soc_tegra_utils
+nct1008                24576  0
+snd_hda_tegra          16384  0
+tegra_bpmp_thermal     16384  0
+nvadsp                110592  1 snd_soc_tegra210_adsp
+snd_hda_codec         118784  2 snd_hda_codec_hdmi,snd_hda_tegra
+userspace_alert        16384  0
+tegra210_adma          28672  2 snd_soc_tegra210_admaif,snd_soc_tegra210_adsp
+snd_hda_core           81920  3 snd_hda_codec_hdmi,snd_hda_codec,snd_hda_tegra
+snd_soc_tegra210_ahub  1257472  3 snd_soc_tegra210_ope,snd_soc_tegra210_sfc
+snd_soc_rt5640        114688  1
+snd_soc_rl6231         16384  1 snd_soc_rt5640
+cfg80211              724992  1 rtl8822ce
+spi_tegra114           32768  0
+nvidia               1339392  9 nvidia_modeset
+loop                   36864  37
+ina3221                24576  0
+pwm_fan                24576  0
+nvgpu                2494464  28
+nvmap                 192512  201 nvgpu
+ip_tables              36864  0
+x_tables               49152  1 ip_tables

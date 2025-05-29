@@ -5,8 +5,7 @@
 # os.environ["NAPARI_OGL"] = "False" 
 import os
 
-os.environ["QT_LOGGING_RULES"]      = "qt.qpa.*=false"
-os.environ['NAPARI_OGL'] = 'false'
+# os.environ['NAPARI_OGL'] = 'false'
 
 
 import numpy as np, cupy as cp, napari
@@ -33,7 +32,7 @@ def refine_rois(mean, labels):
 
     # Check if labels are assigned
     print("unique IDs now:", np.unique(labels0)[:20])
-    viewer = napari.current_viewer() # or napari.Viewer()  # get the current viewer or create a new one
+    viewer = napari.current_viewer() or napari.Viewer()  # get the current viewer or create a new one
     print("passed napari current")
 # Open window
     viewer.mouse_double_click_callbacks.clear() # Clear double click zoom in feature

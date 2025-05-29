@@ -226,14 +226,17 @@ class GPU(QWidget):
 
         # This call will now succeed with a proper Qt event loop
         label_map = refine_rois(mean, masks)
-        from projection import ProjectDisplay
-        import cv2
-        from skimage.color import label2rgb
-        rgb_image = label2rgb(label_map, bg_label=0).astype(np.uint8)
-        rgb_image = (rgb_image * 255).astype(np.uint8)
-        ProjectDisplay.show_image_fullscreen_on_second_monitor(
-                    rgb_image, homography_matrix=None
-            )
+        
+        from projection       import ProjectDisplay
+        from PyQt5.QtGui      import QGuiApplication
+        from skimage.color    import label2rgb
+        rgb_image = (label2rgb(label_map, bg_label=0) * 255).astype(np.uint8)
+        screens = QGuiApplication.screens()
+        screen  = screens[1] if len(screens) > 1 else screens[0]
+        proj    = ProjectDisplay(screen)
+        proj.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
+
+
         # Optionally save out the new labels right here
         np.savez_compressed(self.curated_path, labels=label_map)
         GPU.log_INFO(f"Refined labels saved to {self.curated_path}")

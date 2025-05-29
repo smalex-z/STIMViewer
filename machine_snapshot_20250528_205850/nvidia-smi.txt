@@ -1,0 +1,2 @@
+./snapshot.sh: line 30: nvidia-smi: command not found
+(nvidia-smi failed)
