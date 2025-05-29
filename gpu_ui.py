@@ -1,48 +1,21 @@
 # from PyQt5.QtWidgets import QGridLayout, QPushButton, QWidget, QTextEdit, QVBoxLayout
 # from PyQt5.QtGui import QTextCursor
-# from PyQt5.QtCore import pyqtSignal
+# from PyQt5.QtCore import pyqtpyqtSignal
 
 
-# class GPU(QWidget):
-#     # Class-level variable to hold the global instance.
-#     instance = None
-#     log_buffer = []
-#     export_count = 0
+# from PyQt5.QtWidgets import (
+#     QGridLayout, QPushButton, QWidget, QTextEdit,
+#     QVBoxLayout, QFileDialog
+# )
+# from PyQt5.QtGui import QTextCursor
+# from PyQt5.QtCore import pyqtpyqtSignal
+import os
+import os
 
-#     # Need to define a signal since these need to be done in background threads
 
-#     newLogSignal = pyqtSignal(str)
 
-#     closed = pyqtSignal()
-
-#     def __init__(self, logger=None, log_widget=None):
-#         super().__init__()
-#         self.setWindowTitle("GPU")
-#         self.setGeometry(100, 100, 600, 400)
-
-#         self.layout = QVBoxLayout()
-#         self.setLayout(self.layout)
-
-#         # Initialize the log_widget. If none provided, create a QTextEdit.
-#         self.log_widget = log_widget if log_widget else QTextEdit()
-#         self.log_widget.setReadOnly(True)
-#         self.layout.addWidget(self.log_widget)
-
-#         self.logger = logger
-
-#         self.paused = False
-
-#         self.newLogSignal.connect(self.write_log_slot)
-
-#         self.log_init()
-
-#         # Set the global instance to this object.
-#         GPU.instance = self
-
-#         # Flush the log buffer to the logbook
-#         for message in GPU.log_buffer:
-#             self.newLogSignal.emit(message)
-#         GPU.log_buffer.clear()
+# 
+# 
 
 from PyQt5.QtWidgets import (
     QGridLayout, QPushButton, QWidget, QTextEdit,
@@ -51,6 +24,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtCore import pyqtSignal
 import threading
+import os
+
 import pyqtgraph as pg
 from live_trace_extractor import LiveTraceExtractor
 from make_mmap import make_memmap
@@ -61,18 +36,24 @@ from trace_extr import extract_traces
 from trace_view import view_traces
 import numpy as np
 from otsu_thresh import load_movie, compute_mean_projection, denoise_and_threshold_gpu
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Q_ARG
+import PyQt5.QtCore as QtCore
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
+
 
 class GPU(QWidget):
-    newLogSignal = pyqtSignal(str)
+    newLogpyqtSignal = pyqtSignal(str)
     closed       = pyqtSignal()
     instance     = None
     log_buffer   = []
     export_count = 0
+    refineRequested = pyqtSignal(object, object)
 
     def __init__(self, camera, logger=None, log_widget=None):
         super().__init__()
+        self.camera = camera
         GPU.instance = self
-        self.camera = camera 
+        #self.camera = camera 
         self.setWindowTitle("GPU Pipeline")
         self.resize(700, 500)
 
@@ -81,7 +62,7 @@ class GPU(QWidget):
         self.log_widget = log_widget or QTextEdit()
         self.log_widget.setReadOnly(True)
         self.layout.addWidget(self.log_widget)
-        self.newLogSignal.connect(self.write_log_slot)
+        self.newLogpyqtSignal.connect(self.write_log_pyqtSlot)
         self.paused = False
         # pipeline state
         self.video_path   = None
@@ -91,11 +72,14 @@ class GPU(QWidget):
         self.trace_path   = "traces_live.npy"
         self.trace_plot = pg.PlotWidget(title="Live ROI Traces")
         self.layout.addWidget(self.trace_plot)
+        self.refineRequested.connect(self._launch_napari_viewer)
 
         # Add a “Start Live Traces” button
-        btn = QPushButton("▶ Start Live Traces")
+        btn = QPushButton("▶ Restart Live Traces")
         btn.clicked.connect(self.start_live_traces)
         self.layout.addWidget(btn)
+
+    
 
         # storage for our extractor
         self.live_extractor = None
@@ -107,7 +91,7 @@ class GPU(QWidget):
 
         # flush any early logs
         for msg in GPU.log_buffer:
-            self.newLogSignal.emit(msg)
+            self.newLogpyqtSignal.emit(msg)
         GPU.log_buffer.clear()
 
     def init_pipeline_buttons(self):
@@ -177,13 +161,21 @@ class GPU(QWidget):
             movie = np.load(self.memmap_path, mmap_mode='r')
             self.discovered = compute_mean_projection(movie, calib_frames=5400, chunk_size=200)
 
-            masks, sizes = denoise_and_threshold_gpu(
-                self.discovered, gauss_ksize=(5,5), gauss_sigma=1.5,
+            label = masks, sizes = denoise_and_threshold_gpu(
+                self.discovered, gauss_ksize=(3,3), gauss_sigma=1.5,
                 min_area=60, max_area=300
             )
             # save as rois.npz
             np.savez_compressed(self.rois_path, masks=masks, sizes=sizes)
             GPU.log_INFO(f"ROIs written to {self.rois_path}")
+            # from projection import ProjectDisplay
+            # import cv2
+            # from skimage.color import label2rgb
+            # rgb_image = label2rgb(label, bg_label=0).astype(np.uint8)
+            # rgb_image = (rgb_image * 255).astype(np.uint8)
+            # ProjectDisplay.show_image_fullscreen_on_second_monitor(
+            #         rgb_image, homography_matrix=None
+            # )
         except Exception as e:
             GPU.log_ERRO(f"ROI discovery failed: {e}")
 
@@ -209,12 +201,42 @@ class GPU(QWidget):
             # load the mean, masks, run your roi_editor logic in headless mode
             from otsu_thresh import load_movie, compute_mean_projection
             mean = compute_mean_projection(load_movie(self.video_path), calib_frames=5400)
-            labels = np.load(self.rois_path)["labels"]
-            refined = refine_rois(mean, labels)
-            np.savez_compressed(self.curated_path, labels=refined)
-            GPU.log_INFO(f"Refined labels saved to {self.curated_path}")
+            masks = np.load(self.rois_path)["masks"]
+            #refined_labels = refine_rois(mean, masks)
+            # QtCore.QMetaObject.invokeMethod(
+            #     self,
+            #     "_launch_napari_viewer",
+            #     QtCore.Qt.QueuedConnection,
+            #     QtCore.Q_ARG(object, mean),
+            #     QtCore.Q_ARG(object, masks),
+            # )
+            self.refineRequested.emit(mean, masks)
+            # np.savez_compressed(self.curated_path, labels=refined_labels)
+            # GPU.log_INFO(f"Refined labels saved to {self.curated_path}")
         except Exception as e:
             GPU.log_ERRO(f"ROI refinement failed: {e}")
+    
+    @pyqtSlot(object, object)
+    def _launch_napari_viewer(self, mean, masks):
+        """
+        This runs on the main (GUI) thread, so Qt is fully available.
+        We call your refine_rois() helper here.
+        """
+        from roi_editor import refine_rois
+
+        # This call will now succeed with a proper Qt event loop
+        label_map = refine_rois(mean, masks)
+        from projection import ProjectDisplay
+        import cv2
+        from skimage.color import label2rgb
+        rgb_image = label2rgb(label_map, bg_label=0).astype(np.uint8)
+        rgb_image = (rgb_image * 255).astype(np.uint8)
+        ProjectDisplay.show_image_fullscreen_on_second_monitor(
+                    rgb_image, homography_matrix=None
+            )
+        # Optionally save out the new labels right here
+        np.savez_compressed(self.curated_path, labels=label_map)
+        GPU.log_INFO(f"Refined labels saved to {self.curated_path}")
 
     def run_extract_traces(self):
         threading.Thread(target=self._thread_extract_traces, daemon=True).start()
@@ -268,7 +290,7 @@ class GPU(QWidget):
             self.pause_resume_button.setText("Pause Logging")
 
 
-    def write_log_slot(self, log):
+    def write_log_pyqtSlot(self, log):
         """
         Write the log to the log widget.
         Uses HTML formatting so that colored messages are rendered properly.
@@ -278,7 +300,7 @@ class GPU(QWidget):
             self.log_widget.moveCursor(QTextCursor.End)
 
     def write_log(self, log):
-        self.newLogSignal.emit(log)
+        self.newLogpyqtSignal.emit(log)
 
 
     @classmethod
@@ -356,3 +378,153 @@ class GPU(QWidget):
         except Exception as e:
             self.write_log(f"<br><i>Error exporting log: {str(e)}</i><br>")
         print("Logbook exported to file")
+
+
+# import sys
+# import os
+# import threading
+# import numpy as np
+# import cupy as cp
+# from PyQt5.QtWidgets import (
+#     QApplication, QWidget, QVBoxLayout, QTextEdit, QPushButton,
+#     QGridLayout, QFileDialog, QLabel, QHBoxLayout
+# )
+# from PyQt5.QtGui import QTextCursor
+# from PyQt5.QtCore import pyqtSignal, pyqtSlot
+# import pyqtgraph as pg
+# from make_mmap import make_memmap
+# from otsu_thresh import compute_mean_projection, denoise_and_threshold_gpu, load_movie
+# from roi_editor import ROIEditor
+# from trace_extr import extract_traces
+# from trace_view import view_traces_pyqtgraph
+
+# class GPU(QWidget):
+#     newLog = pyqtSignal(str)
+#     closed = pyqtSignal()
+#     refineRequested = pyqtSignal(np.ndarray, np.ndarray)
+
+#     def __init__(self, camera=None):
+#         super().__init__()
+#         self.setWindowTitle("GPU Pipeline")
+#         self.resize(800, 600)
+#         self.video_path = None
+#         self.memmap_path = "movie_mmap.npy"
+#         self.rois_path = "rois.npz"
+#         self.curated_path = "rois_current.npz"
+#         self.trace_path = "traces_live.npy"
+
+#         # Layouts
+#         layout = QVBoxLayout(self)
+#         self.log_widget = QTextEdit()
+#         self.log_widget.setReadOnly(True)
+#         layout.addWidget(self.log_widget)
+#         self.newLog.connect(self._append_log)
+
+#         # Live trace plot
+#         self.trace_plot = pg.PlotWidget(title="Live ROI Traces")
+#         layout.addWidget(self.trace_plot)
+
+#         # Buttons
+#         btn_layout = QGridLayout()
+#         names = ["> Select Video…", "> Make Memmap", "> Discover ROIs",
+#                  "> Refine ROIs", "> Extract Traces", "> View Traces"]
+#         methods = [self.select_video, self.run_make_memmap, self.run_discover_rois,
+#                    self.run_refine_rois, self.run_extract_traces, self.run_view_traces]
+#         for i, (n, m) in enumerate(zip(names, methods)):
+#             btn = QPushButton(n)
+#             btn.clicked.connect(m)
+#             btn_layout.addWidget(btn, 0, i)
+#         layout.addLayout(btn_layout)
+
+#         # Connect refine signal
+#         self.refineRequested.connect(self._launch_roi_editor)
+#         from PyQt5.QtCore import Qt
+#         self.refineRequested.connect(
+#             self._launch_roi_editor,
+#             type=Qt.QueuedConnection
+#         )
+
+#     def _append_log(self, text):
+#         self.log_widget.append(text)
+#         self.log_widget.moveCursor(QTextCursor.End)
+
+#     def select_video(self):
+#         path, _ = QFileDialog.getOpenFileName(self, "Select video file", "",
+#                                               "Video files (*.avi *.mp4 *.npy)")
+#         if path:
+#             self.video_path = path
+#             self.newLog.emit(f"Selected video: {path}")
+
+#     def run_make_memmap(self):
+#         threading.Thread(target=self._make_memmap, daemon=True).start()
+
+#     def _make_memmap(self):
+#         self.newLog.emit("Making memmap…")
+#         try:
+#             make_memmap(self.video_path, self.memmap_path)
+#             self.newLog.emit(f"Memmap saved to {self.memmap_path}")
+#         except Exception as e:
+#             self.newLog.emit(f"Error: {e}")
+
+#     def run_discover_rois(self):
+#         threading.Thread(target=self._discover_rois, daemon=True).start()
+
+#     def _discover_rois(self):
+#         self.newLog.emit("Discovering ROIs…")
+#         try:
+#             movie = np.load(self.memmap_path, mmap_mode='r')
+#             mean = compute_mean_projection(movie, calib_frames=5400)
+#             masks, _ = denoise_and_threshold_gpu(mean)
+#             np.savez_compressed(self.rois_path, masks=masks)
+#             self.newLog.emit(f"ROIs saved to {self.rois_path}")
+#         except Exception as e:
+#             self.newLog.emit(f"Error: {e}")
+
+#     def run_refine_rois(self):
+#         threading.Thread(target=self._refine_rois_thread, daemon=True).start()
+
+#     def _refine_rois_thread(self):
+#         self.newLog.emit("Refining ROIs…")
+#         try:
+#             mean = compute_mean_projection(load_movie(self.video_path), calib_frames=5400)
+#             masks = np.load(self.rois_path)['masks']
+#             self.refineRequested.emit(mean, masks)
+#         except Exception as e:
+#             self.newLog.emit(f"Error: {e}")
+
+#     @pyqtSlot(np.ndarray, np.ndarray)
+#     def _launch_roi_editor(self, mean, masks):
+#         editor = ROIEditor(mean, masks)
+#         editor.closed = self._on_roi_editor_closed
+#         editor.show()
+#         # self._roi_editor = ROIEditor(mean, masks)
+#         # self._roi_editor.closed.connect(self._on_roi_editor_closed)
+#         # self._roi_editor.show()
+
+#     def _on_roi_editor_closed(self):
+#         # After ROIEditor closes, save curated masks
+#         # Assume ROIEditor writes to self.curated_path
+#         self.newLog.emit(f"Refined ROIs saved to {self.curated_path}")
+
+#     def run_extract_traces(self):
+#         threading.Thread(target=self._extract_traces, daemon=True).start()
+
+#     def _extract_traces(self):
+#         self.newLog.emit("Extracting traces…")
+#         try:
+#             extract_traces(self.memmap_path, self.curated_path, self.trace_path)
+#             self.newLog.emit(f"Traces saved to {self.trace_path}")
+#         except Exception as e:
+#             self.newLog.emit(f"Error: {e}")
+
+#     def run_view_traces(self):
+#         try:
+#             view_traces_pyqtgraph(self.trace_path, mean_source=self.video_path)
+#         except Exception as e:
+#             self.newLog.emit(f"Error: {e}")
+
+# if __name__ == '__main__':
+#     app = QApplication(sys.argv)
+#     gui = GPU()
+#     gui.show()
+#     sys.exit(app.exec_())

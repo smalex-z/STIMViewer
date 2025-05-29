@@ -1,3 +1,10 @@
+import os
+
+# 
+import os
+
+
+
 from PyQt5.QtWidgets import QGridLayout, QPushButton, QWidget, QTextEdit, QVBoxLayout
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtCore import pyqtSignal
@@ -9,9 +16,9 @@ class Logbook(QWidget):
     log_buffer = []
     export_count = 0
 
-    # Need to define a signal since these need to be done in background threads
+    # Need to define a pyqtSignal since these need to be done in background threads
 
-    newLogSignal = pyqtSignal(str)
+    newLogpyqtSignal = pyqtSignal(str)
 
     closed = pyqtSignal()
 
@@ -32,7 +39,7 @@ class Logbook(QWidget):
 
         self.paused = False
 
-        self.newLogSignal.connect(self.write_log_slot)
+        self.newLogpyqtSignal.connect(self.write_log_pyqtSlot)
 
         self.log_init()
 
@@ -41,7 +48,7 @@ class Logbook(QWidget):
 
         # Flush the log buffer to the logbook
         for message in Logbook.log_buffer:
-            self.newLogSignal.emit(message)
+            self.newLogpyqtSignal.emit(message)
         Logbook.log_buffer.clear()
 
     def closeEvent(self, event):
@@ -75,7 +82,7 @@ class Logbook(QWidget):
             self.pause_resume_button.setText("Pause Logging")
 
 
-    def write_log_slot(self, log):
+    def write_log_pyqtSlot(self, log):
         """
         Write the log to the log widget.
         Uses HTML formatting so that colored messages are rendered properly.
@@ -85,7 +92,7 @@ class Logbook(QWidget):
             self.log_widget.moveCursor(QTextCursor.End)
 
     def write_log(self, log):
-        self.newLogSignal.emit(log)
+        self.newLogpyqtSignal.emit(log)
 
 
     @classmethod

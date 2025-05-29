@@ -3,7 +3,7 @@ venv/
 *.venv
 env/
 *.env
-
+nvenv/
 # Ignore Python bytecode files
 *.pyc
 *.pyo
@@ -21,3 +21,4 @@ otsu/
 *.npz
 *.avi
 *.mp4
+*.npy

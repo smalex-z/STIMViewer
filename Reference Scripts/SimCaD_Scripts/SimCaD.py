@@ -159,7 +159,7 @@ def generate_synthetic_calcium_movie(
     use_ar2 : bool
         If True, use an AR(2) model. If False, use a difference-of-exponentials model.
     cell_snr : float
-        Scalar controlling amplitude of cell signals relative to background.
+        Scalar controlling amplitude of cell pyqtSignals relative to background.
     background_strength : float
         Base background intensity added to all pixels, in approximate [0,1].
     motion_smoothing : float
@@ -211,7 +211,7 @@ def generate_synthetic_calcium_movie(
                                                 sy, sx, normalize=True)
         cell_masks[i] = footprint
 
-    # 2) Generate spike trains and corresponding calcium signals
+    # 2) Generate spike trains and corresponding calcium pyqtSignals
     for i in range(num_cells):
         spikes = generate_markov_spikes(num_frames, spike_transition_matrix)
         spikes_all[i] = spikes

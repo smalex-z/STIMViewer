@@ -197,7 +197,7 @@ def generate_synthetic_calcium_movie(
     use_ar2 : bool
         If True, use AR(2) to generate calcium from spikes; else use a difference-of-exponentials.
     cell_snr : float
-        Scalar controlling amplitude of cell signals relative to background.
+        Scalar controlling amplitude of cell pyqtSignals relative to background.
     background_strength : float
         Base background intensity in frames, typically in [0,1].
     motion_smoothing : float

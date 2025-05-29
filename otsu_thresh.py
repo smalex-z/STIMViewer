@@ -1,5 +1,12 @@
 # otsu_thresh.py
 # ran once from main.py per movie
+import os
+
+# 
+import os
+
+
+
 import numpy as np
 import cv2
 # import h5py
@@ -55,8 +62,8 @@ def load_movie(movie_path, dataset_name=None):
 
 def compute_mean_projection(
     movie,
-    calib_frames=5400,
-    chunk_size=200
+    calib_frames=900,
+    chunk_size=5 # how many frames to suma t once
 ):
     """
     Compute the average (mean) image over the first `calib_frames` frames.
@@ -153,10 +160,10 @@ def save_rois(masks, sizes, output_npz='rois.npz'):
 
 def denoise_and_threshold_gpu(
     mean_img,
-    gauss_ksize=(5,5),
-    gauss_sigma=1.5,
-    min_area=60,
-    max_area=300
+    gauss_ksize=(3,3),
+    gauss_sigma=0.5,
+    min_area=5,
+    max_area=200
 ):
     """
     GPU-accelerated ROI segmentation using OpenCV UMat for blur, threshold, morphology, distance transform.
@@ -184,8 +191,8 @@ def denoise_and_threshold_gpu(
         maxValue=1,
         adaptiveMethod=cv2.ADAPTIVE_THRESH_MEAN_C,
         thresholdType=cv2.THRESH_BINARY,
-        blockSize=51,
-        C=5
+        blockSize=21,# width and heihgt of square patch around each pixel
+        C=0 # larger means pixels need to be brighter above the local mean so pick up less pixels
     )
 
     # 4) Morphological cleanup on GPU
@@ -232,3 +239,4 @@ def denoise_and_threshold_gpu(
     t1 = time.perf_counter()
     print(f"Denoise+threshold+split took {(t1-t0)*1000:.1f} ms (CPU)")
     return masks, sizes
+    # return labels_img

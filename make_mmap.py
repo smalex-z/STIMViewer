@@ -20,6 +20,14 @@
 # make_mmap.py  (run once per new movie)
 # We use this to convert the movie into a numpy array so we can later
 # access frames without re-decoding each time.
+import os
+import os
+
+
+
+
+# 
+
 import numpy as np
 from otsu_thresh import load_movie
 

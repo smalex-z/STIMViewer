@@ -1,15 +1,33 @@
+import os
+
+# 
+import os
+
+
+
 import math
+
+# try:
+#     from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QPushButton, QVBoxLayout
+#     from PyQt5.QtGui import QImage, QPainter, QPixmap, QTransform
+#     from PyQt5.QtCore import QRectF, Qt
+#     from PyQt5.QtCore import pyqtpyqtSlot as pyqtSlot
+# except ImportError:
+#     from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
+#     from PyQt5.QtGui import QImage, QPainter
+#     from PyQt5.QtCore import QRectF
+#     from PyQt5.QtCore import pyqtpyqtSlot as pyqtSlot
 
 try:
     from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QPushButton, QVBoxLayout
     from PyQt5.QtGui import QImage, QPainter, QPixmap, QTransform
     from PyQt5.QtCore import QRectF, Qt
-    from PyQt5.QtCore import pyqtSlot as Slot
+    from PyQt5.QtCore import pyqtSlot
 except ImportError:
     from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
     from PyQt5.QtGui import QImage, QPainter
     from PyQt5.QtCore import QRectF
-    from PyQt5.QtCore import pyqtSlot as Slot
+    from PyQt5.QtCore import pyqtSlot
 
 
 class Display(QGraphicsView):
@@ -30,12 +48,12 @@ class Display(QGraphicsView):
         self.setTransform(QTransform().scale(zoom_factor, zoom_factor))
 
 
-    @Slot(QImage)
+    #@pyqtSlot(QImage, 'PyQt_PyObject')
     def on_image_received(self, image: QImage):
         self.__scene.set_image(image)
         self.update()
 
-    @Slot(QImage, object)
+    #@pyqtSlot(QImage, 'PyQt_PyObject')
     def on_mask_received(self, mask, _=None):
         self.__scene.set_mask(mask)
     

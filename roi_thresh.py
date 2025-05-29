@@ -1,4 +1,11 @@
 # roi_thresh.py
+import os
+# 
+# 
+import os
+
+
+
 import numpy as np, cupy as cp, cv2
 from skimage.feature import peak_local_max
 from skimage.segmentation import watershed
@@ -11,10 +18,10 @@ from scipy import ndimage as ndi
 # can define multiple functions and assign it to differnt ROIs, customizing the thresholding for certain ROIs
 # or instead we can have the user draw it themselves 
 def threshold_patch(img, # Same parameters as before
-                    gauss_ksize=(5,5),
-                    gauss_sigma=1.0,
-                    min_area=30,
-                    max_area=400):
+                    gauss_ksize=(3,3),
+                    gauss_sigma=0.5,
+                    min_area=5,
+                    max_area=200):
     """Return list[mask] – tighter fit using local max-projection + erosion."""
     # 1) convert to float32 and blur
     # Apply gaussian blur to suppress and noise
@@ -27,7 +34,7 @@ def threshold_patch(img, # Same parameters as before
     # And how we can have the user rethreshold ROIs
     bw   = cv2.adaptiveThreshold(norm.astype('uint8'), 1,
                                  cv2.ADAPTIVE_THRESH_MEAN_C,
-                                 cv2.THRESH_BINARY, 51, 5)
+                                 cv2.THRESH_BINARY, 21, 0)
 
     # 3) optional erosion to shrink halo to fit ROIs tighter around cells
     # but can also be bad for masks that are too tight and need to be loosened

@@ -21,9 +21,25 @@
 # for the use or reliability of any portion of this document.
 #
 # General permission to copy or modify is hereby granted.
-
-from main import main
 import os
+# os.environ['QT_QPA_PLATFORM'] = 'egl'
+
+from PyQt5.QtCore import QCoreApplication, Qt
+QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts) 
+QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+# import os
+from vispy import use                             # 
+use()
+# vispy.use(gl='gl2')
+# os.environ['QT_QPA_PLATFORM'] = 'eglfs'
+
+# vispy.use('egl')
+# from vispy import app as vispy_app           # 
+#vispy_app.use_app('pyqt5')
+#os.environ["QT_API"] = "PyQt5"
+from main import main
+from kill_zombies import kill_other_instances
+import sys
 
 export_file = "export_log.txt"
 
@@ -31,12 +47,18 @@ if os.path.exists(export_file):
     # Clear the file at the beginning of the program
     open(export_file, "w").close()
     
-try:
-    from PyQt5.QtWidgets import QApplication    
-except ImportError:
-    from PyQt5.QtWidgets import QApplication
+# try:
+from PyQt5.QtWidgets import QApplication    
+# except ImportError:
+#     from PyQt5.QtWidgets import QApplication
 
 if __name__ == "__main__":
+    kill_other_instances()
     print("[DEBUG] main_gui.py: __main__ hit", flush=True)
     from qt_interface import Interface
-    main(Interface())
+    #main(Interface())
+    app = QApplication(sys.argv)       
+    window = Interface()                 
+    window.show()
+    sys.exit(app.exec_())
+  
