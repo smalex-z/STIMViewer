@@ -22,7 +22,7 @@ def main():
     # -------------------------------
     # Change movie_path to point at your data.
     # If using HDF5, supply dataset_name; for .avi/.mp4 leave it None.
-    movie_path   = "cropped.avi" # Path to movie, better if in root directory like it is here
+    movie_path   = "synthetic_calcium_movie (1).mp4" # Path to movie, better if in root directory like it is here
     movie = load_movie(movie_path, "None")
 
     # -------------------------------

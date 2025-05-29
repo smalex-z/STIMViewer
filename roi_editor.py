@@ -164,9 +164,9 @@ def refine_rois(mean, labels):
     @magicgui(call_button='Export → trace_view')
     def export():
         """Write the current label map for the next stage."""
-        np.savez_compressed("rois_current.npz", labels=lbl.data)
+        np.savez_compressed("rois.npz", labels=lbl.data)
         
-        viewer.status = "Exported rois_current.npz"
+        viewer.status = "Exported rois.npz"
 
 
     # ---- dock widgets -------------------------------------------

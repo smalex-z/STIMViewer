@@ -37,15 +37,14 @@ class LiveTraceExtractor:
         pi = self.plot.getPlotItem()
         pi.addLegend()
         vb = pi.getViewBox()
-        vb.setMouseEnabled(x=True, y=False)
-        pi = self.plot.getPlotItem()
+        vb.setMouseEnabled(x=True, y=True)
+        # pi = self.plot.getPlotItem()
         pi.setLabel('left','Mean Intensity')
         pi.setLabel('bottom','Frames ago')
         pi.setYRange(0, 255)          # camera 8-bit range
+        pi.setLimits(xMin=0, xMax=max_points)
         pi.enableAutoRange(axis='y', enable=False)
-        pi.enableAutoRange(axis='x', enable=False)
-        pi.setXRange(0, max_points)
-        vb.setLimits(xMin=0, xMax=max_points)
+        pi.enableAutoRange(axis='x', enable=True)
 
         self.curves = {}
         for rid in self.ids:

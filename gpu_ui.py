@@ -26,7 +26,7 @@ import PyQt5.QtCore as QtCore
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
 from PyQt5.QtCore import Qt, QMetaObject
 from PyQt5 import QtCore
-
+from camera import Camera
 
 class GPU(QWidget):
     newLogpyqtSignal = pyqtSignal(str)
@@ -38,7 +38,7 @@ class GPU(QWidget):
     requestStartLiveTraces = pyqtSignal()
     requestStartRecording   = pyqtSignal()
 
-    def __init__(self, camera, logger=None, log_widget=None):
+    def __init__(self, camera: Camera, logger=None, log_widget=None):
         super().__init__()
         if camera is None:
             raise ValueError("GPU needs a Camera instance")
@@ -113,12 +113,12 @@ class GPU(QWidget):
         grid.addWidget(btn, row, 3)
 
         # 5) Extract traces
-        btn = QPushButton("➤ Extract Traces")
-        btn.clicked.connect(self.run_extract_traces)
-        grid.addWidget(btn, row, 4)
+        # btn = QPushButton("➤ Extract Traces")
+        # btn.clicked.connect(self.run_extract_traces)
+        # grid.addWidget(btn, row, 4)
 
         # 6) View traces
-        btn = QPushButton("▶ View Traces")
+        btn = QPushButton("▶ Export/View Traces")
         btn.clicked.connect(self.run_view_traces)
         grid.addWidget(btn, row, 5)
 
@@ -216,10 +216,9 @@ class GPU(QWidget):
             # if not getattr(self.camera, "is_recording", False):
             #     self.camera.start_recording()
             #     GPU.log_INFO("Recording started after ROI discovery.")
-            if not self.camera.is_recording:
-                self.requestStartRecording.emit()
+            self.requestStartRecording.emit()
                 # QtCore.QMetaObject.invokeMethod(self.camera, "start_recording", QtCore.Qt.QueuedConnection)
-                GPU.log_INFO("Recording requested after ROI discovery.")
+            GPU.log_INFO("Recording requested after ROI discovery.")
 
         except Exception as e:
             GPU.log_ERRO(f"ROI discovery failed: {e}")
@@ -244,7 +243,7 @@ class GPU(QWidget):
     def start_live_traces(self):
         if self.live_extractor is None:
             # Try curated labels first; fall back to discovered ROIs
-            roi_path = self.curated_path if os.path.exists(self.curated_path) else self.rois_path
+            roi_path =  self.rois_path
 
             if not os.path.exists(roi_path):
                 GPU.log_ERRO("No ROI file found. Run Discover or Refine ROIs first.")
@@ -279,6 +278,11 @@ class GPU(QWidget):
             #     QtCore.Q_ARG(object, masks),
             # )
             self.refineRequested.emit(mean, masks)
+            GPU.log_INFO("Live traces requested after ROI refinement.")
+            if not self.camera.is_recording:
+                self.requestStartRecording.emit()
+                GPU.log_INFO("Recording requested after ROI refinement.")
+            
             # np.savez_compressed(self.curated_path, labels=refined_labels)
             # GPU.log_INFO(f"Refined labels saved to {self.curated_path}")
         except Exception as e:
@@ -316,35 +320,35 @@ class GPU(QWidget):
         GPU.log_NOTI("Extracting traces…")
         try:
             extract_traces(
-                self.memmap_path, self.curated_path, self.trace_path
+                self.memmap_path, self.rois_path, self.trace_path
             )
             GPU.log_INFO(f"Traces saved to {self.trace_path}")
         except Exception as e:
             GPU.log_ERRO(f"Trace extraction failed: {e}")
 
     def run_view_traces(self):
-        # no need thread—instant
+        # # no need thread—instant
+        # # try:
+        # #     view_traces(self.trace_path)
+        # # except Exception as e:
+        # #     GPU.log_ERRO(f"Trace view failed: {e}")
         # try:
-        #     view_traces(self.trace_path)
+        #     save_path, _ = QFileDialog.getSaveFileName(
+        #         self, "Export traces to CSV", "", "CSV Files (*.csv)")
+        #     if save_path:
+        #         data = np.load(self.trace_path)   # assume shape (T, N_rois)
+        #         # build a header of ROI names
+        #         num_rois = data.shape[1] if data.ndim > 1 else 1
+        #         header = ",".join(f"ROI{i+1}" for i in range(num_rois))
+        #         np.savetxt(save_path, data, delimiter=",",
+        #                    header=header, comments="")
+        #         GPU.log_INFO(f"Traces exported to {save_path}")
         # except Exception as e:
-        #     GPU.log_ERRO(f"Trace view failed: {e}")
-        try:
-            save_path, _ = QFileDialog.getSaveFileName(
-                self, "Export traces to CSV", "", "CSV Files (*.csv)")
-            if save_path:
-                data = np.load(self.trace_path)   # assume shape (T, N_rois)
-                # build a header of ROI names
-                num_rois = data.shape[1] if data.ndim > 1 else 1
-                header = ",".join(f"ROI{i+1}" for i in range(num_rois))
-                np.savetxt(save_path, data, delimiter=",",
-                           header=header, comments="")
-                GPU.log_INFO(f"Traces exported to {save_path}")
-        except Exception as e:
-            GPU.log_ERRO(f"Failed to export traces: {e}")
+        #     GPU.log_ERRO(f"Failed to export traces: {e}")
 
-        # then launch your normal viewer
         try:
-            view_traces(self.trace_path)
+            # show only the last 50 frames of live traces
+            view_traces(self.trace_path, rois_path=self.curated_path if os.path.exists(self.curated_path) else self.rois_path, last_n=5)
         except Exception as e:
             GPU.log_ERRO(f"Trace view failed: {e}")
 
