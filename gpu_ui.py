@@ -24,6 +24,8 @@ from otsu_thresh import load_movie, compute_mean_projection, denoise_and_thresho
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Q_ARG
 import PyQt5.QtCore as QtCore
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
+from PyQt5.QtCore import Qt, QMetaObject
+from PyQt5 import QtCore
 
 
 class GPU(QWidget):
@@ -33,15 +35,20 @@ class GPU(QWidget):
     log_buffer   = []
     export_count = 0
     refineRequested = pyqtSignal(object, object)
+    requestStartLiveTraces = pyqtSignal()
+    requestStartRecording   = pyqtSignal()
 
     def __init__(self, camera, logger=None, log_widget=None):
         super().__init__()
+        if camera is None:
+            raise ValueError("GPU needs a Camera instance")
         self.camera = camera
         GPU.instance = self
         #self.camera = camera 
         self.setWindowTitle("GPU Pipeline")
         self.resize(700, 500)
-
+        self.requestStartLiveTraces.connect(self.start_live_traces, QtCore.Qt.QueuedConnection)
+        self.requestStartRecording.connect(self.camera.start_recording, QtCore.Qt.QueuedConnection)
         # layout & log widget
         self.layout = QVBoxLayout(self)
         self.log_widget = log_widget or QTextEdit()
@@ -51,6 +58,7 @@ class GPU(QWidget):
         self.paused = False
         # pipeline state
         self.video_path   = None
+        self.proj_display = None
         self.memmap_path  = "movie_mmap.npy"
         self.rois_path    = "rois.npz"
         self.curated_path = "rois_current.npz"
@@ -139,47 +147,122 @@ class GPU(QWidget):
     def run_discover_rois(self):
         threading.Thread(target=self._thread_discover_rois, daemon=True).start()
 
+    # def _thread_discover_rois(self):
+    #     GPU.log_NOTI("Discovering ROIs…")
+    #     try:
+    #         # reuse your main.py logic but via a function
+    #         movie = np.load(self.memmap_path, mmap_mode='r')
+    #         self.discovered = compute_mean_projection(movie, calib_frames=5400, chunk_size=200)
+
+    #         label = masks, sizes = denoise_and_threshold_gpu(
+    #             self.discovered, gauss_ksize=(3,3), gauss_sigma=1.5,
+    #             min_area=60, max_area=300
+    #         )
+    #         # save as rois.npz
+    #         np.savez_compressed(self.rois_path, masks=masks, sizes=sizes)
+    #         GPU.log_INFO(f"ROIs written to {self.rois_path}")
+    #         # from projection import ProjectDisplay
+    #         # import cv2
+    #         # from skimage.color import label2rgb
+    #         # rgb_image = label2rgb(label, bg_label=0).astype(np.uint8)
+    #         # rgb_image = (rgb_image * 255).astype(np.uint8)
+    #         # ProjectDisplay.show_image_fullscreen_on_second_monitor(
+    #         #         rgb_image, homography_matrix=None
+    #         # )
+    #     except Exception as e:
+    #         GPU.log_ERRO(f"ROI discovery failed: {e}")
+
     def _thread_discover_rois(self):
         GPU.log_NOTI("Discovering ROIs…")
         try:
-            # reuse your main.py logic but via a function
+            # Load memmap video
             movie = np.load(self.memmap_path, mmap_mode='r')
             self.discovered = compute_mean_projection(movie, calib_frames=5400, chunk_size=200)
 
-            label = masks, sizes = denoise_and_threshold_gpu(
+            # Threshold and denoise to get masks
+            masks, sizes = denoise_and_threshold_gpu(
                 self.discovered, gauss_ksize=(3,3), gauss_sigma=1.5,
                 min_area=60, max_area=300
             )
-            # save as rois.npz
-            np.savez_compressed(self.rois_path, masks=masks, sizes=sizes)
+            labeled_image = np.zeros_like(masks[0], dtype=np.int32)
+            for i, mask in enumerate(masks, start=1):
+                labeled_image[mask] = i
+            # Save original discovered ROIs
+            #np.savez_compressed(self.rois_path, masks=masks, sizes=sizes)
+            #GPU.log_INFO(f"ROIs written to {self.rois_path}")
+
+            # ==== 👇 Project thresholded masks on STIMViewer ====
+            from skimage.color import label2rgb
+            from projection import ProjectDisplay
+            from PyQt5.QtGui import QGuiApplication
+            import cv2
+            rgb_image = (label2rgb(labeled_image, bg_label=0) * 255).astype(np.uint8)
+            screen = QGuiApplication.screens()[1]  # or [0] if only one
+            size = screen.size()
+            h, w = size.height(), size.width()
+            rgb_image = cv2.resize(rgb_image, (w, h), interpolation=cv2.INTER_NEAREST)
+            screens = QGuiApplication.screens()
+            screen = screens[1] if len(screens) > 1 else screens[0]
+            self.proj_display = ProjectDisplay(screen)
+            self.proj_display.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
+            np.savez_compressed(self.rois_path, masks=masks, sizes=sizes, labels=labeled_image)
             GPU.log_INFO(f"ROIs written to {self.rois_path}")
-            # from projection import ProjectDisplay
-            # import cv2
-            # from skimage.color import label2rgb
-            # rgb_image = label2rgb(label, bg_label=0).astype(np.uint8)
-            # rgb_image = (rgb_image * 255).astype(np.uint8)
-            # ProjectDisplay.show_image_fullscreen_on_second_monitor(
-            #         rgb_image, homography_matrix=None
-            # )
+            # ==== 👇 Start Live Traces automatically ====
+            self.requestStartLiveTraces.emit()
+            # self.start_live_traces()
+            # QtCore.QMetaObject.invokeMethod(self, "start_live_traces", QtCore.Qt.QueuedConnection)
+
+            # ==== 👇 Start recording automatically ====
+            # if not getattr(self.camera, "is_recording", False):
+            #     self.camera.start_recording()
+            #     GPU.log_INFO("Recording started after ROI discovery.")
+            if not self.camera.is_recording:
+                self.requestStartRecording.emit()
+                # QtCore.QMetaObject.invokeMethod(self.camera, "start_recording", QtCore.Qt.QueuedConnection)
+                GPU.log_INFO("Recording requested after ROI discovery.")
+
         except Exception as e:
             GPU.log_ERRO(f"ROI discovery failed: {e}")
 
+
     def run_refine_rois(self):
         threading.Thread(target=self._thread_refine_rois, daemon=True).start()
+    # def start_live_traces(self):
+    #     if self.live_extractor is None:
+    #         if not os.path.exists(self.curated_path):
+    #             GPU.log_ERRO("No curated ROIs; run Refine ROIs first.")
+    #             return
+    #         self.live_extractor = LiveTraceExtractor(
+    #             camera=self.camera,
+    #             label_path=self.curated_path,
+    #             plot_widget=self.trace_plot,
+    #             max_points=300
+    #         )
+    #         GPU.log_INFO("Live trace extraction started.")
+    #     else:
+    #         GPU.log_NOTI("Live trace extractor already running.")
     def start_live_traces(self):
         if self.live_extractor is None:
-            if not os.path.exists(self.curated_path):
-                GPU.log_ERRO("No curated ROIs; run Refine ROIs first.")
+            # Try curated labels first; fall back to discovered ROIs
+            roi_path = self.curated_path if os.path.exists(self.curated_path) else self.rois_path
+
+            if not os.path.exists(roi_path):
+                GPU.log_ERRO("No ROI file found. Run Discover or Refine ROIs first.")
                 return
-            self.live_extractor = LiveTraceExtractor(
-                camera=self.camera,
-                label_path=self.curated_path,
-                plot_widget=self.trace_plot,
-                max_points=300
-            )
-            GPU.log_INFO("Live trace extraction started.")
+
+            try:
+                self.live_extractor = LiveTraceExtractor(
+                    camera=self.camera,
+                    label_path=roi_path,
+                    plot_widget=self.trace_plot,
+                    max_points=300
+                )
+                GPU.log_INFO(f"Live trace extraction started using {os.path.basename(roi_path)}.")
+            except Exception as e:
+                GPU.log_ERRO(f"Failed to start live traces: {e}")
         else:
             GPU.log_NOTI("Live trace extractor already running.")
+
     def _thread_refine_rois(self):
         GPU.log_NOTI("Refining ROIs in GUI…")
         try:
@@ -223,8 +306,8 @@ class GPU(QWidget):
 
 
         # Optionally save out the new labels right here
-        np.savez_compressed(self.curated_path, labels=label_map)
-        GPU.log_INFO(f"Refined labels saved to {self.curated_path}")
+        # np.savez_compressed(self.curated_path, labels=label_map)
+        # GPU.log_INFO(f"Refined labels saved to {self.curated_path}")
 
     def run_extract_traces(self):
         threading.Thread(target=self._thread_extract_traces, daemon=True).start()
@@ -241,6 +324,25 @@ class GPU(QWidget):
 
     def run_view_traces(self):
         # no need thread—instant
+        # try:
+        #     view_traces(self.trace_path)
+        # except Exception as e:
+        #     GPU.log_ERRO(f"Trace view failed: {e}")
+        try:
+            save_path, _ = QFileDialog.getSaveFileName(
+                self, "Export traces to CSV", "", "CSV Files (*.csv)")
+            if save_path:
+                data = np.load(self.trace_path)   # assume shape (T, N_rois)
+                # build a header of ROI names
+                num_rois = data.shape[1] if data.ndim > 1 else 1
+                header = ",".join(f"ROI{i+1}" for i in range(num_rois))
+                np.savetxt(save_path, data, delimiter=",",
+                           header=header, comments="")
+                GPU.log_INFO(f"Traces exported to {save_path}")
+        except Exception as e:
+            GPU.log_ERRO(f"Failed to export traces: {e}")
+
+        # then launch your normal viewer
         try:
             view_traces(self.trace_path)
         except Exception as e:

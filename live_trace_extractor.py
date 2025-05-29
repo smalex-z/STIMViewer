@@ -28,12 +28,31 @@ class LiveTraceExtractor:
         
         # plotting
         self.plot = plot_widget
-        self.curves = {
-            rid: self.plot.plot(pen=pg.mkPen(width=2)) for rid in self.ids
-        }
-        self.plot.addLegend()
-        for rid, curve in self.curves.items():
-            curve.setName(f"ROI {rid}")
+        # self.curves = {
+        #     rid: self.plot.plot(pen=pg.mkPen(width=2)) for rid in self.ids
+        # }
+        # self.plot.addLegend()
+        # for rid, curve in self.curves.items():
+        #     self.plot.legend.addItem(curve, f"ROI {rid}")
+        pi = self.plot.getPlotItem()
+        pi.addLegend()
+        vb = pi.getViewBox()
+        vb.setMouseEnabled(x=True, y=False)
+        pi = self.plot.getPlotItem()
+        pi.setLabel('left','Mean Intensity')
+        pi.setLabel('bottom','Frames ago')
+        pi.setYRange(0, 255)          # camera 8-bit range
+        pi.enableAutoRange(axis='y', enable=False)
+        pi.enableAutoRange(axis='x', enable=False)
+        pi.setXRange(0, max_points)
+        vb.setLimits(xMin=0, xMax=max_points)
+
+        self.curves = {}
+        for rid in self.ids:
+            # plot *with* a name so the legend entry is created immediately
+            curve = pi.plot(pen=pg.mkPen(width=2), name=f"ROI {rid}")
+            self.curves[rid] = curve
+
         
         # hook camera
         camera._interface.on_image_received = self.on_frame

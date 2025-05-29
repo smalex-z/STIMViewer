@@ -44,14 +44,16 @@ from PyQt5.QtWidgets import QDockWidget
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtWidgets import QDialog, QLabel, QPushButton, QVBoxLayout
+from PyQt5.QtWidgets import QWidget
+
 from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy, QDialog, QVBoxLayout, QPushButton
 from PyQt5.QtGui import QGuiApplication, QPixmap
-
-
+from camera import Camera
 # Initialize the IDS peak library twice when already done in main_gui.pyw
-ids_peak.Library.Initialize()
-# print("IDS peak library initialized.")
-Logbook.log_buffer.append("IDS peak library initialized.") # add to buffer
+# ids_peak.Library.Initialize()
+# # print("IDS peak library initialized.")
+# Logbook.log_buffer.append("IDS peak library initialized.") # add to buffer
 
 
 
@@ -71,6 +73,12 @@ class Interface(QtWidgets.QMainWindow):
         
         # qt_instance = QtWidgets.QApplication(sys.argv)
         super().__init__()
+        if cam_module is None:
+            
+            self._camera = Camera(ids_peak.DeviceManager.Instance(), self)
+            #raise ValueError("Interface needs a Camera instance")
+        else:
+            self._camera = cam_module
 
         # 2) Splash/launcher dialog (no parent!)
         dlg = QDialog()
@@ -128,8 +136,9 @@ class Interface(QtWidgets.QMainWindow):
         #super().__init__()
         #self.setWindowTitle("STIMViewer")
         self.last_frame_time = time()
-        self.set_camera(cam_module)
+        #self.set_camera(cam_module)
         self.gpu_ui = GPU(camera=self._camera)
+        #self.gpu_ui.connect_camera_callbacks()
         self.gui_init()
         from PyQt5.QtWidgets import QApplication
         app = QApplication.instance()
@@ -137,13 +146,18 @@ class Interface(QtWidgets.QMainWindow):
         
         self._qt_instance.aboutToQuit.connect(self._close)
         self.setMinimumSize(700, 650)
+        
 
     def gui_init(self):
-        self.widget = QtWidgets.QWidget(self)
-        self._layout = QtWidgets.QVBoxLayout()
-        self.widget.setLayout(self._layout)
-        self.setCentralWidget(self.widget)
-        self.display = None
+        container = QWidget()
+        # self.widget = QtWidgets.QWidget(self)
+        # self._layout = QtWidgets.QVBoxLayout()
+        # self.widget.setLayout(self._layout)
+        # self.display = Display()
+        self._layout = QVBoxLayout(container)
+        self.setCentralWidget(container)
+        self.display = Display()
+        self._layout.addWidget(self.display)
         self.projection = None
         self.acquisition_thread = None
         # self.viewer = Viewer()     
@@ -186,7 +200,7 @@ class Interface(QtWidgets.QMainWindow):
         return True
     
     def set_camera(self, cam_module):
-        self._camera = cam_module
+        self._camera = cam_module #.Camera(Camera.device_manager, self)
     
     #GUI Creation
     def _create_button_bar(self):
@@ -415,8 +429,9 @@ class Interface(QtWidgets.QMainWindow):
 
 
     def start_window(self):
-        self.display = Display()
-        self._layout.addWidget(self.display)
+        # self.display = Display()
+        # self.setCentralWidget(self.display())
+        # self._layout.addWidget(self.display)
         if hasattr(self, "_camera") and self._camera is not None and self._camera._device is not None:
             # use the correct attribute name (`display`, not `display_widget`)
             self._camera._interface.on_mask_received = self.display.on_mask_received
@@ -432,10 +447,27 @@ class Interface(QtWidgets.QMainWindow):
         self.projection = ProjectDisplay(screen)
     
     def start_interface(self):
-        self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
+        # self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
         
-        QtCore.QCoreApplication.setApplicationName(
-            "STIMViewer")
+        # QtCore.QCoreApplication.setApplicationName(
+        #     "STIMViewer")
+        # print(">> now in start_interface(), about to exec()")
+        # self.show()
+        # self._qt_instance.exec_()
+        import threading
+        self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
+
+        # — fire up the camera acquisition —
+        if not self._camera.acquisition_running:
+            self._camera.start_realtime_acquisition()
+        self.acquisition_thread = threading.Thread(
+           target=self._camera.acquisition_thread,
+            daemon=True
+        )
+        self.acquisition_thread.start()
+
+        # — now show the window —
+        QtCore.QCoreApplication.setApplicationName("STIMViewer")
         print(">> now in start_interface(), about to exec()")
         self.show()
         self._qt_instance.exec_()

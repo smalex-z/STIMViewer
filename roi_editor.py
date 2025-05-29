@@ -165,6 +165,7 @@ def refine_rois(mean, labels):
     def export():
         """Write the current label map for the next stage."""
         np.savez_compressed("rois_current.npz", labels=lbl.data)
+        
         viewer.status = "Exported rois_current.npz"
 
 

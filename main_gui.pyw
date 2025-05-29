@@ -32,6 +32,11 @@ QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
 from main import main
 from kill_zombies import kill_other_instances
 import sys
+from qt_interface import Interface
+from ids_peak import ids_peak
+from camera import Camera
+
+
 
 export_file = "export_log.txt"
 
@@ -44,10 +49,22 @@ from PyQt5.QtWidgets import QApplication
 
 if __name__ == "__main__":
     kill_other_instances()
-    print("[DEBUG] main_gui.py: __main__ hit", flush=True)
-    app = QApplication(sys.argv)  
 
-    from qt_interface import Interface
-    main(Interface())
+    # 1) Create the Qt app
+    app = QApplication(sys.argv)
+
+    # 2) Init the IDS library
+    ids_peak.Library.Initialize()
+
+    # 3) Build your UI (which will construct the Camera internally)
+    ui = Interface()  
+
+    # 4) Delegate to your main.py “main” function to start acquisition & enter the loop
+    main(ui)  
+
+    # 5) Clean up
+    ids_peak.Library.Close()
+
+
 
   

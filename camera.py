@@ -64,18 +64,22 @@ from ids_peak_ipl import ids_peak_ipl
 from ids_peak import ids_peak_ipl_extension
 from calibration import find_homography
 from PyQt5.QtCore import QTimer
-
+from PyQt5.QtCore import QObject, pyqtSignal #add
 TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
 # os.environ["LD_PRELOAD"] = os.environ.get("LD_PRELOAD", "") + ":/lib/aarch64-linux-gnu/libGLdispatch.so.0"
 # os.environ["QT_XCB_GL_INTEGRATION"] = "none"
-
-class Camera:
+#add
+class Camera(QObject):
+    frame_ready = pyqtSignal(object)
     def __init__(self, device_manager, interface):
+        super().__init__()
+        self.is_recording = False
         if interface is None:
             raise ValueError("Interface is None")
 
         self.device_manager = device_manager
         self._interface = interface
+        self.frame_ready.connect(self._interface.on_image_received)
         self._device = None
         self._datastream = None
         self.acquisition_mode = 0 #0: Real Time, #1: HW Trigger, #2: SW Trigger
@@ -294,7 +298,9 @@ class Camera:
 
             # Kill the datastream to exit out of pending `WaitForFinishedBuffer`
             # calls
-            self._datastream.KillWait()
+            if self.acquisition_running:
+                self._datastream.KillWait
+
             self._datastream.StopAcquisition(ids_peak.AcquisitionStopMode_Default)
             # Discard all buffers from the acquisition engine
             # They remain in the announced buffer pool
@@ -346,6 +352,8 @@ class Camera:
             
             # Use the hardware_trigger_line variable
             self.node_map.FindNode("TriggerSource").SetCurrentEntry(self.hardware_trigger_line)
+            self.node_map.FindNode("TriggerActivation").SetCurrentEntry("RisingEdge")
+
 
             # Start the data stream and acquisition
             self._datastream.StartAcquisition()
@@ -388,13 +396,24 @@ class Camera:
 
 
     def start_recording(self):
+        # if self._datastream is None:
+        #     self._init_data_stream()
+        # fps = int(self.node_map.FindNode("AcquisitionFrameRate").Value()) if self.acquisition_mode == 0 else self.GUIfps
+        # self.video_recorder.start_recording(fps)
+        if self.is_recording:
+            return
         if self._datastream is None:
             self._init_data_stream()
         fps = int(self.node_map.FindNode("AcquisitionFrameRate").Value()) if self.acquisition_mode == 0 else self.GUIfps
         self.video_recorder.start_recording(fps)
+        self.is_recording = True
 
     def stop_recording(self):
+        # self.video_recorder.stop_recording()
+        if not self.is_recording:
+            return
         self.video_recorder.stop_recording()
+        self.is_recording = False
 
     def _valid_name(self, path: str, ext: str):
         num = 0
@@ -478,26 +497,60 @@ class Camera:
         try:
             cwd = os.getcwd()
             converted_ipl_image = None
-            buffer = self._datastream.WaitForFinishedBuffer(500)  # Short timeout
+
+
+            timeout = 500
+
+            if self.acquisition_mode == 1:
+                timeout = 2000
+            try:
+                buffer = self._datastream.WaitForFinishedBuffer(timeout)
+            except ids_peak.Exception as e:
+                if self.acquisition_mode == 1 and "GC_ERR_TIMEOUT" in str(e):
+                    return None  # expected for no trigger
+                elif "GC_ERR_ABORT" in str(e):
+                    print("⚠️ Trigger event was aborted—no trigger received?")
+                    return None
+                else:
+                    print(f"Unhandled camera exception: {e}")
+                    return None
+
 
             if buffer is None:
-                return None  # No buffer available, skip processing
+                if self.acquisition_mode == 1:
+                    time.sleep(0.01)  # prevent spinning CPU while waiting for external trigger
+                return None
+
 
             ipl_image = ids_peak_ipl_extension.BufferToImage(buffer)
             converted_ipl_image = self._image_converter.Convert(ipl_image, TARGET_PIXEL_FORMAT)
             self._datastream.QueueBuffer(buffer)
-            self._interface.on_image_received(converted_ipl_image)
+            #self._interface.on_image_received(converted_ipl_image)
+            self.frame_ready.emit(converted_ipl_image)
 
-            self.video_recorder.add_frame(converted_ipl_image)  # ✅ Use new VideoRecorder
+            #self.video_recorder.add_frame(converted_ipl_image)  # ✅ Use new VideoRecorder
+            threading.Thread(
+                target=self.video_recorder.add_frame,
+                args=(converted_ipl_image,),
+                daemon=True
+            ).start()
 
             if self.save_image:
+                #save_path = self._valid_name(os.path.join(self.save_dir, "image"), ".png")
+                #ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, converted_ipl_image)
                 save_path = self._valid_name(os.path.join(self.save_dir, "image"), ".png")
-                ids_peak_ipl.ImageWriter.WriteAsPNG(save_path, converted_ipl_image)
+                threading.Thread(
+                    target=ids_peak_ipl.ImageWriter.WriteAsPNG,
+                    args=(save_path, converted_ipl_image), 
+                    daemon=True
+                ).start()
                 print(f"Image Saved at {save_path}")
                 self.save_image = False
                 
             return converted_ipl_image
         except ids_peak.Exception as e:
+            if self.acquisition_mode == 1 and "GC_ERR_TIMEOUT" in str(e):
+                return None
             print(f"No buffer available: {e}")
             return None
         

@@ -147,24 +147,26 @@ def start(camera_device: camera.Camera, ui: 'Interface'):
 
 def main(ui: 'Interface'):
     # Initialize library and create a device manager
-    ids_peak.Library.Initialize()
-    device_manager = ids_peak.DeviceManager.Instance()
-    camera_device = None
-    try:
-        camera_device = camera.Camera(device_manager, ui)
-        start(camera_device, ui)
+    # ids_peak.Library.Initialize()
+    # device_manager = ids_peak.DeviceManager.Instance()
+    # camera_device = None
+    # try:
+    #     camera_device = camera.Camera(device_manager, ui)
+    #     start(camera_device, ui)
     
-    except KeyboardInterrupt:
-        print("User interrupt: Exiting...")
-    except Exception as e:
-        print(f"Exception (main): {str(e)}")
-    finally:
-        # Close camera and library after program ends
-        if camera_device is not None:
-            camera_device.close()
-        ids_peak.Library.Close()
+    # except KeyboardInterrupt:
+    #     print("User interrupt: Exiting...")
+    # except Exception as e:
+    #     print(f"Exception (main): {str(e)}")
+    # finally:
+    #     # Close camera and library after program ends
+    #     if camera_device is not None:
+    #         camera_device.close()
+    #     ids_peak.Library.Close()
+    cam = ui._camera
+    start(cam, ui)
 
 
-if __name__ == '__main__':
-    from qt_interface import Interface
-    main(Interface())
+# if __name__ == '__main__':
+#     from qt_interface import Interface
+#     main(Interface())
