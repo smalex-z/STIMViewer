@@ -23,30 +23,12 @@
 # General permission to copy or modify is hereby granted.
 import os
 
-
-# os.environ['QT_QPA_PLATFORM'] = 'egl'
-# os.environ["QT_QPA_PLATFORM"] = "xcb"            # or "desktop"
-# os.environ["QT_OPENGL"]        = "desktop"
-# os.environ["NAPARI_OGL"]       = "desktop"
-# os.environ["VISPY_GL_BACKEND"] = "osmesa"
-# os.environ["QT_XCB_GL_INTEGRATION"] = "none"        # 
-
-
 from PyQt5.QtCore import QCoreApplication, Qt
 QCoreApplication.setAttribute(Qt.AA_UseSoftwareOpenGL)
 
 QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts) 
 QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-# import os
-# from vispy import use                             # 
-# use()
-# vispy.use(gl='gl2')
-# os.environ['QT_QPA_PLATFORM'] = 'eglfs'
 
-# vispy.use('egl')
-# from vispy import app as vispy_app           # 
-#vispy_app.use_app('pyqt5')
-#os.environ["QT_API"] = "PyQt5"
 from main import main
 from kill_zombies import kill_other_instances
 import sys
@@ -57,11 +39,8 @@ if os.path.exists(export_file):
     # Clear the file at the beginning of the program
     open(export_file, "w").close()
     
-# try:
 from PyQt5.QtWidgets import QApplication  
 
-# except ImportError:
-#     from PyQt5.QtWidgets import QApplication
 
 if __name__ == "__main__":
     kill_other_instances()
@@ -70,8 +49,5 @@ if __name__ == "__main__":
 
     from qt_interface import Interface
     main(Interface())
-    # app = QApplication(sys.argv)       
-    # window = Interface()                 
-    # window.show()
-    # sys.exit(app.exec_())
+
   

@@ -1,21 +1,6 @@
-# from PyQt5.QtWidgets import QGridLayout, QPushButton, QWidget, QTextEdit, QVBoxLayout
-# from PyQt5.QtGui import QTextCursor
-# from PyQt5.QtCore import pyqtpyqtSignal
 
-
-# from PyQt5.QtWidgets import (
-#     QGridLayout, QPushButton, QWidget, QTextEdit,
-#     QVBoxLayout, QFileDialog
-# )
-# from PyQt5.QtGui import QTextCursor
-# from PyQt5.QtCore import pyqtpyqtSignal
 import os
 import os
-
-
-
-# 
-# 
 
 from PyQt5.QtWidgets import (
     QGridLayout, QPushButton, QWidget, QTextEdit,
@@ -226,7 +211,7 @@ class GPU(QWidget):
 
         # This call will now succeed with a proper Qt event loop
         label_map = refine_rois(mean, masks)
-        
+
         from projection       import ProjectDisplay
         from PyQt5.QtGui      import QGuiApplication
         from skimage.color    import label2rgb
@@ -382,152 +367,3 @@ class GPU(QWidget):
             self.write_log(f"<br><i>Error exporting log: {str(e)}</i><br>")
         print("Logbook exported to file")
 
-
-# import sys
-# import os
-# import threading
-# import numpy as np
-# import cupy as cp
-# from PyQt5.QtWidgets import (
-#     QApplication, QWidget, QVBoxLayout, QTextEdit, QPushButton,
-#     QGridLayout, QFileDialog, QLabel, QHBoxLayout
-# )
-# from PyQt5.QtGui import QTextCursor
-# from PyQt5.QtCore import pyqtSignal, pyqtSlot
-# import pyqtgraph as pg
-# from make_mmap import make_memmap
-# from otsu_thresh import compute_mean_projection, denoise_and_threshold_gpu, load_movie
-# from roi_editor import ROIEditor
-# from trace_extr import extract_traces
-# from trace_view import view_traces_pyqtgraph
-
-# class GPU(QWidget):
-#     newLog = pyqtSignal(str)
-#     closed = pyqtSignal()
-#     refineRequested = pyqtSignal(np.ndarray, np.ndarray)
-
-#     def __init__(self, camera=None):
-#         super().__init__()
-#         self.setWindowTitle("GPU Pipeline")
-#         self.resize(800, 600)
-#         self.video_path = None
-#         self.memmap_path = "movie_mmap.npy"
-#         self.rois_path = "rois.npz"
-#         self.curated_path = "rois_current.npz"
-#         self.trace_path = "traces_live.npy"
-
-#         # Layouts
-#         layout = QVBoxLayout(self)
-#         self.log_widget = QTextEdit()
-#         self.log_widget.setReadOnly(True)
-#         layout.addWidget(self.log_widget)
-#         self.newLog.connect(self._append_log)
-
-#         # Live trace plot
-#         self.trace_plot = pg.PlotWidget(title="Live ROI Traces")
-#         layout.addWidget(self.trace_plot)
-
-#         # Buttons
-#         btn_layout = QGridLayout()
-#         names = ["> Select Video…", "> Make Memmap", "> Discover ROIs",
-#                  "> Refine ROIs", "> Extract Traces", "> View Traces"]
-#         methods = [self.select_video, self.run_make_memmap, self.run_discover_rois,
-#                    self.run_refine_rois, self.run_extract_traces, self.run_view_traces]
-#         for i, (n, m) in enumerate(zip(names, methods)):
-#             btn = QPushButton(n)
-#             btn.clicked.connect(m)
-#             btn_layout.addWidget(btn, 0, i)
-#         layout.addLayout(btn_layout)
-
-#         # Connect refine signal
-#         self.refineRequested.connect(self._launch_roi_editor)
-#         from PyQt5.QtCore import Qt
-#         self.refineRequested.connect(
-#             self._launch_roi_editor,
-#             type=Qt.QueuedConnection
-#         )
-
-#     def _append_log(self, text):
-#         self.log_widget.append(text)
-#         self.log_widget.moveCursor(QTextCursor.End)
-
-#     def select_video(self):
-#         path, _ = QFileDialog.getOpenFileName(self, "Select video file", "",
-#                                               "Video files (*.avi *.mp4 *.npy)")
-#         if path:
-#             self.video_path = path
-#             self.newLog.emit(f"Selected video: {path}")
-
-#     def run_make_memmap(self):
-#         threading.Thread(target=self._make_memmap, daemon=True).start()
-
-#     def _make_memmap(self):
-#         self.newLog.emit("Making memmap…")
-#         try:
-#             make_memmap(self.video_path, self.memmap_path)
-#             self.newLog.emit(f"Memmap saved to {self.memmap_path}")
-#         except Exception as e:
-#             self.newLog.emit(f"Error: {e}")
-
-#     def run_discover_rois(self):
-#         threading.Thread(target=self._discover_rois, daemon=True).start()
-
-#     def _discover_rois(self):
-#         self.newLog.emit("Discovering ROIs…")
-#         try:
-#             movie = np.load(self.memmap_path, mmap_mode='r')
-#             mean = compute_mean_projection(movie, calib_frames=5400)
-#             masks, _ = denoise_and_threshold_gpu(mean)
-#             np.savez_compressed(self.rois_path, masks=masks)
-#             self.newLog.emit(f"ROIs saved to {self.rois_path}")
-#         except Exception as e:
-#             self.newLog.emit(f"Error: {e}")
-
-#     def run_refine_rois(self):
-#         threading.Thread(target=self._refine_rois_thread, daemon=True).start()
-
-#     def _refine_rois_thread(self):
-#         self.newLog.emit("Refining ROIs…")
-#         try:
-#             mean = compute_mean_projection(load_movie(self.video_path), calib_frames=5400)
-#             masks = np.load(self.rois_path)['masks']
-#             self.refineRequested.emit(mean, masks)
-#         except Exception as e:
-#             self.newLog.emit(f"Error: {e}")
-
-#     @pyqtSlot(np.ndarray, np.ndarray)
-#     def _launch_roi_editor(self, mean, masks):
-#         editor = ROIEditor(mean, masks)
-#         editor.closed = self._on_roi_editor_closed
-#         editor.show()
-#         # self._roi_editor = ROIEditor(mean, masks)
-#         # self._roi_editor.closed.connect(self._on_roi_editor_closed)
-#         # self._roi_editor.show()
-
-#     def _on_roi_editor_closed(self):
-#         # After ROIEditor closes, save curated masks
-#         # Assume ROIEditor writes to self.curated_path
-#         self.newLog.emit(f"Refined ROIs saved to {self.curated_path}")
-
-#     def run_extract_traces(self):
-#         threading.Thread(target=self._extract_traces, daemon=True).start()
-
-#     def _extract_traces(self):
-#         self.newLog.emit("Extracting traces…")
-#         try:
-#             extract_traces(self.memmap_path, self.curated_path, self.trace_path)
-#             self.newLog.emit(f"Traces saved to {self.trace_path}")
-#         except Exception as e:
-#             self.newLog.emit(f"Error: {e}")
-
-#     def run_view_traces(self):
-#         try:
-#             view_traces_pyqtgraph(self.trace_path, mean_source=self.video_path)
-#         except Exception as e:
-#             self.newLog.emit(f"Error: {e}")
-
-# if __name__ == '__main__':
-#     app = QApplication(sys.argv)
-#     gui = GPU()
-#     gui.show()
-#     sys.exit(app.exec_())

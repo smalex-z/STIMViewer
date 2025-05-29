@@ -1,10 +1,5 @@
 import os
 
-# 
-import os
-
-
-
 from PyQt5.QtWidgets import QGridLayout, QPushButton, QWidget, QTextEdit, QVBoxLayout
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtCore import pyqtSignal

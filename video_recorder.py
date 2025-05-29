@@ -1,10 +1,4 @@
-import os
-
-# 
-import os
-
-# 
-
+# video_recorder.py
 import os
 import cv2
 import datetime

@@ -1,9 +1,5 @@
 import os
 
-# 
-import os
-
-# 
 
 from PIL import Image
 from logbook import Logbook

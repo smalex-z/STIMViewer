@@ -1,7 +1,5 @@
 # roi_thresh.py
-import os
-# 
-# 
+
 import os
 
 

@@ -1,13 +1,10 @@
-import os
-import os
 
 
 
 import psutil
 import sys
 import os
-# os.environ["QT_QPA_PLATFORM"] = "xcb"
-# os.environ["QT_OPENGL"] = "desktop" 
+
 
 def kill_other_instances():
     current_pid = os.getpid()

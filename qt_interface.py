@@ -22,12 +22,7 @@
 #
 # General permission to copy or modify is hereby granted.
 import os
-import os
 
-
-
-
-# 
 
 import sys
 import time
@@ -44,32 +39,13 @@ from ids_peak import ids_peak
 from logbook import Logbook
 from gpu_ui import GPU
 from napari import Viewer
-# try:
-#     from PyQt5.QtWidgets import QDockWidget
-#     from PyQt5 import QtCore, QtWidgets, QtGui
-#     from PyQt5.QtCore import Qt
-#     from PyQt5.QtCore import pyqtpyqtSlot as pyqtSlot
-#     from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy, QDialog, QVBoxLayout, QPushButton
-#     from PyQt5.QtGui import QGuiApplication, QPixmap
-# except ImportError:
-#     from PyQt5 import QtCore, QtWidgets, QtGui
-#     from PyQt5.QtCore import Qt
-#     from PyQt5.QtCore import pyqtpyqtSlot as pyqtSlot
-#     from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy, QDialog, QVBoxLayout, QPushButton
-#     from PyQt5.QtGui import QGuiApplication, QPixmap
-# try:
+
 from PyQt5.QtWidgets import QDockWidget
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy, QDialog, QVBoxLayout, QPushButton
 from PyQt5.QtGui import QGuiApplication, QPixmap
-# except ImportError:
-#     from PyQt5 import QtCore, QtWidgets, QtGui
-#     from PyQt5.QtCore import Qt
-#     from PyQt5.QtCore import pyqtSlot
-#     from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy, QDialog, QVBoxLayout, QPushButton
-#     from PyQt5.QtGui import QGuiApplication, QPixmap
 
 
 # Initialize the IDS peak library twice when already done in main_gui.pyw
@@ -77,147 +53,7 @@ ids_peak.Library.Initialize()
 # print("IDS peak library initialized.")
 Logbook.log_buffer.append("IDS peak library initialized.") # add to buffer
 
-# import sys
-# import time
-# import cv2
-# import numpy as np
 
-# from typing import Optional
-
-# from camera import Camera
-# from time import time
-# from display import Display
-# from projection import ProjectDisplay
-# from ids_peak import ids_peak
-
-
-# try:
-#     from PyQt5 import QtCore, QtWidgets, QtGui
-#     from PyQt5.QtCore import Qt
-#     from PyQt5.QtCore import pyqtSlot as Slot
-#     from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy, QDialog, QVBoxLayout, QPushButton
-#     from PyQt5.QtGui import QGuiApplication, QPixmap
-# except ImportError:
-#     from PyQt5 import QtCore, QtWidgets, QtGui
-#     from PyQt5.QtCore import Qt
-#     from PyQt5.QtCore import pyqtSlot as Slot
-#     from PyQt5.QtWidgets import QLabel, QFrame, QSizePolicy, QDialog, QVBoxLayout, QPushButton
-#     from PyQt5.QtGui import QGuiApplication, QPixmap
-
-
-
-# ids_peak.Library.Initialize()
-# print("IDS peak library initialized.")
-
-# class Interface(QtWidgets.QMainWindow):
-#     """
-#     Interface provides a GUI to interact with the camera,
-#     but it is not necessary to understand how to use the API of ids_peak or
-#     ids_peak_ipl.
-#     """
-
-#     messagebox_signal = QtCore.pyqtSignal((str, str))
-#     start_button_signal = QtCore.pyqtSignal()
-#     image_update_signal = QtCore.pyqtSignal(QtGui.QImage)
-
-#     def __init__(self, cam_module: Optional[Camera] = None):
-#         # 1) Initialize Qt
-#         qt_instance = QtWidgets.QApplication(sys.argv)
-
-#         # 2) Splash/launcher dialog (no parent!)
-#         dlg = QDialog()
-#         dlg.setWindowTitle("STIMViewer")
-#         layout = QVBoxLayout(dlg)
-
-#         logo = QLabel()
-#         logo.setAlignment(Qt.AlignCenter)
-#         logo.setPixmap(QPixmap('./Assets/stimviewer-load.png'))
-#         layout.addWidget(logo)
-
-#         # Create horizontal layout for camera selection, projector status, and start button
-#         hbox = QtWidgets.QHBoxLayout()
-
-#         # Camera Type Selection
-#         cam_label = QLabel("Camera Type:")
-#         self.camera_type_dropdown = QtWidgets.QComboBox()
-#         self.camera_type_dropdown.addItems(["IDS_Peak", "MIPI", "Generic Camera"])
-
-#         cam_layout = QtWidgets.QVBoxLayout()
-#         cam_layout.addWidget(cam_label)
-#         cam_layout.addWidget(self.camera_type_dropdown)
-#         hbox.addLayout(cam_layout)
-
-#         # Projector Detection
-#         screens = QGuiApplication.screens()
-#         projector_status = QLabel()
-#         if len(screens) > 1:
-#             projector_status.setText("✅ Projector Connected")
-#             projector_status.setStyleSheet("color: green; font-weight: bold;")
-#         else:
-#             projector_status.setText("❌ No Projector Found")
-#             projector_status.setStyleSheet("color: red; font-weight: bold;")
-#         projector_status.setAlignment(Qt.AlignCenter)
-#         hbox.addWidget(projector_status)
-
-#         # Start Button
-#         btn = QPushButton('Start STIMViewer')
-#         btn.clicked.connect(dlg.accept)
-#         hbox.addWidget(btn)
-
-#         # Add horizontal layout to main vertical layout
-#         layout.addLayout(hbox)
-
-#         # Block here until user hits “Start STIMViewer”
-#         if dlg.exec_() != QDialog.Accepted:
-#             sys.exit(0)
-
-#         self.selected_camera_type = self.camera_type_dropdown.currentText()
-
-        
-#         self._qt_instance = qt_instance
-
-#         # 3) Now actually build your main window
-#         super().__init__()
-#         self.last_frame_time = time()
-#         self.set_camera(cam_module)
-#         self.gui_init()
-#         self.gpu_ui = GPU(camera=self._camera)
-#         self.gui_init()
-#         self._qt_instance.aboutToQuit.connect(self._close)
-#         self.setMinimumSize(700, 650)
-
-#     def gui_init(self):
-#         self.widget = QtWidgets.QWidget(self)
-#         self._layout = QtWidgets.QVBoxLayout()
-#         self.widget.setLayout(self._layout)
-#         self.setCentralWidget(self.widget)
-#         self.display = None
-#         self.projection = None
-#         self.acquisition_thread = None
-
-#         # Buttons
-#         self._button_start = None
-#         self._button_exit = None
-#         self._button_software_trigger = None
-#         self._button_start_hardware_acquisition = None
-#         self._hardware_status = False #False = Display Start, False = End
-#         self._recording_status = False #False = Display Start, False = End
-
-#         self._button_exit = None
-
-#         # Dropdowns set to None placeholders
-#         self._dropdown_pixel_format = None
-#         self._dropdown_trigger_line = None # Dropdown for hardware trigger line
-
-#         self.messagebox_signal[str, str].connect(self.message)
-
-#         self._GUIfps_label = None
-#         self._frame_count = 0
-#         self._error_cont = 0
-#         self._gain_label = None
-
-
-#         self._gain_slider = None
 
 class Interface(QtWidgets.QMainWindow):
     """

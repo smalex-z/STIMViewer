@@ -2,16 +2,6 @@
 import os
 
 
-
-# # os.environ["QT_QPA_PLATFORM"] = "xcb"
-# os.environ["NAPARI_OGL"] = "False" 
-import os
-
-
-
-# os.environ["QT_OPENGL"] = "desktop"
-# 
-
 import cupy as cp, numpy as np, napari
 
 def extract_traces(memmap_path, curated_path, trace_path):
@@ -56,66 +46,3 @@ def extract_traces(memmap_path, curated_path, trace_path):
     # display the masked image
     napari.run()
 
-
-# import sys
-# import os
-# import numpy as np
-# import cupy as cp
-# from PyQt5.QtWidgets import QApplication
-# import pyqtgraph as pg
-
-
-# def extract_traces(memmap_path: str, curated_path: str, trace_path: str) -> None:
-#     """
-#     Extract mean fluorescence traces per ROI using CuPy and NumPy,
-#     save them, and display a projection of ROI pixels on frame 0.
-#     """
-#     # Load movie frames (T, H, W)
-#     movie = np.load(memmap_path, mmap_mode='r')
-#     masks = np.load(curated_path)['masks']  # 2D label map: 0=bg, 1..N=ROIs
-
-#     # Identify ROI IDs (skip background 0)
-#     ids = np.unique(masks)
-#     ids = ids[ids != 0]
-
-#     # Precompute flat indices for each ROI on GPU
-#     pix = [cp.asarray(np.flatnonzero(masks.ravel() == i)) for i in ids]
-
-#     # Allocate trace array on GPU: (num_rois, num_frames)
-#     T, H, W = movie.shape
-#     traces = cp.zeros((len(ids), T), dtype=cp.float32)
-
-#     # Extract mean intensity per ROI per frame
-#     for t in range(T):
-#         frame_flat = cp.asarray(movie[t].ravel(), dtype=cp.float32)
-#         for k, idx in enumerate(pix):
-#             traces[k, t] = frame_flat[idx].mean()
-
-#     # Save traces to disk
-#     cp.save(trace_path, traces)
-
-#     # Prepare projection image: blank background
-#     proj = np.zeros_like(movie[0], dtype=movie.dtype)
-#     proj[masks > 0] = movie[0][masks > 0]
-
-#     # Display projection using PyQt5 + PyQtGraph
-#     app = QApplication.instance() or QApplication(sys.argv)
-#     # Use ImageView for easy contrast controls
-#     view = pg.ImageView()
-#     view.setImage(proj.astype(np.float32), autoLevels=True)
-#     view.setWindowTitle('ROI Projection (Frame 0)')
-#     view.show()
-
-#     # Run Qt event loop
-#     if not QApplication.instance().startingUp():
-#         sys.exit(app.exec_())
-
-
-# if __name__ == '__main__':
-#     # Example invocation:
-#     # python trace_extractor_pyqtgraph.py movie_mmap.npy rois_current.npz traces_live.npy
-#     if len(sys.argv) != 4:
-#         print(f"Usage: {sys.argv[0]} <memmap_path> <curated_path> <trace_path>")
-#         sys.exit(1)
-#     memmap_path, curated_path, trace_path = sys.argv[1:]
-#     extract_traces(memmap_path, curated_path, trace_path)
