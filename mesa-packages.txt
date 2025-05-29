@@ -1,0 +1,37 @@
+ii  libegl-mesa0:arm64                         21.2.6-0ubuntu0.1~20.04.2            arm64        free implementation of the EGL API -- Mesa vendor library
+ii  libegl1-mesa:arm64                         21.2.6-0ubuntu0.1~20.04.2            arm64        transitional dummy package
+ii  libegl1-mesa-dev:arm64                     21.2.6-0ubuntu0.1~20.04.2            arm64        free implementation of the EGL API -- development files
+ii  libgl-dev:arm64                            1.3.2-1~ubuntu0.20.04.2              arm64        Vendor neutral GL dispatch library -- GL development files
+ii  libgl1:arm64                               1.3.2-1~ubuntu0.20.04.2              arm64        Vendor neutral GL dispatch library -- legacy GL support
+ii  libgl1-mesa-dev:arm64                      21.2.6-0ubuntu0.1~20.04.2            arm64        transitional dummy package
+ii  libgl1-mesa-dri:arm64                      21.2.6-0ubuntu0.1~20.04.2            arm64        free implementation of the OpenGL API -- DRI modules
+ii  libgl1-mesa-glx:arm64                      21.2.6-0ubuntu0.1~20.04.2            arm64        transitional dummy package
+ii  libgl2ps1.4                                1.4.0+dfsg1-2                        arm64        Lib providing high quality vector output for OpenGL application
+ii  libglapi-mesa:arm64                        21.2.6-0ubuntu0.1~20.04.2            arm64        free implementation of the GL API -- shared library
+ii  libgles-dev:arm64                          1.3.2-1~ubuntu0.20.04.2              arm64        Vendor neutral GL dispatch library -- GLES development files
+ii  libgles1:arm64                             1.3.2-1~ubuntu0.20.04.2              arm64        Vendor neutral GL dispatch library -- GLESv1 support
+ii  libgles2:arm64                             1.3.2-1~ubuntu0.20.04.2              arm64        Vendor neutral GL dispatch library -- GLESv2 support
+ii  libgles2-mesa:arm64                        21.2.6-0ubuntu0.1~20.04.2            arm64        transitional dummy package
+ii  libgles2-mesa-dev:arm64                    21.2.6-0ubuntu0.1~20.04.2            arm64        transitional dummy package
+ii  libglib-object-introspection-perl          0.048-2build1                        arm64        Perl bindings for gobject-introspection libraries
+ii  libglib-perl:arm64                         3:1.329.2-1                          arm64        interface to the GLib and GObject libraries
+ii  libglib2.0-0:arm64                         2.64.6-1~ubuntu20.04.8               arm64        GLib library of C routines
+ii  libglib2.0-bin                             2.64.6-1~ubuntu20.04.8               arm64        Programs for the GLib library
+ii  libglib2.0-cil                             2.12.40-3                            arm64        CLI binding for the GLib utility library 2.12
+ii  libglib2.0-cil-dev                         2.12.40-3                            arm64        CLI binding for the GLib utility library 2.12
+ii  libglib2.0-data                            2.64.6-1~ubuntu20.04.8               all          Common files for GLib library
+ii  libglib2.0-dev:arm64                       2.64.6-1~ubuntu20.04.8               arm64        Development files for the GLib library
+ii  libglib2.0-dev-bin                         2.64.6-1~ubuntu20.04.8               arm64        Development utilities for the GLib library
+ii  libglib2.0-doc                             2.64.6-1~ubuntu20.04.8               all          Documentation files for the GLib library
+ii  libglib2.0-tests                           2.64.6-1~ubuntu20.04.8               arm64        GLib library of C routines - installed tests
+ii  libglibmm-2.4-1v5:arm64                    2.64.2-1                             arm64        C++ wrapper for the GLib toolkit (shared libraries)
+ii  libglu1-mesa:arm64                         9.0.1-1build1                        arm64        Mesa OpenGL utility library (GLU)
+ii  libglu1-mesa-dev:arm64                     9.0.1-1build1                        arm64        Mesa OpenGL utility library -- development files
+ii  libglusterfs0:arm64                        7.2-2build1                          arm64        GlusterFS shared library
+ii  libglvnd-dev:arm64                         1.3.2-1~ubuntu0.20.04.2              arm64        Vendor neutral GL dispatch library -- development files
+ii  libglvnd0:arm64                            1.3.2-1~ubuntu0.20.04.2              arm64        Vendor neutral GL dispatch library
+ii  libglx-dev:arm64                           1.3.2-1~ubuntu0.20.04.2              arm64        Vendor neutral GL dispatch library -- GLX development files
+ii  libglx-mesa0:arm64                         21.2.6-0ubuntu0.1~20.04.2            arm64        free implementation of the OpenGL API -- GLX vendor library
+ii  libglx0:arm64                              1.3.2-1~ubuntu0.20.04.2              arm64        Vendor neutral GL dispatch library -- GLX support
+ii  libosmesa6:arm64                           21.2.6-0ubuntu0.1~20.04.2            arm64        Mesa Off-screen rendering extension
+ii  mesa-utils                                 8.4.0-1build1                        arm64        Miscellaneous Mesa GL utilities
