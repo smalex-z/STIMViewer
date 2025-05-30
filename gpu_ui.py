@@ -51,7 +51,8 @@ class GPU(QWidget):
         self.requestStartRecording.connect(self.camera.start_recording, QtCore.Qt.QueuedConnection)
         # self.camera.recordingStarted.connect(self.on_recording_started)
         # self.camera.recordingStopped.connect(self.on_recording_stopped)
-
+        if hasattr(GPU.instance, "roiExported"):
+            GPU.instance.roiExported.connect(self.on_roi_exported)
         # layout & log widget
         self.layout = QVBoxLayout(self)
         self.log_widget = log_widget or QTextEdit()
@@ -89,6 +90,18 @@ class GPU(QWidget):
         for msg in GPU.log_buffer:
             self.newLogpyqtSignal.emit(msg)
         GPU.log_buffer.clear()
+
+    @pyqtSlot(object)
+    def on_roi_exported(self, label_data):
+        try:
+            GPU.log_INFO("Received new ROIs from Napari export. Re-initializing live traces.")
+            if self.live_extractor:
+                self.live_extractor.stop()
+                self.live_extractor = None
+            self.start_live_traces()
+        except Exception as e:
+            GPU.log_ERRO(f"Failed to reinit live traces after export: {e}")
+
 
     def init_pipeline_buttons(self):
         """Create buttons for each GPU‐pipeline step."""
@@ -228,7 +241,7 @@ class GPU(QWidget):
 
 
                 # QtCore.QMetaObject.invokeMethod(self.camera, "start_recording", QtCore.Qt.QueuedConnection)
-            GPU.log_INFO("Recording requested after ROI discovery.")
+            # GPU.log_INFO("Recording requested after ROI discovery.")
 
         except Exception as e:
             GPU.log_ERRO(f"ROI discovery failed: {e}")
@@ -344,13 +357,41 @@ class GPU(QWidget):
         label_map, viewer = refine_rois(mean, masks, return_viewer=True)  # refine_rois must support return_viewer=True
 
         # === Step 3: Define restore function on close ===
+        # def restore_after_napari(event=None):
+        #     try:
+        #         self.camera.start_realtime_acquisition()
+        #         GPU.log_INFO("Camera re-enabled after napari closed.")
+        #         #self.run_view_traces()
+                
+        #     except Exception as e:
+        #         GPU.log_ERRO(f"Failed to restore camera after napari: {e}")
         def restore_after_napari(event=None):
+            roi_path =  self.rois_path
             try:
                 self.camera.start_realtime_acquisition()
                 GPU.log_INFO("Camera re-enabled after napari closed.")
-                self.run_view_traces()
+
+                # Step 1: Project the newly exported mask
+                from projection import project_mask  # ensure this module/function is correct
+                label_path = "rois.npz"
+                project_mask(label_path)
+
+                # Step 2: Start recording again
+                self.camera.start_recording()
+                GPU.log_INFO("Recording restarted after napari.")
+
+                # Step 3: Re-initialize live traces
+                self.live_extractor = LiveTraceExtractor(
+                    camera=self.camera,
+                    label_path=roi_path,
+                    plot_widget=self.trace_plot,
+                    max_points=300
+                )
+                GPU.log_INFO("Live trace extractor reinitialized.")
+
             except Exception as e:
-                GPU.log_ERRO(f"Failed to restore camera after napari: {e}")
+                GPU.log_ERRO(f"Failed to restore after napari: {e}")
+
 
         viewer.window._qt_window.closeEvent = restore_after_napari
 
@@ -390,7 +431,8 @@ class GPU(QWidget):
 
         try:
             # show only the last 50 frames of live traces
-            view_traces(self.trace_path, rois_path=self.curated_path if os.path.exists(self.curated_path) else self.rois_path, last_n=100, max_rois=10)
+            # view_traces(self.trace_path, rois_path=self.curated_path if os.path.exists(self.curated_path) else self.rois_path, last_n=100, max_rois=10)
+            self.live_trace_extractor.export_traces("live_traces.npy")
         except Exception as e:
             GPU.log_ERRO(f"Trace view failed: {e}")
 

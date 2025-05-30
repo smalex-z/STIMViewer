@@ -81,6 +81,8 @@ import numpy as np
 import cupy as cp
 import pyqtgraph as pg
 from collections import deque
+import threading
+import queue
 
 class LiveTraceExtractor:
     def __init__(self, camera, label_path, plot_widget: pg.PlotWidget, max_points=500, max_rois=8):
@@ -91,6 +93,9 @@ class LiveTraceExtractor:
         max_points     – how many most recent frames to show
         """
         # Load ROI labels (assumed from projected mask)
+        self.frame_queue = queue.Queue(maxsize=10)
+        self.worker_thread = threading.Thread(target=self._frame_processor, daemon=True)
+        self.worker_thread.start()
         labels = np.load(label_path)['labels']
         self.ids = np.unique(labels)
         self.ids = self.ids[self.ids > 0][:max_rois]  # keep only positive ROI IDs
@@ -119,24 +124,84 @@ class LiveTraceExtractor:
             self.curves[rid] = curve
 
         # Hook camera callback
-        camera._interface.on_image_received = self.on_frame
+        camera.frame_ready.connect(self.on_frame)
 
+
+    
     def on_frame(self, frame):
-        if not isinstance(frame, np.ndarray):
-            frame = np.array(frame)
+        # if not isinstance(frame, np.ndarray):
+        #     frame = np.array(frame)
+        try:
+            self.frame_queue.put_nowait(frame)
+        except queue.Full:
+            pass  # Drop frame if busy
 
-        f_gpu = cp.asarray(frame.ravel(), dtype=cp.float32)
+    # def on_frame(self, frame):
+    #     if not isinstance(frame, np.ndarray):
+    #         frame = np.array(frame)
 
-        for rid, mask_indices in zip(self.ids, self.pix):
-            val = float(f_gpu[mask_indices].mean().get())
-            self.buffers[rid].append(val)
+    #     if frame.ndim == 3 and frame.shape[2] == 4:
+    #         frame = frame[..., 0]  # Use one channel from BGRA
 
-        self._update_plot()
+    #     f_gpu = cp.asarray(frame.ravel(), dtype=cp.float32)
+
+    #     for rid, mask_indices in zip(self.ids, self.pix):
+    #         val = float(f_gpu[mask_indices].mean().get())
+    #         self.buffers[rid].append(val)
+    #     from PyQt5.QtCore import QTimer
+    #     QTimer.singleShot(0, self._update_plot)
+
 
     def _update_plot(self):
+        all_values = []
         for rid, curve in self.curves.items():
             y = list(self.buffers[rid])
+            all_values.extend(y)
             x = list(range(-len(y)+1, 1))
             curve.setData(x, y)
+
+        if all_values:
+            min_y, max_y = np.min(all_values), np.max(all_values)
+            self.plot.setYRange(min_y - 5, max_y + 5)
+
+
+    def _frame_processor(self):
+        while True:
+            frame = self.frame_queue.get()
+
+            try:
+                # Convert IDS Image to NumPy if needed
+                if hasattr(frame, "get_numpy_1D"):
+                    h, w = frame.Height(), frame.Width()
+                    np_frame = np.array(frame.get_numpy_1D(), dtype=np.uint8).reshape((h, w, 4))
+                    frame = np_frame[..., 0]  # Use only one channel
+                elif isinstance(frame, np.ndarray) and frame.ndim == 3 and frame.shape[2] == 4:
+                    frame = frame[..., 0]
+
+                f_gpu = cp.asarray(frame.ravel(), dtype=cp.float32)
+
+                for rid, mask_indices in zip(self.ids, self.pix):
+                    val = float(f_gpu[mask_indices].mean().get())
+                    self.buffers[rid].append(val)
+
+                from PyQt5.QtCore import QTimer
+                QTimer.singleShot(0, self._update_plot)
+
+            except Exception as e:
+                print(f"Frame processing error: {e}")
+                continue
+
+
+    def export_traces(self, output_path="live_traces.npy"):
+        """
+        Save the last N frames of ROI traces to a file.
+        Each row is a frame, each column is an ROI.
+        """
+        try:
+            trace_matrix = np.stack([list(self.buffers[rid]) for rid in self.ids], axis=1)
+            np.save(output_path, trace_matrix)
+            print(f"✅ Traces exported to {output_path} — shape: {trace_matrix.shape}")
+        except Exception as e:
+            print(f"❌ Failed to export traces: {e}")
 
 
