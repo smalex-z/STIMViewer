@@ -48,19 +48,19 @@ def refine_rois(mean, labels):
     qt_canvas = viewer.window.qt_viewer.canvas
     print("passed viewer add labels")
     from PyQt5.QtCore import QTimer
-    QTimer.singleShot(
-        0,
-        lambda: (
-            qt_canvas.update(),            # VisPy repaint
-            qt_canvas.native.update(),     # Qt widget repaint
-        )
-    )
+    # QTimer.singleShot(
+    #     0,
+    #     lambda: (
+    #         qt_canvas.update(),            # VisPy repaint
+    #         qt_canvas.native.update(),     # Qt widget repaint
+    #     )
+    # )
     print("passed viewer add labels")
 
     #lbl.color_mode = "random"
     lbl.contour = 1 # Give each roi a random color contour
     PAD      = 5        # pixels around ROI when cropping
-    @lbl.mouse_double_click_callbacks.append ## appends mouse double clicks to the refine one function
+    # @lbl.mouse_double_click_callbacks.append ## appends mouse double clicks to the refine one function
     def refine_one(layer, event):
         event.handled = True # clear any previous double clicks
         r, c = map(int, event.position) # pick the pixel and roi id
@@ -114,6 +114,7 @@ def refine_rois(mean, labels):
         # single shot ensures we dont have a persistent timer object
         viewer.status = f"ROI {rid} refined (IoU {best_iou:.2f})"
             # update the status bar of napari
+    QTimer.singleShot(0, lambda: lbl.mouse_double_click_callbacks.append(refine_one))
 
     # ---------------- selection widgets --------------------------
     from PyQt5.QtWidgets import QLabel
@@ -131,6 +132,12 @@ def refine_rois(mean, labels):
         """Update the label to show current keep-list."""
         text = ', '.join(map(str, sorted(selected))) or 'none'
         sel_label.setText(f'Selected ROIs: {text}')
+
+    def on_export_clicked():
+        from gpu_ui import GPU
+        GPU.instance.roiExported.emit(lbl.data)
+
+
 
 
     # uses magic gui to build a QT button to toggle the ROI based on the function its over
@@ -160,13 +167,41 @@ def refine_rois(mean, labels):
         refresh_sel_label()
         viewer.status = "Mask reset"
 
-    # saves the current label image to rois_current.npz
+    # # saves the current label image to rois_current.npz
+    # @magicgui(call_button='Export → trace_view')
+    # def export():
+    #     """Write the current label map for the next stage."""
+    #     np.savez_compressed("rois.npz", labels=lbl.data)
+    #     viewer.status = "Exported rois.npz"
+    #     from gpu_ui import GPU
+    #     GPU.instance.roiExported.emit(lbl.data)
     @magicgui(call_button='Export → trace_view')
     def export():
         """Write the current label map for the next stage."""
         np.savez_compressed("rois.npz", labels=lbl.data)
-        
         viewer.status = "Exported rois.npz"
+
+        # === ⬇️ New code: update projection ===
+        from skimage.color import label2rgb
+        from PyQt5.QtGui import QGuiApplication
+        from projection import ProjectDisplay
+        from calibration import find_homography
+        import cv2
+
+        rgb_image = (label2rgb(lbl.data, bg_label=0) * 255).astype(np.uint8)
+        screens = QGuiApplication.screens()
+        screen = screens[1] if len(screens) > 1 else screens[0]
+
+        homography = find_homography()
+
+        viewer.status = "Updated projection"
+        proj = ProjectDisplay(screen)
+        proj.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=homography)
+
+        # === signal live trace update ===
+        from gpu_ui import GPU
+        GPU.instance.roiExported.emit(lbl.data)
+
 
 
     # ---- dock widgets -------------------------------------------

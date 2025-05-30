@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import logbook as Logbook
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageDraw
-
+from gpu_ui import GPU
 
 # Example usage
 """
@@ -143,7 +143,9 @@ def find_homography():
     # Read images
     img2 = cv2.imread("./Assets/Generated/custom_registration_image.png")
     img1 = cv2.imread("./Assets/Generated/calibration_capture_image.png")
-
+    if img1 is None or img2 is None:
+        GPU.log_WARN("Calibration images missing – skipping homography.")
+        return np.eye(3)
     # Convert images to grayscale
     img1_gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
     img2_gray = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)

@@ -62,7 +62,6 @@ from collections import deque
 from ids_peak import ids_peak
 from ids_peak_ipl import ids_peak_ipl
 from ids_peak import ids_peak_ipl_extension
-from calibration import find_homography
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import QObject, pyqtSignal #add
 TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
@@ -76,7 +75,7 @@ class Camera(QObject):
         self.is_recording = False
         if interface is None:
             raise ValueError("Interface is None")
-
+        self.GUIfps = 30 
         self.device_manager = device_manager
         self._interface = interface
         self.frame_ready.connect(self._interface.on_image_received)
@@ -259,6 +258,9 @@ class Camera(QObject):
         for buffer in self._buffer_list:
             self._datastream.QueueBuffer(buffer)
 
+        self.start_continuous_capture()
+
+
 
         # Constant Acquisition Test
         try:
@@ -291,6 +293,7 @@ class Camera(QObject):
 
 
     def stop_realtime_acquisition(self):
+        self.killed = True
         if self._device is None or self.acquisition_running is False:
             return
         try:
@@ -299,7 +302,7 @@ class Camera(QObject):
             # Kill the datastream to exit out of pending `WaitForFinishedBuffer`
             # calls
             if self.acquisition_running:
-                self._datastream.KillWait
+                self._datastream.KillWait()
 
             self._datastream.StopAcquisition(ids_peak.AcquisitionStopMode_Default)
             # Discard all buffers from the acquisition engine
@@ -367,11 +370,18 @@ class Camera(QObject):
         except Exception as e:
             print(f"Exception during start_hardware_acquisition: {e}")
             return False
+        self.start_continuous_capture()
+
         return True
+
+    def start_continuous_capture(self):
+        self.killed = False
+        threading.Thread(target=self.acquisition_thread, daemon=True).start()
+
 
 
     def stop_hardware_acquisition(self):
-        
+        self.killed = True
         if self._device is None or self.acquisition_running is False:
             return
         try:
@@ -426,6 +436,8 @@ class Camera(QObject):
         return build_string()
 
     def start_calibration(self):
+        
+
         def delayed_capture():
              # ✅ Step 4: Capture Image After Projection
             save_path = os.path.join(self.asset_dir, "calibration_capture_image.png")
@@ -444,6 +456,7 @@ class Camera(QObject):
 
         def compute_homography():
             try:
+                from calibration import find_homography
                 homography_matrix = find_homography()
                 self.translation_matrix = homography_matrix
                 print("✅ Homography Computed Successfully!")
@@ -549,16 +562,22 @@ class Camera(QObject):
                 
             return converted_ipl_image
         except ids_peak.Exception as e:
-            if self.acquisition_mode == 1 and "GC_ERR_TIMEOUT" in str(e):
+            if "GC_ERR_TIMEOUT" in str(e):
+                # log only the *first* one every 10 s
+                if time.time() - getattr(self, "_last_to", 0) > 10:
+                    print("⚠️  camera time-out (no trigger) – suppressed further messages")
+                    self._last_to = time.time()
                 return None
-            print(f"No buffer available: {e}")
-            return None
         
 
     def acquisition_thread(self):
+
         while not self.killed:
             try:
                 self.get_data_stream_image()
+                if len(self.frame_times) % 10 == 0:
+                    self.get_actual_fps()
+
             except Exception as e:
                 self._interface.warning(f"Acquisition error: {str(e)}")
                 self.save_image = False
@@ -576,3 +595,13 @@ class Camera(QObject):
             QTimer.singleShot(500, self.start_hardware_acquisition)
             # self.start_hardware_acquisition()
         return new_line
+
+        # camera.py  (add at the end of the class)
+    def stop_acquisition(self):
+        """Stop whichever mode is currently active and make the thread exit cleanly."""
+        self.killed = True
+        if self.acquisition_running:
+            if self.acquisition_mode == 1:          # hardware
+                self.stop_hardware_acquisition()
+            else:                                   # realtime
+                self.stop_realtime_acquisition()

@@ -36,9 +36,10 @@ class VideoRecorder:
         if not self.recording:
             self.recording = True
             Logbook.log_INFO(f"🔴 Recording started at {fps} FPS...")  # ✅ Print when recording starts
+            self.init_video_writer(fps)
             self.video_writer_thread = threading.Thread(target=self._video_writer_loop, daemon=True)
             self.video_writer_thread.start()
-            self.init_video_writer(fps)
+            
 
     def stop_recording(self):
         """Stop recording and finalize the video file."""
@@ -53,18 +54,29 @@ class VideoRecorder:
         self.processing_remaining_frames = True
         QTimer.singleShot(100, self._check_video_writer_status)
 
+        # msg_box = QMessageBox()
+        # msg_box.setIcon(QMessageBox.Information)
+        # msg_box.setWindowTitle("Processing Video")
+        # msg_box.setText(
+        #     f"Recording stopped.\n"
+        #     f"{remaining_frames} frames are remaining to be processed.\n"
+        #     f"Estimated processing time: {estimated_time} seconds."
+        # )
+        # msg_box.setStandardButtons(QMessageBox.Ok)
+        # msg_box.exec_()
+
+        # self.interface._button_start_recording.setEnabled(False)
+        QTimer.singleShot(0, lambda: self._show_processing_message(remaining_frames, estimated_time))
+
+
+    def _show_done_message(self):
         msg_box = QMessageBox()
         msg_box.setIcon(QMessageBox.Information)
-        msg_box.setWindowTitle("Processing Video")
-        msg_box.setText(
-            f"Recording stopped.\n"
-            f"{remaining_frames} frames are remaining to be processed.\n"
-            f"Estimated processing time: {estimated_time} seconds."
-        )
+        msg_box.setWindowTitle("Video Processing Complete")
+        msg_box.setText("Your video has finished processing and is ready for use!")
         msg_box.setStandardButtons(QMessageBox.Ok)
         msg_box.exec_()
-
-        self.interface._button_start_recording.setEnabled(False)
+        self.interface._button_start_recording.setEnabled(True)
 
     def _check_video_writer_status(self):
         """Check if all frames have been written before finalizing the file."""
@@ -75,14 +87,30 @@ class VideoRecorder:
             self.video_writer.release()
             self.video_writer = None
             self.processing_remaining_frames = False
-            self.interface._button_start_recording.setEnabled(True)
+            # self.interface._button_start_recording.setEnabled(True)
 
-            msg_box = QMessageBox()
-            msg_box.setIcon(QMessageBox.Information)
-            msg_box.setWindowTitle("Video Processing Complete")
-            msg_box.setText("Your video has finished processing and is ready for use!")
-            msg_box.setStandardButtons(QMessageBox.Ok)
-            msg_box.exec_()
+            # msg_box = QMessageBox()
+            # msg_box.setIcon(QMessageBox.Information)
+            # msg_box.setWindowTitle("Video Processing Complete")
+            # msg_box.setText("Your video has finished processing and is ready for use!")
+            # msg_box.setStandardButtons(QMessageBox.Ok)
+            # msg_box.exec_()
+            QTimer.singleShot(0, self._show_done_message)
+
+
+    def _show_processing_message(self, frames, time_estimate):
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Information)
+        msg_box.setWindowTitle("Processing Video")
+        msg_box.setText(
+            f"Recording stopped.\n"
+            f"{frames} frames are remaining to be processed.\n"
+            f"Estimated processing time: {time_estimate} seconds."
+        )
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec_()
+        self.interface._button_start_recording.setEnabled(False)
+
 
     def _video_writer_loop(self):
         """Continuously write frames to the video file."""
