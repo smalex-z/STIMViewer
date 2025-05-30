@@ -49,6 +49,9 @@ class GPU(QWidget):
         self.resize(700, 500)
         self.requestStartLiveTraces.connect(self.start_live_traces, QtCore.Qt.QueuedConnection)
         self.requestStartRecording.connect(self.camera.start_recording, QtCore.Qt.QueuedConnection)
+        # self.camera.recordingStarted.connect(self.on_recording_started)
+        # self.camera.recordingStopped.connect(self.on_recording_stopped)
+
         # layout & log widget
         self.layout = QVBoxLayout(self)
         self.log_widget = log_widget or QTextEdit()
@@ -216,7 +219,14 @@ class GPU(QWidget):
             # if not getattr(self.camera, "is_recording", False):
             #     self.camera.start_recording()
             #     GPU.log_INFO("Recording started after ROI discovery.")
-            self.requestStartRecording.emit()
+            # self.requestStartRecording.emit()
+            if not self.camera.is_recording:
+                QtCore.QMetaObject.invokeMethod(self.camera, "start_recording", QtCore.Qt.QueuedConnection)
+                GPU.log_INFO("Recording requested after ROI discovery.")
+
+      
+
+
                 # QtCore.QMetaObject.invokeMethod(self.camera, "start_recording", QtCore.Qt.QueuedConnection)
             GPU.log_INFO("Recording requested after ROI discovery.")
 
@@ -288,30 +298,62 @@ class GPU(QWidget):
         except Exception as e:
             GPU.log_ERRO(f"ROI refinement failed: {e}")
     
+    # @pyqtSlot(object, object)
+    # def _launch_napari_viewer(self, mean, masks):
+    #     """
+    #     This runs on the main (GUI) thread, so Qt is fully available.
+    #     We call your refine_rois() helper here.
+    #     """
+    #     from roi_editor import refine_rois
+
+    #     # This call will now succeed with a proper Qt event loop
+    #     label_map = refine_rois(mean, masks)
+
+    #     from projection       import ProjectDisplay
+    #     from PyQt5.QtGui      import QGuiApplication
+    #     from skimage.color    import label2rgb
+    #     rgb_image = (label2rgb(label_map, bg_label=0) * 255).astype(np.uint8)
+    #     screens = QGuiApplication.screens()
+    #     screen  = screens[1] if len(screens) > 1 else screens[0]
+    #     proj    = ProjectDisplay(screen)
+    #     proj.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
+
+
+    #     # Optionally save out the new labels right here
+    #     # np.savez_compressed(self.curated_path, labels=label_map)
+    #     # GPU.log_INFO(f"Refined labels saved to {self.curated_path}")
     @pyqtSlot(object, object)
     def _launch_napari_viewer(self, mean, masks):
-        """
-        This runs on the main (GUI) thread, so Qt is fully available.
-        We call your refine_rois() helper here.
-        """
         from roi_editor import refine_rois
-
-        # This call will now succeed with a proper Qt event loop
-        label_map = refine_rois(mean, masks)
-
-        from projection       import ProjectDisplay
-        from PyQt5.QtGui      import QGuiApplication
-        from skimage.color    import label2rgb
-        rgb_image = (label2rgb(label_map, bg_label=0) * 255).astype(np.uint8)
-        screens = QGuiApplication.screens()
-        screen  = screens[1] if len(screens) > 1 else screens[0]
-        proj    = ProjectDisplay(screen)
-        proj.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
+        import napari
+        if self.camera.is_recording:
+            self.camera.stop_recording()
+            GPU.log_INFO("Recording stopped before launching napari.")
 
 
-        # Optionally save out the new labels right here
-        # np.savez_compressed(self.curated_path, labels=label_map)
-        # GPU.log_INFO(f"Refined labels saved to {self.curated_path}")
+        # === Step 1: Pause conflicting components ===
+        try:
+            if self.proj_display:
+                self.proj_display.close()
+            self.camera.stop_acquisition()
+            GPU.log_INFO("Paused camera and projection before launching napari.")
+        except Exception as e:
+            GPU.log_WARN(f"Failed to pause components before napari: {e}")
+
+        # === Step 2: Launch napari ===
+        label_map, viewer = refine_rois(mean, masks, return_viewer=True)  # refine_rois must support return_viewer=True
+
+        # === Step 3: Define restore function on close ===
+        def restore_after_napari(event=None):
+            try:
+                self.camera.start_realtime_acquisition()
+                GPU.log_INFO("Camera re-enabled after napari closed.")
+                self.run_view_traces()
+            except Exception as e:
+                GPU.log_ERRO(f"Failed to restore camera after napari: {e}")
+
+        viewer.window._qt_window.closeEvent = restore_after_napari
+
 
     def run_extract_traces(self):
         threading.Thread(target=self._thread_extract_traces, daemon=True).start()
@@ -348,16 +390,22 @@ class GPU(QWidget):
 
         try:
             # show only the last 50 frames of live traces
-            view_traces(self.trace_path, rois_path=self.curated_path if os.path.exists(self.curated_path) else self.rois_path, last_n=5)
+            view_traces(self.trace_path, rois_path=self.curated_path if os.path.exists(self.curated_path) else self.rois_path, last_n=100, max_rois=10)
         except Exception as e:
             GPU.log_ERRO(f"Trace view failed: {e}")
 
 
     def closeEvent(self, event):
-        # Override close event: hide instead of closing.
-        event.ignore()
-        self.hide()
+        # Properly stop recording and acquisition
+        if self.live_extractor:
+            self.live_extractor.stop()
+            self.live_extractor = None
+        if self.camera:
+            self.camera.stop_recording()
+            self.camera.stop_realtime_acquisition()
         self.closed.emit()
+        event.accept()  # Allow the window to actually close
+
 
     def log_init(self):
         self.pause_resume_button = QPushButton("Pause Logging")

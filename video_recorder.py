@@ -35,10 +35,11 @@ class VideoRecorder:
         """Start video recording in a separate thread."""
         if not self.recording:
             self.recording = True
+            self.init_video_writer(fps)
             Logbook.log_INFO(f"🔴 Recording started at {fps} FPS...")  # ✅ Print when recording starts
             self.video_writer_thread = threading.Thread(target=self._video_writer_loop, daemon=True)
             self.video_writer_thread.start()
-            self.init_video_writer(fps)
+            
 
     def stop_recording(self):
         """Stop recording and finalize the video file."""
@@ -91,7 +92,8 @@ class VideoRecorder:
                 frame = self.frame_queue.get(timeout=1)
                 image_np = np.array(frame.get_numpy_1D(), dtype=np.uint8).reshape((frame.Height(), frame.Width(), 4))
                 image_bgr = cv2.cvtColor(image_np, cv2.COLOR_BGRA2BGR)
-                self.video_writer.write(image_bgr)
+                if self.video_writer is not None:
+                    self.video_writer.write(image_bgr)
             except queue.Empty:
                 continue
             except Exception as e:

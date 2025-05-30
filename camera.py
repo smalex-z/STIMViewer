@@ -71,6 +71,9 @@ TARGET_PIXEL_FORMAT = ids_peak_ipl.PixelFormatName_BGRa8
 #add
 class Camera(QObject):
     frame_ready = pyqtSignal(object)
+    recordingStarted = pyqtSignal()
+    recordingStopped = pyqtSignal()
+
     def __init__(self, device_manager, interface):
         super().__init__()
         self.is_recording = False
@@ -393,8 +396,9 @@ class Camera(QObject):
             print("Closed HW Acq")
         except Exception as e:
             print(f"Exception (stop hardware acquisition): {str(e)}")
+    from PyQt5.QtCore import pyqtSlot
 
-
+    @pyqtSlot()
     def start_recording(self):
         # if self._datastream is None:
         #     self._init_data_stream()
@@ -405,15 +409,20 @@ class Camera(QObject):
         if self._datastream is None:
             self._init_data_stream()
         fps = int(self.node_map.FindNode("AcquisitionFrameRate").Value()) if self.acquisition_mode == 0 else self.GUIfps
+        if not fps:
+            print("⚠️ Warning: FPS is zero or undefined. Cannot start recording.")
+            return
         self.video_recorder.start_recording(fps)
         self.is_recording = True
-
+        self.recordingStarted.emit() 
+    @pyqtSlot()
     def stop_recording(self):
         # self.video_recorder.stop_recording()
         if not self.is_recording:
             return
         self.video_recorder.stop_recording()
         self.is_recording = False
+        self.recordingStopped.emit()
 
     def _valid_name(self, path: str, ext: str):
         num = 0
@@ -529,11 +538,12 @@ class Camera(QObject):
             self.frame_ready.emit(converted_ipl_image)
 
             #self.video_recorder.add_frame(converted_ipl_image)  # ✅ Use new VideoRecorder
-            threading.Thread(
-                target=self.video_recorder.add_frame,
-                args=(converted_ipl_image,),
-                daemon=True
-            ).start()
+            if self.is_recording:
+                threading.Thread(
+                    target=self.video_recorder.add_frame,
+                    args=(converted_ipl_image,),
+                    daemon=True
+                ).start()
 
             if self.save_image:
                 #save_path = self._valid_name(os.path.join(self.save_dir, "image"), ".png")

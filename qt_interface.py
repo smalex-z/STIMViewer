@@ -38,7 +38,7 @@ from projection import ProjectDisplay
 from ids_peak import ids_peak
 from logbook import Logbook
 from gpu_ui import GPU
-from napari import Viewer
+# from napari import Viewer
 
 from PyQt5.QtWidgets import QDockWidget
 from PyQt5 import QtCore, QtWidgets, QtGui
@@ -186,6 +186,9 @@ class Interface(QtWidgets.QMainWindow):
         self._button_show_gpu_ui = None
 
         self.messagebox_pyqtSignal[str, str].connect(self.message)
+        self._camera.recordingStarted.connect(self._on_recording_started)
+        self._camera.recordingStopped.connect(self._on_recording_stopped)
+
 
         self._GUIfps_label = None
         self._frame_count = 0
@@ -445,6 +448,22 @@ class Interface(QtWidgets.QMainWindow):
             screen = screens[0]
 
         self.projection = ProjectDisplay(screen)
+
+    @QtCore.pyqtSlot()
+    def _on_recording_started(self):
+        self._recording_status = True
+        self._button_start_recording.setText("Stop Recording")
+        self._button_start_hardware_acquisition.setEnabled(False)
+        self._dropdown_trigger_line.setEnabled(False)
+
+    @QtCore.pyqtSlot()
+    def _on_recording_stopped(self):
+        self._recording_status = False
+        self._button_start_recording.setText("Start Recording")
+        self._button_start_hardware_acquisition.setEnabled(True)
+        if not self._hardware_status:
+            self._dropdown_trigger_line.setEnabled(True)
+
     
     def start_interface(self):
         # self._gain_slider.setMaximum(int(self._camera.max_gain * 100))

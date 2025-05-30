@@ -8,7 +8,7 @@ from otsu_thresh import load_movie, compute_mean_projection   # your file
 
 
 
-def refine_rois(mean, labels):
+def refine_rois(mean, labels, return_viewer=False):
     print("test")
     # Stream 5400 frames average them and return a 2-D float array as the background
     #mean  = compute_mean_projection(load_movie("cropped.avi"), calib_frames=5400)
@@ -161,12 +161,61 @@ def refine_rois(mean, labels):
         viewer.status = "Mask reset"
 
     # saves the current label image to rois_current.npz
+    # @magicgui(call_button='Export → trace_view')
+    # def export():
+    #     """Write the current label map for the next stage."""
+    #     np.savez_compressed("rois.npz", labels=lbl.data)
+        
+    #     viewer.status = "Exported rois.npz"
     @magicgui(call_button='Export → trace_view')
     def export():
-        """Write the current label map for the next stage."""
+        """Write the current label map for the next stage and update the projection."""
+        import os
+        import numpy as np
+        from skimage.color import label2rgb
+        from PyQt5.QtGui import QGuiApplication
+        from projection import ProjectDisplay
+        from calibration import find_homography
+        import cv2
+        from gpu_ui import GPU
+
+        # Save the current label map
         np.savez_compressed("rois.npz", labels=lbl.data)
-        
         viewer.status = "Exported rois.npz"
+
+        try:
+            # Apply label-to-color map
+            rgb_image = (label2rgb(lbl.data, bg_label=0) * 255).astype(np.uint8)
+
+            # Detect available screens
+            screens = QGuiApplication.screens()
+            screen = screens[1] if len(screens) > 1 else screens[0]
+
+            # Load homography
+            homography = find_homography()
+            if homography is None:
+                viewer.status = "⚠️ No homography found – skipping projection."
+                return
+
+            # Close previous projection window if open
+            if hasattr(GPU.instance, "proj_display") and GPU.instance.proj_display:
+                GPU.instance.proj_display.close()
+
+            # Launch new projection
+            GPU.instance.proj_display = ProjectDisplay(screen)
+            GPU.instance.proj_display.show_image_fullscreen_on_second_monitor(
+                rgb_image, homography_matrix=homography
+            )
+
+            viewer.status = "Projection updated and exported."
+
+            # Emit signal to update live trace extractor (if connected)
+            if hasattr(GPU.instance, "roiExported"):
+                GPU.instance.roiExported.emit(lbl.data)
+
+        except Exception as e:
+            viewer.status = f"❌ Export failed: {e}"
+
 
 
     # ---- dock widgets -------------------------------------------
@@ -175,4 +224,7 @@ def refine_rois(mean, labels):
 
     viewer.window.add_dock_widget(sel_label, area='right')
     refresh_sel_label()        # initialize text once
+    if return_viewer:
+        return labels0, viewer
     return labels0
+

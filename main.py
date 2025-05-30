@@ -142,7 +142,14 @@ def start(camera_device: camera.Camera, ui: 'Interface'):
 
     # Assets
     makeWhite(1936, 1096) #resolution
-    create_custom_registration_image()
+    # create_custom_registration_image()
+    create_custom_registration_image(
+        width=1920, 
+        height=1080, 
+        line_color=(0, 255, 0), 
+        fill_color=(0, 0, 0)
+    )
+
 
 
 def main(ui: 'Interface'):
