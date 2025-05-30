@@ -38,7 +38,6 @@ from projection import ProjectDisplay
 from ids_peak import ids_peak
 from logbook import Logbook
 from gpu_ui import GPU
-from napari import Viewer
 
 from PyQt5.QtWidgets import QDockWidget
 from PyQt5 import QtCore, QtWidgets, QtGui

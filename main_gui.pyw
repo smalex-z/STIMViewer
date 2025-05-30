@@ -27,10 +27,15 @@ import os
 # os.environ.setdefault("QT_QPA_PLATFORM",      "xcb")
 # os.environ["QT_QPA_PLATFORM"] = "xcb"
 # os.environ.setdefault("QT_XCB_GL_INTEGRATION", "egl") 
+os.environ["QT_OPENGL"] = "software"
+os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
+os.environ["QT_QPA_PLATFORM"] = "xcb"
+os.environ["QT_XCB_GL_INTEGRATION"] = "none"
 
 # from PyQt5.QtCore import QCoreApplication, Qt
 # QCoreApplication.setAttribute(Qt.AA_UseSoftwareOpenGL)
 from PyQt5.QtCore import QCoreApplication, Qt
+QCoreApplication.setAttribute(Qt.AA_UseSoftwareOpenGL)
 
 QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts) 
 QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)

@@ -1,7 +1,7 @@
 # roi_editor.py
 
 
-import numpy as np, cupy as cp, napari
+import numpy as np, cupy 
 from magicgui import magicgui
 from roi_thresh import threshold_patch
 from otsu_thresh import load_movie, compute_mean_projection   # your file
@@ -25,6 +25,7 @@ def refine_rois(mean, labels):
 
     # Check if labels are assigned
     print("unique IDs now:", np.unique(labels0)[:20])
+    import napari
     viewer = napari.current_viewer() or napari.Viewer()  # get the current viewer or create a new one
     print("passed napari current")
 # Open window
@@ -48,13 +49,13 @@ def refine_rois(mean, labels):
     qt_canvas = viewer.window.qt_viewer.canvas
     print("passed viewer add labels")
     from PyQt5.QtCore import QTimer
-    # QTimer.singleShot(
-    #     0,
-    #     lambda: (
-    #         qt_canvas.update(),            # VisPy repaint
-    #         qt_canvas.native.update(),     # Qt widget repaint
-    #     )
-    # )
+    QTimer.singleShot(
+        0,
+        lambda: (
+            qt_canvas.update(),            # VisPy repaint
+            qt_canvas.native.update(),     # Qt widget repaint
+        )
+    )
     print("passed viewer add labels")
 
     #lbl.color_mode = "random"
