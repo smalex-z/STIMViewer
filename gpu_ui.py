@@ -222,7 +222,11 @@ class GPU(QWidget):
             np.savez_compressed(self.rois_path, masks=masks, sizes=sizes, labels=labeled_image)
             GPU.log_INFO(f"ROIs written to {self.rois_path}")
             # ==== 👇 Start Live Traces automatically ====
-            self.requestStartLiveTraces.emit()
+            # self.requestStartLiveTraces.emit()
+            # Start live trace extraction (queued to GUI thread)
+            QtCore.QMetaObject.invokeMethod(self, "start_live_traces", QtCore.Qt.QueuedConnection)
+            GPU.log_INFO("Live trace extraction requested after ROI discovery.")
+
             # self.start_live_traces()
             # QtCore.QMetaObject.invokeMethod(self, "start_live_traces", QtCore.Qt.QueuedConnection)
 
@@ -282,6 +286,7 @@ class GPU(QWidget):
     #             GPU.log_ERRO(f"Failed to start live traces: {e}")
     #     else:
     #         GPU.log_NOTI("Live trace extractor already running.")
+    @pyqtSlot()
     def start_live_traces(self):
         print("Camera acquisition_running:", self.camera.acquisition_running)
 
@@ -417,6 +422,23 @@ class GPU(QWidget):
                     plot_widget=self.trace_plot,
                     max_points=300
                 )
+
+            #     # Start live trace extraction (queued to GUI thread)
+            # QtCore.QMetaObject.invokeMethod(self, "start_live_traces", QtCore.Qt.QueuedConnection)
+            # GPU.log_INFO("Live trace extraction requested after ROI discovery.")
+
+            # # self.start_live_traces()
+            # # QtCore.QMetaObject.invokeMethod(self, "start_live_traces", QtCore.Qt.QueuedConnection)
+
+            # # ==== 👇 Start recording automatically ====
+            # # if not getattr(self.camera, "is_recording", False):
+            # #     self.camera.start_recording()
+            # #     GPU.log_INFO("Recording started after ROI discovery.")
+            # # self.requestStartRecording.emit()
+            # if not self.camera.is_recording:
+            #     QtCore.QMetaObject.invokeMethod(self.camera, "start_recording", QtCore.Qt.QueuedConnection)
+            #     GPU.log_INFO("Recording requested after ROI discovery.")
+
                 GPU.log_INFO("Live trace extractor reinitialized.")
 
             except Exception as e:
