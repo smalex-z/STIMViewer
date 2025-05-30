@@ -12,13 +12,10 @@ import threading
 import os
 
 import pyqtgraph as pg
+# from live_trace_extractor import export_traces
 from live_trace_extractor import LiveTraceExtractor
 from make_mmap import make_memmap
 from otsu_thresh import compute_mean_projection, denoise_and_threshold_gpu
-from roi_thresh import threshold_patch
-from roi_editor import refine_rois   
-from trace_extr import extract_traces
-from trace_view import view_traces
 import numpy as np
 from otsu_thresh import load_movie, compute_mean_projection, denoise_and_threshold_gpu
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Q_ARG
@@ -263,27 +260,57 @@ class GPU(QWidget):
     #         GPU.log_INFO("Live trace extraction started.")
     #     else:
     #         GPU.log_NOTI("Live trace extractor already running.")
+    # def start_live_traces(self):
+    #     if self.live_extractor is None:
+    #         # Try curated labels first; fall back to discovered ROIs
+    #         roi_path =  self.rois_path
+
+    #         if not os.path.exists(roi_path):
+    #             GPU.log_ERRO("No ROI file found. Run Discover or Refine ROIs first.")
+    #             return
+
+    #         try:
+    #             self.live_extractor = LiveTraceExtractor(
+    #                 camera=self.camera,
+    #                 label_path=roi_path,
+    #                 plot_widget=self.trace_plot,
+    #                 max_points=300
+    #             )
+    #             GPU.log_INFO(f"Live trace extraction started using {os.path.basename(roi_path)}.")
+    #         except Exception as e:
+    #             GPU.log_ERRO(f"Failed to start live traces: {e}")
+    #     else:
+    #         GPU.log_NOTI("Live trace extractor already running.")
     def start_live_traces(self):
-        if self.live_extractor is None:
-            # Try curated labels first; fall back to discovered ROIs
-            roi_path =  self.rois_path
-
-            if not os.path.exists(roi_path):
-                GPU.log_ERRO("No ROI file found. Run Discover or Refine ROIs first.")
-                return
-
-            try:
-                self.live_extractor = LiveTraceExtractor(
-                    camera=self.camera,
-                    label_path=roi_path,
-                    plot_widget=self.trace_plot,
-                    max_points=300
-                )
-                GPU.log_INFO(f"Live trace extraction started using {os.path.basename(roi_path)}.")
-            except Exception as e:
-                GPU.log_ERRO(f"Failed to start live traces: {e}")
-        else:
+        if self.live_extractor is not None:
             GPU.log_NOTI("Live trace extractor already running.")
+            return
+
+        if not self.camera.acquisition_running:
+            GPU.log_WARN("Camera acquisition is not running; attempting to start...")
+            started = self.camera.start_realtime_acquisition()
+            if not started:
+                GPU.log_ERRO("Failed to start camera acquisition. Aborting live trace initialization.")
+                return
+            else:
+                GPU.log_INFO("Camera acquisition started for live trace extraction.")
+
+        roi_path = self.rois_path
+        if not os.path.exists(roi_path):
+            GPU.log_ERRO("No ROI file found. Run Discover or Refine ROIs first.")
+            return
+
+        try:
+            self.live_extractor = LiveTraceExtractor(
+                camera=self.camera,
+                label_path=roi_path,
+                plot_widget=self.trace_plot,
+                max_points=300
+            )
+            GPU.log_INFO(f"Live trace extraction started using {os.path.basename(roi_path)}.")
+        except Exception as e:
+            GPU.log_ERRO(f"Failed to start live traces: {e}")
+
 
     def _thread_refine_rois(self):
         GPU.log_NOTI("Refining ROIs in GUI…")
@@ -396,18 +423,18 @@ class GPU(QWidget):
         viewer.window._qt_window.closeEvent = restore_after_napari
 
 
-    def run_extract_traces(self):
-        threading.Thread(target=self._thread_extract_traces, daemon=True).start()
+    # def run_extract_traces(self):
+    #     threading.Thread(target=self._thread_extract_traces, daemon=True).start()
 
-    def _thread_extract_traces(self):
-        GPU.log_NOTI("Extracting traces…")
-        try:
-            extract_traces(
-                self.memmap_path, self.rois_path, self.trace_path
-            )
-            GPU.log_INFO(f"Traces saved to {self.trace_path}")
-        except Exception as e:
-            GPU.log_ERRO(f"Trace extraction failed: {e}")
+    # def _thread_extract_traces(self):
+    #     GPU.log_NOTI("Extracting traces…")
+    #     try:
+    #         extract_traces(
+    #             self.memmap_path, self.rois_path, self.trace_path
+    #         )
+    #         GPU.log_INFO(f"Traces saved to {self.trace_path}")
+    #     except Exception as e:
+    #         GPU.log_ERRO(f"Trace extraction failed: {e}")
 
     def run_view_traces(self):
         # # no need thread—instant
@@ -432,7 +459,7 @@ class GPU(QWidget):
         try:
             # show only the last 50 frames of live traces
             # view_traces(self.trace_path, rois_path=self.curated_path if os.path.exists(self.curated_path) else self.rois_path, last_n=100, max_rois=10)
-            self.live_trace_extractor.export_traces("live_traces.npy")
+            self.live_extractor.export_traces("live_traces.npy")
         except Exception as e:
             GPU.log_ERRO(f"Trace view failed: {e}")
 

@@ -83,8 +83,11 @@ import pyqtgraph as pg
 from collections import deque
 import threading
 import queue
+from PyQt5.QtCore import QObject, pyqtSignal
 
-class LiveTraceExtractor:
+
+class LiveTraceExtractor(QObject):
+    update_plot_signal = pyqtSignal()
     def __init__(self, camera, label_path, plot_widget: pg.PlotWidget, max_points=500, max_rois=8):
         """
         camera         – your Camera instance
@@ -93,10 +96,16 @@ class LiveTraceExtractor:
         max_points     – how many most recent frames to show
         """
         # Load ROI labels (assumed from projected mask)
+        super().__init__()
+        self.camera =camera
+        self.update_plot_signal.connect(self._update_plot) 
         self.frame_queue = queue.Queue(maxsize=10)
+        self.running = True
         self.worker_thread = threading.Thread(target=self._frame_processor, daemon=True)
         self.worker_thread.start()
         labels = np.load(label_path)['labels']
+        
+        self.check_labels = np.load(label_path)['labels']
         self.ids = np.unique(labels)
         self.ids = self.ids[self.ids > 0][:max_rois]  # keep only positive ROI IDs
 
@@ -105,7 +114,7 @@ class LiveTraceExtractor:
 
         # Pre-allocate buffers for live plotting
         self.buffers = {rid: deque(maxlen=max_points) for rid in self.ids}
-
+       
         # Plot setup
         self.plot = plot_widget
         pi = self.plot.getPlotItem()
@@ -126,30 +135,28 @@ class LiveTraceExtractor:
         # Hook camera callback
         camera.frame_ready.connect(self.on_frame)
 
-
-    
     def on_frame(self, frame):
-        # if not isinstance(frame, np.ndarray):
-        #     frame = np.array(frame)
         try:
             self.frame_queue.put_nowait(frame)
         except queue.Full:
             pass  # Drop frame if busy
 
+
+    
     # def on_frame(self, frame):
-    #     if not isinstance(frame, np.ndarray):
-    #         frame = np.array(frame)
+    #     # if not isinstance(frame, np.ndarray):
+    #     #     frame = np.array(frame)
+    #     # try:
+    #     #     self.frame_queue.put_nowait(frame)
+    #     # except queue.Full:
+    #     #     pass  # Drop frame if busy
+    #     while self.running:
+    #         try:
+    #             self.frame = self.frame_queue.get(timeout=0.5)
+    #         except queue.Empty:
+    #             continue
 
-    #     if frame.ndim == 3 and frame.shape[2] == 4:
-    #         frame = frame[..., 0]  # Use one channel from BGRA
 
-    #     f_gpu = cp.asarray(frame.ravel(), dtype=cp.float32)
-
-    #     for rid, mask_indices in zip(self.ids, self.pix):
-    #         val = float(f_gpu[mask_indices].mean().get())
-    #         self.buffers[rid].append(val)
-    #     from PyQt5.QtCore import QTimer
-    #     QTimer.singleShot(0, self._update_plot)
 
 
     def _update_plot(self):
@@ -166,42 +173,119 @@ class LiveTraceExtractor:
 
 
     def _frame_processor(self):
-        while True:
-            frame = self.frame_queue.get()
+        while self.running:
+            try:
+                frame = self.frame_queue.get(timeout=0.5)
+            except queue.Empty:
+                continue  # Skip this loop, don't go further if no frame
 
             try:
+                print(f"Frame shape: {frame.shape}")  # ✅ This is safe now
+
                 # Convert IDS Image to NumPy if needed
                 if hasattr(frame, "get_numpy_1D"):
                     h, w = frame.Height(), frame.Width()
+                    assert self.labels.shape == (h, w), "Label shape does not match camera frame shape!"
+
                     np_frame = np.array(frame.get_numpy_1D(), dtype=np.uint8).reshape((h, w, 4))
-                    frame = np_frame[..., 0]  # Use only one channel
-                elif isinstance(frame, np.ndarray) and frame.ndim == 3 and frame.shape[2] == 4:
-                    frame = frame[..., 0]
+                    frame = np_frame[..., 0]
+                    print(f"Frame shape (converted NumPy): {frame.shape}")
+                elif isinstance(frame, np.ndarray):
+                    if frame.ndim == 3 and frame.shape[2] == 3:
+                        frame = frame[..., 0]
+                    elif frame.ndim == 2:
+                        pass
+                    else:
+                        raise ValueError("Unsupported frame format.")
 
+                # GPU computation
                 f_gpu = cp.asarray(frame.ravel(), dtype=cp.float32)
-
                 for rid, mask_indices in zip(self.ids, self.pix):
                     val = float(f_gpu[mask_indices].mean().get())
                     self.buffers[rid].append(val)
 
-                from PyQt5.QtCore import QTimer
-                QTimer.singleShot(0, self._update_plot)
+                self.update_plot_signal.emit()
 
             except Exception as e:
-                print(f"Frame processing error: {e}")
+                if isinstance(frame, np.ndarray):
+                    print(f"Frame shape: {frame.shape}")
+                elif hasattr(frame, "Height") and hasattr(frame, "Width"):
+                    print(f"Frame shape (IDS Image): {frame.Height()}x{frame.Width()}")
+                else:
+                    print("Unknown frame type:", type(frame))
+
                 continue
 
 
-    def export_traces(self, output_path="live_traces.npy"):
+
+    def export_traces(self, output_path="live_traces.npy", rois_path="rois.npz", last_n=100, max_rois=10):
         """
-        Save the last N frames of ROI traces to a file.
+        Save the last N frames of ROI traces to a file and visualize them.
         Each row is a frame, each column is an ROI.
         """
         try:
             trace_matrix = np.stack([list(self.buffers[rid]) for rid in self.ids], axis=1)
             np.save(output_path, trace_matrix)
             print(f"✅ Traces exported to {output_path} — shape: {trace_matrix.shape}")
+
+            # Now show a quick plot
+            import matplotlib.pyplot as plt
+            import numpy as np
+            import os
+            import sys
+
+            if not os.path.exists(rois_path):
+                print("❌ No rois.npz found. Run ROI discovery/refinement first.")
+                return
+            if not os.path.exists(output_path):
+                print(f"❌ No trace file found at {output_path}")
+                return
+
+            lab = np.load(rois_path)["labels"].astype(int)
+            ids = np.unique(lab)
+            ids = ids[ids > 0]
+            if ids.size == 0:
+                print("❌ ROI mask contains zero ROIs.")
+                return
+
+            traces = np.load(output_path)
+            if traces.ndim != 2:
+                print("❌ Trace file must be 2D (frames x ROIs).")
+                return
+
+            if traces.shape[0] < traces.shape[1]:
+                traces = traces.T
+
+            T, N = traces.shape
+            if last_n > T:
+                last_n = T
+
+            shown_rois = min(max_rois, N)
+            trace_block = traces[-last_n:, :shown_rois]
+            x = np.arange(-last_n + 1, 1, 1)
+
+            plt.figure(figsize=(12, 6))
+            for i in range(shown_rois):
+                plt.plot(x, trace_block[:, i], label=f"ROI {i+1}")
+            plt.xlabel("Frames ago")
+            plt.ylabel("Mean intensity")
+            plt.title(f"Live ROI Traces — last {last_n} frames, {shown_rois} ROIs")
+            plt.legend(loc="upper right", fontsize="small", ncol=2)
+            plt.grid(True)
+            plt.tight_layout()
+            plt.show()
+
         except Exception as e:
-            print(f"❌ Failed to export traces: {e}")
+            print(f"❌ Failed to export or visualize traces: {e}")
+
+
+
+    def stop(self):
+        self.running = False
+        self.worker_thread.join(timeout=1.0)
+        if hasattr(self.camera, "frame_ready"):
+           self.camera.frame_ready.disconnect(self.on_frame)
+
+
 
 
