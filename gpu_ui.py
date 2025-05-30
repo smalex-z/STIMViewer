@@ -24,6 +24,7 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
 from PyQt5.QtCore import Qt, QMetaObject
 from PyQt5 import QtCore
 from camera import Camera
+import cv2
 
 class GPU(QWidget):
     newLogpyqtSignal = pyqtSignal(str)
@@ -191,6 +192,7 @@ class GPU(QWidget):
             # Load memmap video
             movie = np.load(self.memmap_path, mmap_mode='r')
             self.discovered = compute_mean_projection(movie, calib_frames=5400, chunk_size=200)
+            self.discovered = cv2.resize(self.discovered, (1936, 1096), interpolation=cv2.INTER_NEAREST)
 
             # Threshold and denoise to get masks
             masks, sizes = denoise_and_threshold_gpu(
@@ -208,7 +210,6 @@ class GPU(QWidget):
             from skimage.color import label2rgb
             from projection import ProjectDisplay
             from PyQt5.QtGui import QGuiApplication
-            import cv2
             rgb_image = (label2rgb(labeled_image, bg_label=0) * 255).astype(np.uint8)
             screen = QGuiApplication.screens()[1]  # or [0] if only one
             size = screen.size()
@@ -282,6 +283,8 @@ class GPU(QWidget):
     #     else:
     #         GPU.log_NOTI("Live trace extractor already running.")
     def start_live_traces(self):
+        print("Camera acquisition_running:", self.camera.acquisition_running)
+
         if self.live_extractor is not None:
             GPU.log_NOTI("Live trace extractor already running.")
             return
@@ -456,9 +459,10 @@ class GPU(QWidget):
         # except Exception as e:
         #     GPU.log_ERRO(f"Failed to export traces: {e}")
 
+        if not self.live_extractor:
+            GPU.log_ERRO("Live trace extractor is not running.")
+            return
         try:
-            # show only the last 50 frames of live traces
-            # view_traces(self.trace_path, rois_path=self.curated_path if os.path.exists(self.curated_path) else self.rois_path, last_n=100, max_rois=10)
             self.live_extractor.export_traces("live_traces.npy")
         except Exception as e:
             GPU.log_ERRO(f"Trace view failed: {e}")
