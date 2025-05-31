@@ -21,6 +21,7 @@ charset-normalizer==3.4.2
 click==8.1.8
 cloudpickle==3.1.1
 colorama==0.4.3
+colour==0.1.5
 comm==0.2.2
 command-not-found==0.3
 contourpy==1.1.1
@@ -156,6 +157,7 @@ pycups==1.9.73
 pydantic==2.10.6
 pydantic-compat==0.1.2
 pydantic_core==2.27.2
+pygame==2.6.1
 Pygments==2.19.1
 PyGObject==3.36.0
 PyJWT==1.7.1

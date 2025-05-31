@@ -56,7 +56,6 @@ import cv2
 import threading
 import sys
 
-import datetime
 from os.path import exists
 from video_recorder import VideoRecorder
 from collections import deque

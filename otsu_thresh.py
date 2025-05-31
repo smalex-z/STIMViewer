@@ -2,9 +2,6 @@
 # ran once from main.py per movie
 import os
 
-# 
-import os
-
 
 
 import numpy as np

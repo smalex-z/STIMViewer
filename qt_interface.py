@@ -21,13 +21,12 @@
 # for the use or reliability of any portion of this document.
 #
 # General permission to copy or modify is hereby granted.
-import os
 
 
 import sys
 import time
 import cv2
-import numpy as np
+import numpy 
 
 from typing import Optional
 
@@ -40,7 +39,7 @@ from logbook import Logbook
 from gpu_ui import GPU
 # from napari import Viewer
 
-from PyQt5.QtWidgets import QDockWidget
+# from PyQt5.QtWidgets import QDockWidget
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSlot

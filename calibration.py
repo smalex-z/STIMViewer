@@ -1,14 +1,6 @@
-import os
-
-# 
-import os
-
-
-
 import cv2
-import sys
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot
 import logbook as Logbook
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageDraw

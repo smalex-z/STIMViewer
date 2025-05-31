@@ -1,11 +1,10 @@
-import os
 
 
 import math
 
 try:
-    from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QPushButton, QVBoxLayout
-    from PyQt5.QtGui import QImage, QPainter, QPixmap, QTransform
+    from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
+    from PyQt5.QtGui import QImage, QPainter, QTransform
     from PyQt5.QtCore import QRectF, Qt
     from PyQt5.QtCore import pyqtSlot
 except ImportError:

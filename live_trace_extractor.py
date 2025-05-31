@@ -267,9 +267,8 @@ import threading
 import queue
 from PyQt5.QtCore import QObject, pyqtSignal
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-from PyQt5.QtWidgets import QDialog, QVBoxLayout
-import os
+# from matplotlib.figure import Figure
+# from PyQt5.QtWidgets import QDialog, QVBoxLayout
 import cv2
 import pygame
 

@@ -2,7 +2,6 @@
 
 
 import psutil
-import sys
 import os
 
 

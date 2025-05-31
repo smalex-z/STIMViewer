@@ -1,0 +1,1 @@
+Linux aharonijetson1-desktop 5.10.104-tegra #1 SMP PREEMPT Sun Mar 19 07:55:28 PDT 2023 aarch64 aarch64 aarch64 GNU/Linux

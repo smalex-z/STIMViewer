@@ -107,12 +107,8 @@
 #
 # General permission to copy or modify is hereby granted.
 import os
-import os
 
 
-
-# os.environ["QT_QPA_PLATFORM"] = "xcb"
-# os.environ["QT_OPENGL"] = "desktop" 
 import threading
 
 from ids_peak import ids_peak

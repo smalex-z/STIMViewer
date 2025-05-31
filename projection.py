@@ -1,13 +1,9 @@
-import os
 
-
-
-import sys
 import cv2
 import numpy as np
 
-from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow
-from PyQt5.QtGui import QPixmap, QImage, QGuiApplication
+from PyQt5.QtWidgets import  QLabel, QMainWindow
+from PyQt5.QtGui import QPixmap, QImage
 
 app = None
 image_window = None  # Store the window globally

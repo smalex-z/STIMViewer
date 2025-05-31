@@ -34,7 +34,7 @@ from kill_zombies import kill_other_instances
 import sys
 from qt_interface import Interface
 from ids_peak import ids_peak
-from camera import Camera
+# from camera import Camera
 
 
 
