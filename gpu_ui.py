@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtCore import pyqtSignal
 import threading
-
+import time
 import pyqtgraph as pg
 from live_trace_extractor import LiveTraceExtractor
 from make_mmap import make_memmap
@@ -17,7 +17,6 @@ import numpy as np
 from otsu_thresh import  compute_mean_projection, denoise_and_threshold_gpu
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 import PyQt5.QtCore as QtCore
-from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5 import QtCore
 from camera import Camera
 import cv2
@@ -61,8 +60,8 @@ class GPU(QWidget):
         self.rois_path    = "rois.npz"
         # self.curated_path = "rois_current.npz"
         self.trace_path   = "traces_live.npy"
-        # self.trace_plot = pg.PlotWidget(title="Live ROI Traces")
-        # self.layout.addWidget(self.trace_plot)
+        self.trace_plot = pg.PlotWidget(title="Live ROI Traces")
+        self.layout.addWidget(self.trace_plot)
         self.refineRequested.connect(self._launch_napari_viewer)
 
         # # Add a “Start Live Traces” button
@@ -97,15 +96,28 @@ class GPU(QWidget):
             GPU.log_ERRO(f"Failed to reinit live traces after export: {e}")
 
 
+    # def stop_live_traces(self):
+    #     """Safely stop the live trace extractor if it's running."""
+    #     if self.live_extractor:
+    #         try:
+    #             self.live_extractor.stop()
+    #             self.live_extractor = None
+    #             GPU.log_INFO("Live trace extractor stopped.")
+    #         except Exception as e:
+    #             GPU.log_ERRO(f"Failed to stop live trace extractor: {e}")
     def stop_live_traces(self):
         """Safely stop the live trace extractor if it's running."""
         if self.live_extractor:
             try:
-                self.live_extractor.stop()
-                self.live_extractor = None
-                GPU.log_INFO("Live trace extractor stopped.")
+                if hasattr(self.live_extractor, "stop"):
+                    self.live_extractor.stop()
+                else:
+                    GPU.log_WARN("live_extractor has no stop() method.")
             except Exception as e:
                 GPU.log_ERRO(f"Failed to stop live trace extractor: {e}")
+            finally:
+                self.live_extractor = None
+
 
     def init_pipeline_buttons(self):
         """Create buttons for each GPU‐pipeline step."""
@@ -177,8 +189,7 @@ class GPU(QWidget):
             # Load memmap video
             movie = np.load(self.memmap_path, mmap_mode='r')
             self.discovered = compute_mean_projection(movie, calib_frames=5400, chunk_size=200)
-            import gc
-            gc.collect()
+           
 
             self.discovered = cv2.resize(self.discovered, (1936, 1096), interpolation=cv2.INTER_NEAREST)
 
@@ -187,8 +198,7 @@ class GPU(QWidget):
                 self.discovered, gauss_ksize=(3,3), gauss_sigma=1.5,
                 min_area=60, max_area=300
             )
-            import gc
-            gc.collect()
+           
 
             labeled_image = np.zeros_like(masks[0], dtype=np.int32)
             for i, mask in enumerate(masks, start=1):
@@ -259,6 +269,40 @@ class GPU(QWidget):
         except Exception as e:
             GPU.log_ERRO(f"Failed to start live traces: {e}")
 
+    def _wait_until_camera_stops(self, timeout: float = 2.0):
+        """
+        Block (on the GUI thread) until camera.acquisition_running and camera.is_recording
+        are both False, or until `timeout` seconds have elapsed.
+        
+        This polling ensures the camera’s internal event loop has actually stopped
+        before we begin CPU/GPU work.
+        """
+        start = time.time()
+        # First, tell the camera to stop streaming & recording:
+        try:
+            # It’s often best to stop acquisition before stopping recording,
+            # but your Camera API may differ. If your camera stops recording
+            # first, then streaming, feel free to swap these two lines.
+            if self.camera.acquisition_running:
+                self.camera.stop_realtime_acquisition()
+            if self.camera.is_recording:
+                self.camera.stop_recording()
+        except Exception as e:
+            GPU.log_WARN(f"Error while requesting camera stop: {e}")
+
+        # Now poll until both flags are False or we exceed `timeout`.
+        while True:
+            still_streaming = getattr(self.camera, "acquisition_running", False)
+            still_recording = getattr(self.camera, "is_recording", False)
+            if not still_streaming and not still_recording:
+                return True
+            if (time.time() - start) > timeout:
+                # Timed out waiting for the camera to become idle
+                return False
+            # Sleep very briefly so we don’t lock up the GUI entirely.
+            # Qt will still process events between each short sleep.
+            QtCore.QCoreApplication.processEvents()  # allow Qt to update/wheel
+            time.sleep(0.02)
 
     def _thread_refine_rois(self):
         self.stop_live_traces()
@@ -267,10 +311,7 @@ class GPU(QWidget):
             # load the mean, masks, run your roi_editor logic 
             from otsu_thresh import load_movie, compute_mean_projection
             mean = compute_mean_projection(load_movie(self.video_path), calib_frames=5400)
-            import gc
-            del large_array
-            gc.collect()
-
+            mean = cv2.resize(mean, (1936, 1096), interpolation=cv2.INTER_NEAREST)
             masks = np.load(self.rois_path)["masks"]
             
             self.refineRequested.emit(mean, masks)
@@ -281,8 +322,9 @@ class GPU(QWidget):
     @pyqtSlot(object, object)
     def _launch_napari_viewer(self, mean, masks):
         from roi_editor import refine_rois
+        self.stop_live_traces()
         # import napari
-        self.camera.stop_recording()
+        ok = self._wait_until_camera_stops(timeout=2.0)
         GPU.log_INFO("Recording stopped before launching napari.")
 
 
@@ -325,10 +367,21 @@ class GPU(QWidget):
                 self.proj_display.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
 
                 GPU.log_INFO("Mask projected after napari closed.")
-
+                # QtCore.QTimer.singleShot(50, self._finish_restore)
                 # Restart acquisition, recording, and live traces
+                # self.camera.start_realtime_acquisition()
+                # self.camera.start_recording()
                 self.camera.start_realtime_acquisition()
                 self.camera.start_recording()
+
+                # Only launch LiveTraceExtractor once, in Pygame mode:
+                self.live_extractor = LiveTraceExtractor(
+                    camera=self.camera,
+                    label_path=self.rois_path,
+                    plot_widget=self.trace_plot,
+                    max_points=300,
+                    use_pygame_plot=True          # force Pygame mode
+                )
                 self.start_live_traces()
                 GPU.log_INFO("Camera and live trace restarted after napari.")
 
@@ -338,6 +391,24 @@ class GPU(QWidget):
 
 
         viewer.window._qt_window.closeEvent = restore_after_napari
+
+    # def _finish_restore(self):
+    #     # Called ~50 ms after acquisition started
+    #     if not self.camera.is_recording:
+    #         self.camera.start_recording()
+    #         GPU.log_INFO("Camera recording restarted.")
+
+    #     # Start LiveTraceExtractor with PyQtGraph (no Pygame)
+    #     try:
+    #         self.live_extractor = LiveTraceExtractor(
+    #             camera=self.camera,
+    #             label_path=self.rois_path,
+    #             plot_widget=self.trace_plot,
+    #             max_points=300,
+    #         )
+    #         GPU.log_INFO("LiveTraceExtractor re‐launched.")
+    #     except Exception as e:
+    #         GPU.log_ERRO(f"Failed to relaunch LiveTraceExtractor: {e}")
 
     def run_view_traces(self):
 

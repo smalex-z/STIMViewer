@@ -302,7 +302,7 @@ class Camera(QObject):
             # Kill the datastream to exit out of pending `WaitForFinishedBuffer`
             # calls
             if self.acquisition_running:
-                self._datastream.KillWait
+                self._datastream.KillWait()
 
             self._datastream.StopAcquisition(ids_peak.AcquisitionStopMode_Default)
             # Discard all buffers from the acquisition engine
@@ -515,14 +515,17 @@ class Camera(QObject):
             try:
                 buffer = self._datastream.WaitForFinishedBuffer(timeout)
             except ids_peak.Exception as e:
-                if self.acquisition_mode == 1 and "GC_ERR_TIMEOUT" in str(e):
-                    return None  # expected for no trigger
+                # If acquisition stopped, swallow the timeout silently:
+                if "GC_ERR_TIMEOUT" in str(e):
+                    return None
                 elif "GC_ERR_ABORT" in str(e):
-                    print("⚠️ Trigger event was aborted—no trigger received?")
+                    # often safe to ignore too if we’re tearing down
                     return None
                 else:
+                    # Now this really is an unexpected camera exception; print or emit once:
                     print(f"Unhandled camera exception: {e}")
                     return None
+
 
 
             if buffer is None:
