@@ -18,8 +18,7 @@ import threading
 import time
 import pyqtgraph as pg
 from live_trace_extractor import LiveTraceExtractor
-from live_trace_extractor import LiveTraceExtractorNapari
-
+from live_trace_napari import LiveTraceExtractorNapari
 from make_mmap import make_memmap
 from otsu_thresh import compute_mean_projection, denoise_and_threshold_gpu
 import numpy as np
@@ -267,45 +266,45 @@ class GPU(QWidget):
            
 
             # ==== 👇 Project thresholded masks on STIMViewer ====
-            # from skimage.color import label2rgb
-            # from projection import ProjectDisplay
-            # from PyQt5.QtGui import QGuiApplication
-            # rgb_image = (label2rgb(labeled_image, bg_label=0) * 255).astype(np.uint8)
-            # screen = QGuiApplication.screens()[1]  # or [0] if only one
-            # size = screen.size()
-            # h, w = size.height(), size.width()
-            # rgb_image = cv2.resize(rgb_image, (w, h), interpolation=cv2.INTER_NEAREST)
-            # screens = QGuiApplication.screens()
-            # screen = screens[1] if len(screens) > 1 else screens[0]
-            # self.proj_display = ProjectDisplay(screen)
-            # self.proj_display.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
-            # ==== 👇 Project thresholded masks on STIMViewer ====
             from skimage.color import label2rgb
             from projection import ProjectDisplay
             from PyQt5.QtGui import QGuiApplication
-
-            # 1) camera-label image → RGB
             rgb_image = (label2rgb(labeled_image, bg_label=0) * 255).astype(np.uint8)
-
-            # 2) load camera→projector homography you saved during calibration
-            H = np.load("homography_cam2proj.npy")          # shape (3, 3)
-
-            # 3) warp directly to the projector’s native resolution
-            screen   = QGuiApplication.screens()[1] if len(QGuiApplication.screens()) > 1 \
-                    else QGuiApplication.screens()[0]
-            proj_w, proj_h = screen.size().width(), screen.size().height()
-
-            rgb_image = cv2.warpPerspective(
-                rgb_image, H, (proj_w, proj_h),            # output size = projector pixels
-                flags=cv2.INTER_NEAREST,                   # keep crisp label edges
-                borderMode=cv2.BORDER_CONSTANT, borderValue=0
-            )
-
-            # 4) show it – no further resize, no internal homography
+            screen = QGuiApplication.screens()[1]  # or [0] if only one
+            size = screen.size()
+            h, w = size.height(), size.width()
+            rgb_image = cv2.resize(rgb_image, (w, h), interpolation=cv2.INTER_NEAREST)
+            screens = QGuiApplication.screens()
+            screen = screens[1] if len(screens) > 1 else screens[0]
             self.proj_display = ProjectDisplay(screen)
-            self.proj_display.show_image_fullscreen_on_second_monitor(
-                rgb_image, homography_matrix=None          # already warped
-            )
+            self.proj_display.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
+            # ==== 👇 Project thresholded masks on STIMViewer ====
+            # from skimage.color import label2rgb
+            # from projection import ProjectDisplay
+            # from PyQt5.QtGui import QGuiApplication
+
+            # # 1) camera-label image → RGB
+            # rgb_image = (label2rgb(labeled_image, bg_label=0) * 255).astype(np.uint8)
+
+            # # 2) load camera→projector homography you saved during calibration
+            # H = np.load("homography_cam2proj.npy")          # shape (3, 3)
+
+            # # 3) warp directly to the projector’s native resolution
+            # screen   = QGuiApplication.screens()[1] if len(QGuiApplication.screens()) > 1 \
+            #         else QGuiApplication.screens()[0]
+            # proj_w, proj_h = screen.size().width(), screen.size().height()
+
+            # rgb_image = cv2.warpPerspective(
+            #     rgb_image, H, (proj_w, proj_h),            # output size = projector pixels
+            #     flags=cv2.INTER_NEAREST,                   # keep crisp label edges
+            #     borderMode=cv2.BORDER_CONSTANT, borderValue=0
+            # )
+
+            # # 4) show it – no further resize, no internal homography
+            # self.proj_display = ProjectDisplay(screen)
+            # self.proj_display.show_image_fullscreen_on_second_monitor(
+            #     rgb_image, homography_matrix=None          # already warped
+            # )
 
             np.savez_compressed(self.rois_path, masks=masks, sizes=sizes, labels=labeled_image)
             GPU.log_INFO(f"ROIs written to {self.rois_path}")
@@ -466,36 +465,49 @@ class GPU(QWidget):
         def restore_after_napari(event=None):
             try:
                 event.accept()
+                # from skimage.color import label2rgb
+                # from PyQt5.QtGui import QGuiApplication
+                # import numpy as np, cv2
+                # from projection import ProjectDisplay
+
+                # # --- load latest labels and make them RGB -------------------------
+                # labels     = np.load("rois.npz")["labels"]
+                # rgb_image  = (label2rgb(labels, bg_label=0) * 255).astype(np.uint8)
+
+                # # --- apply camera→projector homography once -----------------------
+                # H = np.load("homography_cam2proj.npy")            # 3×3
+
+                # screens   = QGuiApplication.screens()
+                # screen    = screens[1] if len(screens) > 1 else screens[0]
+                # proj_w, proj_h = screen.size().width(), screen.size().height()
+
+                # rgb_image = cv2.warpPerspective(
+                #     rgb_image, H, (proj_w, proj_h),
+                #     flags=cv2.INTER_NEAREST,
+                #     borderMode=cv2.BORDER_CONSTANT, borderValue=0
+                # )
+                # # ------------------------------------------------------------------
+
+                # # launch / refresh projector window
+                # if self.proj_display:
+                #     self.proj_display.close()
+                # self.proj_display = ProjectDisplay(screen)
+                # self.proj_display.show_image_fullscreen_on_second_monitor(
+                #     rgb_image, homography_matrix=None      # already warped
+                # )
                 from skimage.color import label2rgb
-                from PyQt5.QtGui import QGuiApplication
-                import numpy as np, cv2
                 from projection import ProjectDisplay
-
-                # --- load latest labels and make them RGB -------------------------
+                from PyQt5.QtGui import QGuiApplication
                 labels     = np.load("rois.npz")["labels"]
-                rgb_image  = (label2rgb(labels, bg_label=0) * 255).astype(np.uint8)
-
-                # --- apply camera→projector homography once -----------------------
-                H = np.load("homography_cam2proj.npy")            # 3×3
-
-                screens   = QGuiApplication.screens()
-                screen    = screens[1] if len(screens) > 1 else screens[0]
-                proj_w, proj_h = screen.size().width(), screen.size().height()
-
-                rgb_image = cv2.warpPerspective(
-                    rgb_image, H, (proj_w, proj_h),
-                    flags=cv2.INTER_NEAREST,
-                    borderMode=cv2.BORDER_CONSTANT, borderValue=0
-                )
-                # ------------------------------------------------------------------
-
-                # launch / refresh projector window
-                if self.proj_display:
-                    self.proj_display.close()
+                rgb_image = (label2rgb(labels, bg_label=0) * 255).astype(np.uint8)
+                screen = QGuiApplication.screens()[1]  # or [0] if only one
+                size = screen.size()
+                h, w = size.height(), size.width()
+                rgb_image = cv2.resize(rgb_image, (w, h), interpolation=cv2.INTER_NEAREST)
+                screens = QGuiApplication.screens()
+                screen = screens[1] if len(screens) > 1 else screens[0]
                 self.proj_display = ProjectDisplay(screen)
-                self.proj_display.show_image_fullscreen_on_second_monitor(
-                    rgb_image, homography_matrix=None      # already warped
-                )
+                self.proj_display.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
 
                 GPU.log_INFO("Mask projected after napari closed.")
                 # QtCore.QTimer.singleShot(50, self._finish_restore)
@@ -627,3 +639,58 @@ class GPU(QWidget):
         html = f"<span style='color: {color};'><b>{prefix}</b></span> {message}<br>"
         if cls.instance:
             cls.instance.newLogpyqtSignal.emit(html)
+
+
+
+    # Convenience methods for each log level:
+    @classmethod
+    def log_EMER(cls, message):
+        cls._log_generic("EMER", message)
+
+    @classmethod
+    def log_ALRT(cls, message):
+        cls._log_generic("ALRT", message)
+
+    @classmethod
+    def log_CRIT(cls, message):
+        cls._log_generic("CRIT", message)
+
+    @classmethod
+    def log_ERRO(cls, message):
+        cls._log_generic("ERRO", message)
+
+    @classmethod
+    def log_WARN(cls, message):
+        cls._log_generic("WARN", message)
+
+    @classmethod
+    def log_NOTI(cls, message):
+        cls._log_generic("NOTI", message)
+
+    @classmethod
+    def log_INFO(cls, message):
+        cls._log_generic("INFO", message)
+
+    @classmethod
+    def log_DBUG(cls, message):
+        cls._log_generic("DBUG", message)
+
+    def export_logbook_to_file(self):
+        """
+        Export the log to a file.
+        Each export is appended to the file with an export header and separator.
+        """
+        GPU.export_count += 1
+        # Get all logs from the widget as plain text.
+        log_text = self.log_widget.toPlainText()
+        lines = log_text.splitlines()
+        file_path = "export_log.txt"
+        try:
+            with open(file_path, "a") as f:
+                f.write(f"Export: {GPU.export_count}\n")
+                f.write("\n".join(lines))
+                f.write("\n" + ("-" * 40) + "\n")
+            self.write_log(f"<br><i>Log exported successfully to {file_path}</i><br>")
+        except Exception as e:
+            self.write_log(f"<br><i>Error exporting log: {str(e)}</i><br>")
+        print("Logbook exported to file")

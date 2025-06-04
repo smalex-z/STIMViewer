@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from pathlib import Path
 import os
-
+from typing import Optional
 # use an env-var override so you can change it without editing code again
 SSD_ROOT = Path(os.getenv("STIM_DATA_DIR",
             "/media/aharonilabjetson2/NVMe/stimviewer_data")).expanduser()
@@ -53,8 +53,7 @@ class ProjectDisplay(QMainWindow):
     def show_image_fullscreen_on_second_monitor(
             self,
             image: np.ndarray,
-            homography_matrix: np.ndarray | None = None,
-            mirror: bool = True
+            homography_matrix: Optional[np.ndarray] = None, mirror: bool = True
     ):
         """
         Display `image` full-screen on the chosen monitor.
