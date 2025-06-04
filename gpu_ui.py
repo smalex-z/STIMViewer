@@ -288,7 +288,7 @@ class GPU(QWidget):
             screens = QGuiApplication.screens()
             screen = screens[1] if len(screens) > 1 else screens[0]
             self.proj_display = ProjectDisplay(screen)
-            self.proj_display.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
+            self.proj_display.show_image_fullscreen_on_second_monitor(rgb_image, self.camera.translation_matrix)
             # ==== 👇 Project thresholded masks on STIMViewer ====
             # from skimage.color import label2rgb
             # from projection import ProjectDisplay
@@ -565,7 +565,7 @@ class GPU(QWidget):
                     self.proj_display.close()
                 self.proj_display = ProjectDisplay(screen)
                 self.proj_display.show_image_fullscreen_on_second_monitor(
-                    rgb_image, homography_matrix=None
+                    rgb_image, self.camera.translation_matrix
                 )
                 GPU.log_INFO("Mask re‐projected after Napari closed.")
 
