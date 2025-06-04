@@ -104,7 +104,14 @@ class GPU(QWidget):
             if self.live_extractor_napari:
                 self.live_extractor_napari.stop()
                 self.live_extractor_napari = None
-            self.requestStartLiveTracesNapari.emit()
+            # self.requestStartLiveTracesNapari.emit()
+            self.live_extractor_napari = LiveTraceExtractorNapari(
+                camera=self.camera,
+                label_path=self.rois_path,
+                max_points=300,
+                use_pygame_plot=True
+            )
+
         except Exception as e:
             GPU.log_ERRO(f"Failed to reinit live traces after export: {e}")
 
@@ -225,6 +232,10 @@ class GPU(QWidget):
         GPU.log_NOTI("Discovering ROIs…")
         self.stop_live_traces()
         self.stop_live_traces_napari()
+        if self.camera.is_recording:
+            self.camera.stop_recording()
+            time.sleep(0.05)
+            
         try:
 
             if self._discover_method == "OTSU":
@@ -446,7 +457,10 @@ class GPU(QWidget):
         from roi_editor import refine_rois
         self.stop_live_traces()
         # import napari
-        ok = self._wait_until_camera_stops(timeout=2.0)
+        if self.camera.is_recording:
+            self.camera.stop_recording()
+            time.sleep(0.05)   
+        # ok = self._wait_until_camera_stops(timeout=2.0)
         GPU.log_INFO("Recording stopped before launching napari.")
 
 
@@ -463,8 +477,9 @@ class GPU(QWidget):
 
        
         def restore_after_napari(event=None):
+            event.accept()
             try:
-                event.accept()
+                # event.accept()
                 # from skimage.color import label2rgb
                 # from PyQt5.QtGui import QGuiApplication
                 # import numpy as np, cv2
@@ -526,7 +541,13 @@ class GPU(QWidget):
                 #     use_pygame_plot=True          # force Pygame mode
                 # )
                 # self.start_live_traces_napari()
-                self.requestStartLiveTracesNapari.emit()
+                self.live_extractor_napari = LiveTraceExtractorNapari(
+                    camera=self.camera,
+                    label_path=self.rois_path,
+                    max_points=300,
+                    use_pygame_plot=True
+                )
+
                 GPU.log_INFO("Camera and live trace restarted after napari.")
 
             except Exception as e:

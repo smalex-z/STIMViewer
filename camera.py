@@ -97,7 +97,7 @@ class Camera(QObject):
         self.acquisition_running = False
         self.node_map = None
         self._buffer_list = []
-
+        # self.writer = None
         self.target_gain = 1
         self.max_gain = 1
         self.target_dgain = 1
@@ -426,9 +426,13 @@ class Camera(QObject):
     @pyqtSlot()
     def stop_recording(self):
         # self.video_recorder.stop_recording()
+        # if self.writer is not None:
+        #     self.writer.release()
+        #     self.writer = None
         if not self.is_recording:
             return
         self.video_recorder.stop_recording()
+        time.sleep(0.05)
         self.is_recording = False
         self.recordingStopped.emit()
 
