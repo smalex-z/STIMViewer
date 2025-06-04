@@ -230,7 +230,7 @@ class Interface(QtWidgets.QMainWindow):
         self._button_show_logbook = QtWidgets.QPushButton("Show Logbook")
         self._button_show_logbook.clicked.connect(self.show_logbook)
         
-        self._button_show_gpu_ui = QtWidgets.QPushButton("Show GPU UI")
+        self._button_show_gpu_ui = QtWidgets.QPushButton("Show CRISPI")
         self._button_show_gpu_ui.clicked.connect(self.show_gpu_ui)
 
         # Hardware Trigger Dropdown Initialization 
@@ -387,7 +387,7 @@ class Interface(QtWidgets.QMainWindow):
         self._button_start_recording.setToolTip("Start/Stop recording video of the live feed.")
         self._button_software_trigger.setToolTip("Save the next processed frame.")
         self._button_show_logbook.setToolTip("Show the logbook window.")
-        self._button_show_gpu_ui.setToolTip("Show the GPU UI Window")
+        self._button_show_gpu_ui.setToolTip("Show the CRISPI Window")
         # Slider Lables
         self._gain_label.setToolTip("Adjust the analog gain level (brightness).")
         self._dgain_label.setToolTip("Adjust the digital gain level.")

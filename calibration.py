@@ -105,7 +105,8 @@ def create_custom_registration_image(width, height, line_color, fill_color):
     smiley_center = (width - 1000, height - 950)
     smiley_radius = 100
     draw_smiley_face(draw, smiley_center, smiley_radius, line_color)
-    return img
+    print("Saving Custom Registration Image")
+    img.save("./Assets/Generated/custom_registration_image.png")
 
     
 """
@@ -160,7 +161,7 @@ def find_homography():
     kp2, d2_image = sift.detectAndCompute(img2_gray, None)
 
 
-    Logbook.log_INFO(f"Keypoints detected: {len(kp1)} in image1, {len(kp2)} in image2")
+    print(f"Keypoints detected: {len(kp1)} in image1, {len(kp2)} in image2")
 
     if d1_image is None or d2_image is None:
         raise RuntimeError("❌ Feature detection failed: No keypoints found in one or both images.")
@@ -176,7 +177,7 @@ def find_homography():
 
     # Check if there are enough matches
     if len(matches) < 4:
-        Logbook.log_ALRT("Not enough matches found - at least 4 required. Returning Identity Matrix")
+        print("Not enough matches found - at least 4 required. Returning Identity Matrix")
         return np.eye(3)
 
     no_of_matches = len(matches)
@@ -194,19 +195,19 @@ def find_homography():
     homography, mask = cv2.findHomography(p1_image, p2_image, cv2.RANSAC)
 
     if homography is None:
-        Logbook.log_ERRO("❌ Homography calculation failed. Returning identity matrix.")
+        print("❌ Homography calculation failed. Returning identity matrix.")
         return np.eye(3)
 
     # Print the homography matrix
-    Logbook.log_INFO("Homography matrix:")
-    Logbook.log_INFO(homography)
+    print("Homography matrix:")
+    print(homography)
 
     # Decompose the homography matrix
     tx, ty, sx, sy, angle = decompose_homography(homography)
 
-    Logbook.log_INFO(f"Translation: tx = {tx}, ty = {ty}")
-    Logbook.log_INFO(f"Scaling: sx = {sx}, sy = {sy}")
-    Logbook.log_INFO(f"Rotation angle: {angle} degrees")
+    print(f"Translation: tx = {tx}, ty = {ty}")
+    print(f"Scaling: sx = {sx}, sy = {sy}")
+    print(f"Rotation angle: {angle} degrees")
 
     # Compute the inverse homography matrix
     # Alex's note: not too sure what the point of the inverse is here

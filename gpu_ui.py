@@ -176,7 +176,7 @@ class GPU(QWidget):
 
         menu = QMenu(dd)
 
-        for method in ("Suite2p", "CaImAn", "Custom", "OTSU"):
+        for method in ("Cellpose", "CNMF", "Custom", "OTSU"):
             act = QAction(method, dd)
             # When the user picks “Suite2p” (etc.), we call run_discover_rois(method)
             act.triggered.connect(lambda checked=False, m=method: self.run_discover_rois(m))
@@ -258,14 +258,14 @@ class GPU(QWidget):
                     labeled_image[mask] = i
 
 
-            elif self._discover_method == "Suite2p":
+            elif self._discover_method == "Cellpose":
                 # …call Suite2p’s pipeline on self.memmap_path…
                 # labeled_image, masks, sizes = run_suite2p(self.memmap_path, …)
-                raise NotImplementedError("Suite2p integration not yet implemented")
+                raise NotImplementedError("Cellpose integration not yet implemented")
 
-            elif self._discover_method == "CaImAn":
+            elif self._discover_method == "CNMF":
                 # …call CaImAn’s pipeline on self.memmap_path…
-                raise NotImplementedError("CaImAn integration not yet implemented")
+                raise NotImplementedError("CNMF integration not yet implemented")
 
             elif self._discover_method == "Custom":
                 # …run your custom ROI detection code…
