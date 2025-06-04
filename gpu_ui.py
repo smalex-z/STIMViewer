@@ -353,7 +353,7 @@ class GPU(QWidget):
 
         roi_path = self.rois_path
         if not os.path.exists(roi_path):
-            GPU.log_ERRO("No ROI file found. Run Discover or Refine ROIs first.")
+            GPU.log_ERRO("No ROI file found. Run Discover or Manual Mask first.")
             return
 
         try:
@@ -439,7 +439,7 @@ class GPU(QWidget):
 
     def _thread_refine_rois(self):
         self.stop_live_traces_napari()
-        GPU.log_NOTI("Refining ROIs in GUI…")
+        GPU.log_NOTI("Manual Mask Generation…")
         try:
             # load the mean, masks, run your roi_editor logic 
             from otsu_thresh import load_movie, compute_mean_projection
@@ -477,9 +477,8 @@ class GPU(QWidget):
 
        
         def restore_after_napari(event=None):
-            event.accept()
             try:
-                # event.accept()
+                event.accept()
                 # from skimage.color import label2rgb
                 # from PyQt5.QtGui import QGuiApplication
                 # import numpy as np, cv2
@@ -541,12 +540,16 @@ class GPU(QWidget):
                 #     use_pygame_plot=True          # force Pygame mode
                 # )
                 # self.start_live_traces_napari()
-                self.live_extractor_napari = LiveTraceExtractorNapari(
-                    camera=self.camera,
-                    label_path=self.rois_path,
-                    max_points=300,
-                    use_pygame_plot=True
-                )
+                if self.live_extractor_napari:
+                    self.live_extractor_napari.stop()
+                    self.live_extractor_napari = None
+                QtCore.QTimer.singleShot(100, self._spawn_pygame_extractor)
+                # self.live_extractor_napari = LiveTraceExtractor(
+                #     camera=self.camera,
+                #     label_path=self.rois_path,
+                #     max_points=300,
+                #     use_pygame_plot=True
+                # )
 
                 GPU.log_INFO("Camera and live trace restarted after napari.")
 
@@ -557,6 +560,21 @@ class GPU(QWidget):
 
         viewer.window._qt_window.closeEvent = restore_after_napari
 
+    def _spawn_pygame_extractor(self):
+        # Double-check that camera is truly streaming:
+        if not self.camera.acquisition_running:
+            GPU.log_WARN("Camera not streaming yet; extractor will retry in 50 ms")
+            QtCore.QTimer.singleShot(50, self._spawn_pygame_extractor)
+            return
+
+        # Now that camera is up, build the Pygame extractor:
+        self.live_extractor = LiveTraceExtractor(
+            camera=self.camera,
+            label_path=self.rois_path,
+            max_points=300,
+            use_pygame_plot=True
+        )
+        GPU.log_INFO("LiveTraceExtractor (pygame) started after Napari closed.")
     # def _finish_restore(self):
     #     # Called ~50 ms after acquisition started
     #     if not self.camera.is_recording:

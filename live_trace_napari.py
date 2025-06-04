@@ -579,5 +579,16 @@ class LiveTraceExtractorNapari(QObject):
         self.worker_thread.join(timeout=1.0)
         if hasattr(self.camera, "frame_ready"):
             self.camera.frame_ready.disconnect(self.on_frame)
-        if self.use_pygame_plot:
-            pygame.quit()
+        # if self.use_pygame_plot:
+        #     pygame.quit()
+
+    def export_traces(self, output_path="live_traces.npy", rois_path="rois.npz", last_n=100, max_rois=10):
+        try:
+            if len(self.ids) == 0 or not self.buffers or all(len(self.buffers[rid]) == 0 for rid in self.ids):
+                print("❌ No ROI traces available for export.")
+                return
+            trace_matrix = np.stack([list(self.buffers[rid]) for rid in self.ids], axis=1)
+            np.save(output_path, trace_matrix)
+            print(f"✅ Traces exported to {output_path} — shape: {trace_matrix.shape}")
+        except Exception as e:
+            print(f"❌ Failed to export traces: {e}")
