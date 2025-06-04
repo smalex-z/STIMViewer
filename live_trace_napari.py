@@ -91,6 +91,8 @@ import pygame
 #         self.update_plot_signal.connect(self._update_plot)
 #         self.frame_queue = queue.Queue(maxsize=10)
 #         self.running = True
+#         self._frame_count = 0
+#         self._update_every_n = 3
 
 #         # ─── FIRST, initialize Pygame if requested ───────────────────────────
 #         if self.use_pygame_plot:
@@ -295,7 +297,7 @@ import pygame
 #             pygame.quit()
 
 
-class LiveTraceExtractor(QObject):
+class LiveTraceExtractorNapari(QObject):
     update_plot_signal = pyqtSignal()
 
     def __init__(self,

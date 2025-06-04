@@ -1,3 +1,10 @@
+from pathlib import Path
+import os
+
+# use an env-var override so you can change it without editing code again
+SSD_ROOT = Path(os.getenv("STIM_DATA_DIR",
+            "/media/aharonilabjetson2/NVMe/stimviewer_data")).expanduser()
+SSD_ROOT.mkdir(parents=True, exist_ok=True)      # auto-create on first run
 
 import os
 
@@ -11,6 +18,8 @@ import threading
 import time
 import pyqtgraph as pg
 from live_trace_extractor import LiveTraceExtractor
+from live_trace_extractor import LiveTraceExtractorNapari
+
 from make_mmap import make_memmap
 from otsu_thresh import compute_mean_projection, denoise_and_threshold_gpu
 import numpy as np
@@ -30,6 +39,7 @@ class GPU(QWidget):
     refineRequested = pyqtSignal(object, object)
     requestStartLiveTraces = pyqtSignal()
     requestStartRecording   = pyqtSignal()
+    requestStartLiveTracesNapari = pyqtSignal()
 
     def __init__(self, camera: Camera, logger=None, log_widget=None):
         super().__init__()
@@ -38,9 +48,10 @@ class GPU(QWidget):
         self.camera = camera
         GPU.instance = self
         #self.camera = camera 
-        self.setWindowTitle("GPU Pipeline")
+        self.setWindowTitle("CRISPI")
         self.resize(700, 500)
         self.requestStartLiveTraces.connect(self.start_live_traces, QtCore.Qt.QueuedConnection)
+        self.requestStartLiveTraces.connect(self.start_live_traces_napari, QtCore.Qt.QueuedConnection)
         self.requestStartRecording.connect(self.camera.start_recording, QtCore.Qt.QueuedConnection)
         # self.camera.recordingStarted.connect(self.on_recording_started)
         # self.camera.recordingStopped.connect(self.on_recording_stopped)
@@ -60,8 +71,8 @@ class GPU(QWidget):
         self.rois_path    = "rois.npz"
         # self.curated_path = "rois_current.npz"
         self.trace_path   = "traces_live.npy"
-        self.trace_plot = pg.PlotWidget(title="Live ROI Traces")
-        self.layout.addWidget(self.trace_plot)
+        # self.trace_plot = pg.PlotWidget(title="Live ROI Traces")
+        # self.layout.addWidget(self.trace_plot)
         self.refineRequested.connect(self._launch_napari_viewer)
 
         # # Add a “Start Live Traces” button
@@ -73,6 +84,7 @@ class GPU(QWidget):
 
         # storage for our extractor
         self.live_extractor = None
+        self.live_extractor_napari = None
         # add pause/export controls
         self.log_init()
 
@@ -88,10 +100,10 @@ class GPU(QWidget):
     def on_roi_exported(self, label_data):
         try:
             GPU.log_INFO("Received new ROIs from Napari export. Re-initializing live traces.")
-            if self.live_extractor:
-                self.live_extractor.stop()
-                self.live_extractor = None
-            self.start_live_traces()
+            if self.live_extractor_napari:
+                self.live_extractor_napari.stop()
+                self.live_extractor_napari = None
+            self.start_live_traces_napari()
         except Exception as e:
             GPU.log_ERRO(f"Failed to reinit live traces after export: {e}")
 
@@ -118,6 +130,19 @@ class GPU(QWidget):
             finally:
                 self.live_extractor = None
 
+    def stop_live_traces_napari(self):
+        """Safely stop the live trace extractor if it's running."""
+        if self.live_extractor_napari:
+            try:
+                if hasattr(self.live_extractor_napari, "stop"):
+                    self.live_extractor_napari.stop()
+                else:
+                    GPU.log_WARN("live_extractor has no stop() method.")
+            except Exception as e:
+                GPU.log_ERRO(f"Failed to stop live trace extractor: {e}")
+            finally:
+                self.live_extractor_napari = None
+
 
     def init_pipeline_buttons(self):
         """Create buttons for each GPU‐pipeline step."""
@@ -134,13 +159,26 @@ class GPU(QWidget):
         btn.clicked.connect(self.run_make_memmap)
         grid.addWidget(btn, row, 1)
 
+        from PyQt5.QtWidgets import QToolButton, QMenu, QAction
+
         # 3) Detect ROIs
-        btn = QPushButton("➤ Discover ROIs")
-        btn.clicked.connect(self.run_discover_rois)
-        grid.addWidget(btn, row, 2)
+        dd = QToolButton()
+        dd.setText("➤ Discover Mask")
+        dd.setPopupMode(QToolButton.InstantPopup)
+
+        menu = QMenu(dd)
+
+        for method in ("Suite2p", "CaImAn", "Custom", "OTSU"):
+            act = QAction(method, dd)
+            # When the user picks “Suite2p” (etc.), we call run_discover_rois(method)
+            act.triggered.connect(lambda checked=False, m=method: self.run_discover_rois(m))
+            menu.addAction(act)
+
+        dd.setMenu(menu)
+        grid.addWidget(dd, row, 2)
 
         # 4) Refine curated ROIs
-        btn = QPushButton("➤ Refine ROIs")
+        btn = QPushButton("➤ Manual Mask Editor")
         btn.clicked.connect(self.run_refine_rois)
         grid.addWidget(btn, row, 3)
 
@@ -150,7 +188,7 @@ class GPU(QWidget):
         # grid.addWidget(btn, row, 4)
 
         # 6) View traces
-        btn = QPushButton("▶ Export/View Traces")
+        btn = QPushButton("▶ Export Traces")
         btn.clicked.connect(self.run_view_traces)
         grid.addWidget(btn, row, 5)
 
@@ -176,7 +214,8 @@ class GPU(QWidget):
         except Exception as e:
             GPU.log_ERRO(f"Memmap failed: {e}")
 
-    def run_discover_rois(self):
+    def run_discover_rois(self, method="OTSU"):
+        self._discover_method = method
         threading.Thread(target=self._thread_discover_rois, daemon=True).start()
 
   
@@ -186,39 +225,82 @@ class GPU(QWidget):
         self.stop_live_traces()
 
         try:
-            # Load memmap video
-            movie = np.load(self.memmap_path, mmap_mode='r')
-            self.discovered = compute_mean_projection(movie, calib_frames=5400, chunk_size=200)
-           
 
-            self.discovered = cv2.resize(self.discovered, (1936, 1096), interpolation=cv2.INTER_NEAREST)
+            if self._discover_method == "OTSU":
+                # Load memmap video
+                movie = np.load(self.memmap_path, mmap_mode='r')
+                self.discovered = compute_mean_projection(movie, calib_frames=5400, chunk_size=200)
+            
 
-            # Threshold and denoise to get masks
-            masks, sizes = denoise_and_threshold_gpu(
-                self.discovered, gauss_ksize=(3,3), gauss_sigma=1.5,
-                min_area=60, max_area=300
-            )
-           
+                self.discovered = cv2.resize(self.discovered, (1936, 1096), interpolation=cv2.INTER_NEAREST)
 
-            labeled_image = np.zeros_like(masks[0], dtype=np.int32)
-            for i, mask in enumerate(masks, start=1):
-                labeled_image[mask] = i
+                # Threshold and denoise to get masks
+                masks, sizes = denoise_and_threshold_gpu(
+                    self.discovered, gauss_ksize=(3,3), gauss_sigma=1.5,
+                    min_area=60, max_area=300
+                )
+            
+
+                labeled_image = np.zeros_like(masks[0], dtype=np.int32)
+                for i, mask in enumerate(masks, start=1):
+                    labeled_image[mask] = i
+
+            elif self._discover_method == "Suite2p":
+                pass
+            
+            elif self._discover_method == "CaImAn":
+                pass
+
+
+            elif self._discover_method == "Custom":
+                pass
+
+            else:
+                raise ValueError(f"Unknown ROI Method: {self._discover_method}")
             # Save original discovered ROIs
            
 
             # ==== 👇 Project thresholded masks on STIMViewer ====
+            # from skimage.color import label2rgb
+            # from projection import ProjectDisplay
+            # from PyQt5.QtGui import QGuiApplication
+            # rgb_image = (label2rgb(labeled_image, bg_label=0) * 255).astype(np.uint8)
+            # screen = QGuiApplication.screens()[1]  # or [0] if only one
+            # size = screen.size()
+            # h, w = size.height(), size.width()
+            # rgb_image = cv2.resize(rgb_image, (w, h), interpolation=cv2.INTER_NEAREST)
+            # screens = QGuiApplication.screens()
+            # screen = screens[1] if len(screens) > 1 else screens[0]
+            # self.proj_display = ProjectDisplay(screen)
+            # self.proj_display.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
+            # ==== 👇 Project thresholded masks on STIMViewer ====
             from skimage.color import label2rgb
             from projection import ProjectDisplay
             from PyQt5.QtGui import QGuiApplication
+
+            # 1) camera-label image → RGB
             rgb_image = (label2rgb(labeled_image, bg_label=0) * 255).astype(np.uint8)
-            screen = QGuiApplication.screens()[1]  # or [0] if only one
-            size = screen.size()
-            h, w = size.height(), size.width()
-            rgb_image = cv2.resize(rgb_image, (w, h), interpolation=cv2.INTER_NEAREST)
-            screens = QGuiApplication.screens()
-            screen = screens[1] if len(screens) > 1 else screens[0]
+
+            # 2) load camera→projector homography you saved during calibration
+            H = np.load("homography_cam2proj.npy")          # shape (3, 3)
+
+            # 3) warp directly to the projector’s native resolution
+            screen   = QGuiApplication.screens()[1] if len(QGuiApplication.screens()) > 1 \
+                    else QGuiApplication.screens()[0]
+            proj_w, proj_h = screen.size().width(), screen.size().height()
+
+            rgb_image = cv2.warpPerspective(
+                rgb_image, H, (proj_w, proj_h),            # output size = projector pixels
+                flags=cv2.INTER_NEAREST,                   # keep crisp label edges
+                borderMode=cv2.BORDER_CONSTANT, borderValue=0
+            )
+
+            # 4) show it – no further resize, no internal homography
             self.proj_display = ProjectDisplay(screen)
-            self.proj_display.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
+            self.proj_display.show_image_fullscreen_on_second_monitor(
+                rgb_image, homography_matrix=None          # already warped
+            )
+
             np.savez_compressed(self.rois_path, masks=masks, sizes=sizes, labels=labeled_image)
             GPU.log_INFO(f"ROIs written to {self.rois_path}")
       
@@ -269,6 +351,39 @@ class GPU(QWidget):
         except Exception as e:
             GPU.log_ERRO(f"Failed to start live traces: {e}")
 
+    @pyqtSlot()
+    def start_live_traces_napari(self):
+        print("Camera acquisition_running:", self.camera.acquisition_running)
+
+        if self.live_extractor_napari is not None:
+            GPU.log_NOTI("Live trace extractor already running.")
+            return
+
+        if not self.camera.acquisition_running:
+            GPU.log_WARN("Camera acquisition is not running; attempting to start...")
+            started = self.camera.start_realtime_acquisition()
+            if not started:
+                GPU.log_ERRO("Failed to start camera acquisition. Aborting live trace initialization.")
+                return
+            else:
+                GPU.log_INFO("Camera acquisition started for live trace extraction.")
+
+        roi_path = self.rois_path
+        if not os.path.exists(roi_path):
+            GPU.log_ERRO("No ROI file found. Run Discover or Refine ROIs first.")
+            return
+
+        try:
+            self.live_extractor_napari = LiveTraceExtractorNapari(
+                camera=self.camera,
+                label_path=roi_path,
+                plot_widget=self.trace_plot,
+                max_points=300
+            )
+            GPU.log_INFO(f"Live trace extraction started using {os.path.basename(roi_path)}.")
+        except Exception as e:
+            GPU.log_ERRO(f"Failed to start live traces: {e}")
+
     def _wait_until_camera_stops(self, timeout: float = 2.0):
         """
         Block (on the GUI thread) until camera.acquisition_running and camera.is_recording
@@ -305,7 +420,7 @@ class GPU(QWidget):
             time.sleep(0.02)
 
     def _thread_refine_rois(self):
-        self.stop_live_traces()
+        self.stop_live_traces_napari()
         GPU.log_NOTI("Refining ROIs in GUI…")
         try:
             # load the mean, masks, run your roi_editor logic 
@@ -344,27 +459,34 @@ class GPU(QWidget):
             try:
                 from skimage.color import label2rgb
                 from PyQt5.QtGui import QGuiApplication
-                import numpy as np
-                import cv2
+                import numpy as np, cv2
                 from projection import ProjectDisplay
 
-                # Load the latest exported labels
-                labels = np.load("rois.npz")["labels"]
+                # --- load latest labels and make them RGB -------------------------
+                labels     = np.load("rois.npz")["labels"]
+                rgb_image  = (label2rgb(labels, bg_label=0) * 255).astype(np.uint8)
 
-                # Generate RGB projection image
-                rgb_image = (label2rgb(labels, bg_label=0) * 255).astype(np.uint8)
+                # --- apply camera→projector homography once -----------------------
+                H = np.load("homography_cam2proj.npy")            # 3×3
 
-                # Scale image to screen size
-                screens = QGuiApplication.screens()
-                screen = screens[1] if len(screens) > 1 else screens[0]
-                size = screen.size()
-                rgb_image = cv2.resize(rgb_image, (size.width(), size.height()), interpolation=cv2.INTER_NEAREST)
+                screens   = QGuiApplication.screens()
+                screen    = screens[1] if len(screens) > 1 else screens[0]
+                proj_w, proj_h = screen.size().width(), screen.size().height()
 
-                # Launch projector window
+                rgb_image = cv2.warpPerspective(
+                    rgb_image, H, (proj_w, proj_h),
+                    flags=cv2.INTER_NEAREST,
+                    borderMode=cv2.BORDER_CONSTANT, borderValue=0
+                )
+                # ------------------------------------------------------------------
+
+                # launch / refresh projector window
                 if self.proj_display:
                     self.proj_display.close()
                 self.proj_display = ProjectDisplay(screen)
-                self.proj_display.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
+                self.proj_display.show_image_fullscreen_on_second_monitor(
+                    rgb_image, homography_matrix=None      # already warped
+                )
 
                 GPU.log_INFO("Mask projected after napari closed.")
                 # QtCore.QTimer.singleShot(50, self._finish_restore)
@@ -375,14 +497,14 @@ class GPU(QWidget):
                 self.camera.start_recording()
 
                 # Only launch LiveTraceExtractor once, in Pygame mode:
-                self.live_extractor = LiveTraceExtractor(
+                self.live_extractor_napari = LiveTraceExtractorNapari(
                     camera=self.camera,
                     label_path=self.rois_path,
                     plot_widget=self.trace_plot,
                     max_points=300,
                     use_pygame_plot=True          # force Pygame mode
                 )
-                self.start_live_traces()
+                self.start_live_traces_napari()
                 GPU.log_INFO("Camera and live trace restarted after napari.")
 
             except Exception as e:
@@ -426,6 +548,9 @@ class GPU(QWidget):
         if self.live_extractor:
             self.live_extractor.stop()
             self.live_extractor = None
+        if self.live_extractor_napari:
+            self.live_extractor_napari.stop()
+            self.live_extractor_napari = None
         if self.camera:
             self.camera.stop_recording()
             self.camera.stop_realtime_acquisition()
@@ -491,59 +616,3 @@ class GPU(QWidget):
         # Build an HTML-formatted log message.
         html = f"<span style='color: {color};'><b>{prefix}</b></span> {message}<br>"
         if cls.instance:
-            cls.instance.write_log(html)
-    
-
-    # Convenience methods for each log level:
-    @classmethod
-    def log_EMER(cls, message):
-        cls._log_generic("EMER", message)
-
-    @classmethod
-    def log_ALRT(cls, message):
-        cls._log_generic("ALRT", message)
-
-    @classmethod
-    def log_CRIT(cls, message):
-        cls._log_generic("CRIT", message)
-
-    @classmethod
-    def log_ERRO(cls, message):
-        cls._log_generic("ERRO", message)
-
-    @classmethod
-    def log_WARN(cls, message):
-        cls._log_generic("WARN", message)
-
-    @classmethod
-    def log_NOTI(cls, message):
-        cls._log_generic("NOTI", message)
-
-    @classmethod
-    def log_INFO(cls, message):
-        cls._log_generic("INFO", message)
-
-    @classmethod
-    def log_DBUG(cls, message):
-        cls._log_generic("DBUG", message)
-
-    def export_logbook_to_file(self):
-        """
-        Export the log to a file.
-        Each export is appended to the file with an export header and separator.
-        """
-        GPU.export_count += 1
-        # Get all logs from the widget as plain text.
-        log_text = self.log_widget.toPlainText()
-        lines = log_text.splitlines()
-        file_path = "export_log.txt"
-        try:
-            with open(file_path, "a") as f:
-                f.write(f"Export: {GPU.export_count}\n")
-                f.write("\n".join(lines))
-                f.write("\n" + ("-" * 40) + "\n")
-            self.write_log(f"<br><i>Log exported successfully to {file_path}</i><br>")
-        except Exception as e:
-            self.write_log(f"<br><i>Error exporting log: {str(e)}</i><br>")
-        print("Logbook exported to file")
-

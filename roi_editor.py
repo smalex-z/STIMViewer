@@ -1,4 +1,11 @@
 # roi_editor.py
+from pathlib import Path
+import os
+
+# use an env-var override so you can change it without editing code again
+SSD_ROOT = Path(os.getenv("STIM_DATA_DIR",
+            "/media/aharonilabjetson2/NVMe/stimviewer_data")).expanduser()
+SSD_ROOT.mkdir(parents=True, exist_ok=True)      # auto-create on first run
 
 
 import numpy as np, cupy as cp, napari

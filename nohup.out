@@ -1,0 +1,386 @@
+Using pip 25.0.1 from /home/aharonilabjetson2/Desktop/dev-imaan/STIMViewer/venv/lib/python3.8/site-packages/pip (python 3.8)
+Collecting PyQt5
+  Using cached PyQt5-5.15.11.tar.gz (3.2 MB)
+  Installing build dependencies: started
+  Running command pip subprocess to install build dependencies
+  Using pip 25.0.1 from /home/aharonilabjetson2/Desktop/dev-imaan/STIMViewer/venv/lib/python3.8/site-packages/pip (python 3.8)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/5c/94/0a7379def91d4906c1b6ebe0e197f919cbdfbb7df9ff8e32f544a6ad8346/sip-6.9.0-py3-none-any.whl (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/b8/dc/17b69b375103aa3db633b3f1f46bf7030cbe516b2b6d5dc73b7668a7840d/sip-6.9.0.tar.gz (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/0b/b5/aafbb1f35d53ae590d5c0455edc0694a355c3dac22a88392421789c4edd1/sip-6.9.1-py3-none-any.whl (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/e2/83/b23f610ef99fa23aa3c8dcd2ff8536c37b943654405ff4f45f3230327a40/sip-6.9.1.tar.gz (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/04/85/317e2d2a3e926e928c85ea935bc5991ae09181ebdc724b4144546656fbce/sip-6.10.0-1-py3-none-any.whl (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/62/9a/78122735697dbfc6c1db363627309eb0da7e44d8c05ba017b08666530586/sip-6.10.0.tar.gz (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/b9/a9/3e2d8a1f5100117fe490ebee3e857e1c138d19d25667b25c7a0922fde2fb/sip-6.11.0-py3-none-any.whl (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/e3/11/1ad8d00e08f26eaa45c48c085b8fdb6aba32b5c96e601d96b4b821a5b88e/sip-6.11.0.tar.gz (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/d0/99/1c6ff1a3dbf99fe0d69f9eac9995da88aac106c8c64755b940799bcdf2d9/sip-6.11.1-py3-none-any.whl (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/5b/62/f46c9a5634d4f9712721fe6f3c17ec19df89400c4fda3a9fd7e0f960f88e/sip-6.11.1.tar.gz (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/5c/e0/361efe49c9731ee649723b87dba75db2a0ed86ff26cd7fa8f7c07cdcba2f/sip-6.12.0-py3-none-any.whl (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/25/fb/67c5ebb38defec74da7a3e2e0fa994809d152e3d4097f260bc7862a7af30/sip-6.12.0.tar.gz (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+  Collecting sip<7,>=6.8.6
+    Obtaining dependency information for sip<7,>=6.8.6 from https://files.pythonhosted.org/packages/26/7e/1fbee86c34d21f32fd8a6e3efbe4a796fb506541051280d5c94264343db7/sip-6.8.6-py3-none-any.whl.metadata
+    Using cached sip-6.8.6-py3-none-any.whl.metadata (5.3 kB)
+  Collecting PyQt-builder<2,>=1.14.1
+    Obtaining dependency information for PyQt-builder<2,>=1.14.1 from https://files.pythonhosted.org/packages/51/80/cbf9b332e01fc61e04c844560b59632842e93ef1e78a25c9caca03e7ab84/pyqt_builder-1.18.2-py3-none-any.whl.metadata
+    Using cached pyqt_builder-1.18.2-py3-none-any.whl.metadata (1.9 kB)
+  Collecting packaging (from sip<7,>=6.8.6)
+    Obtaining dependency information for packaging from https://files.pythonhosted.org/packages/20/12/38679034af332785aac8774540895e234f4d07f7545804097de4b666afd8/packaging-25.0-py3-none-any.whl.metadata
+    Using cached packaging-25.0-py3-none-any.whl.metadata (3.3 kB)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/21/df/7c6bb83dcb45b35dc35b310d752f254211cde0bcd2a35290ea6e2862b2a9/setuptools-75.4.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/e2/73/c1ccf3e057ef6331cc6861412905dc218203bde46dfe8262c1631aa7fb11/setuptools-75.4.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/fe/df/88ccbee85aefbca071db004fdc8f8d2507d55d5a9dc27ebb93c92edb1bd8/setuptools-75.5.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/c8/db/722a42ffdc226e950c4757b3da7b56ff5c090bb265dccd707f7b8a3c6fee/setuptools-75.5.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/55/21/47d163f615df1d30c094f6c8bbb353619274edccf0327b185cc2493c2c33/setuptools-75.6.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/43/54/292f26c208734e9a7f067aea4a7e282c080750c4546559b58e2e45413ca0/setuptools-75.6.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/4e/6e/abdfaaf5c294c553e7a81cf5d801fbb4f53f5c5b6646de651f92a2667547/setuptools-75.7.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/ac/57/e6f0bde5a2c333a32fbcce201f906c1fd0b3a7144138712a5e9d9598c5ec/setuptools-75.7.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/69/8a/b9dc7678803429e4a3bc9ba462fa3dd9066824d3c607490235c6a796be5a/setuptools-75.8.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/92/ec/089608b791d210aec4e7f97488e67ab0d33add3efccb83a056cbafe3a2a6/setuptools-75.8.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/da/bd/ac215d31c2904e47ec5332897442bdc19fd6b21a82068d057152f4e9c1cf/setuptools-75.8.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/e8/42/0e5f75d734f181367de4acd9aba8f875453a5905169c5485ca8416b015ae/setuptools-75.8.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/a9/38/7d7362e031bd6dc121e5081d8cb6aa6f6fedf2b67bf889962134c6da4705/setuptools-75.8.2-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/d1/53/43d99d7687e8cdef5ab5f9ec5eaf2c0423c2b35133a2b7e7bc276fc32b21/setuptools-75.8.2.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/e2/82/23e063d15ecb1484cd0bf713b36ef916bdc30aa153b71828e8b22a5b2d7b/setuptools-75.9.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/f5/38/6cafe2b3d55661b5d72dc12c038d83f6347d889853697cb98b5e4a5d853d/setuptools-75.9.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/8d/28/19ad82a0549d73ec6feffa6711eacf9246035a9426b8a8b528440c9959d2/setuptools-75.9.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/d0/df/ec5ad16b0ec305081c372bd0550fd638fa96e472cd5a03049c344076ea76/setuptools-75.9.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/37/66/d2d7e6ad554f3a7c7297c3f8ef6e22643ad3d35ef5c63bf488bc89f32f31/setuptools-76.0.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/32/d2/7b171caf085ba0d40d8391f54e1c75a1cda9255f542becf84575cfd8a732/setuptools-76.0.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/62/fb/47dc84839f2743553075c80d08543b3d0f498f42329141b6717504abcdfd/setuptools-76.1.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/fa/2b/287ade3a580869e6178cb37d045f54272b1f006f2c0ff6fad08db258d027/setuptools-76.1.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/40/50/bc3d02829a3babd70b7f1414c93cf6acd198976f0469a07d0e7b813c5002/setuptools-77.0.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/ea/df/9f719dc48f64284be8bd99e2e0bb0dd6e9f8e2c2c3c7bf7a685bc5adf2c7/setuptools-77.0.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/a9/07/99f2cefae815c66eb23148f15d79ec055429c38fa8986edcc712ab5f3223/setuptools-77.0.3-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/81/ed/7101d53811fd359333583330ff976e5177c5e871ca8b909d1d6c30553aa3/setuptools-77.0.3.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/42/c8/3faed884acdb2c1f2eb353cbacdd1ee4943de89a199d1f622ebefb6170e5/setuptools-78.0.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/47/42/55a8f24bd1287676b23e56a6d94e416be390ca6e0ee30fa46a782d038f80/setuptools-78.0.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/aa/db/2fd473dfe436ad19fda190f4079162d400402aedfcc41e048d38c0a375c6/setuptools-78.0.2-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/4c/f4/aa8d364f0dc1f33b2718938648c31202e2db5cd6479a73f0a9ca5a88372d/setuptools-78.0.2.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/54/21/f43f0a1fa8b06b32812e0975981f4677d28e0f3271601dc88ac5a5b83220/setuptools-78.1.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/a9/5a/0db4da3bc908df06e5efae42b44e75c81dd52716e10192ff36d0c1c8e379/setuptools-78.1.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/90/99/158ad0609729111163fc1f674a5a42f2605371a4cf036d0441070e2f7455/setuptools-78.1.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/81/9c/42314ee079a3e9c24b27515f9fbc7a3c1d29992c33451779011c74488375/setuptools-78.1.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/cc/ea/d53f2f8897c46a36df085964d07761ea4c2d1f2cf92019693b6742b7aabb/setuptools-79.0.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/7d/19/fecb7e2825616270f34512b3394cdcf6f45a79b5b6d94fdbd86a509e67b5/setuptools-79.0.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/0d/6d/b4752b044bf94cb802d88a888dc7d288baaf77d7910b7dedda74b5ceea0c/setuptools-79.0.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/bb/71/b6365e6325b3290e14957b2c3a804a529968c77a049b2ed40c095f749707/setuptools-79.0.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/23/63/5517029d6696ddf2bd378d46f63f479be001c31b462303170a1da57650cb/setuptools-80.0.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/44/80/97e25f0f1e4067677806084b7382a6ff9979f3d15119375c475c288db9d7/setuptools-80.0.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/2a/8e/2ee81652472f3c11503d1780c41844a9a9656989b69c29811a4631e4aeb9/setuptools-80.0.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/26/da/7a7021c150030617f90aa4a90a5b23f7b49af877f70ca46967e991645117/setuptools-80.0.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/8b/f6/126c9309c8fe93e5d6bb850593cd58d591daf2da45cc78b61e48d8d95879/setuptools-80.1.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/aa/b2/bd26ed086b842b68c8fe9aac380ad7e5118cf84fa7abd45bb059a88368a8/setuptools-80.1.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/51/95/522fb99f76ecf2efe0a372ee02665a3cda1e5653b37514fd05c98f05a9cf/setuptools-80.2.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/24/65/19a02e93da9d9f118ecb311419a353ae68a8e236c057bf164c866daa227f/setuptools-80.2.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/e6/61/a6239ff35d64e55def020335626894895847cc6659c0f8e1b676c58aad3b/setuptools-80.3.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/51/6c/a3f892949418b5b9aced7396919c75ffb57e38f08b712b565f5eb10677ee/setuptools-80.3.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/53/7e/5d8af3317ddbf9519b687bd1c39d8737fde07d97f54df65553faca5cffb1/setuptools-80.3.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/70/dc/3976b322de9d2e87ed0007cf04cc7553969b6c7b3f48a565d0333748fbcd/setuptools-80.3.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/b1/93/dba5ed08c2e31ec7cdc2ce75705a484ef0be1a2fecac8a58272489349de8/setuptools-80.4.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/95/32/0cc40fe41fd2adb80a2f388987f4f8db3c866c69e33e0b4c8b093fdf700e/setuptools-80.4.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/57/28/46ef5c181f4aa677d0d773da770a8c111e29f21ad67ed1d1b8e414d3fa0b/setuptools-80.6.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/bb/c6/4af6938e3c7321dab335c384d2ce4f604adc81099f124257de71599e301b/setuptools-80.6.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/70/78/ca86603790f24a597427bfedbc73a2aac5762b7c0b60a9d68631bc7e9a0e/setuptools-80.7.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/2b/22/2e66d286bf92bc5f0d0822346e53fc856b5e6ad38b2a53bcde7ea5eb1299/setuptools-80.7.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/a1/18/0e835c3a557dc5faffc8f91092f62fc337c1dab1066715842e7a4b318ec4/setuptools-80.7.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/9e/8b/dc1773e8e5d07fd27c1632c45c1de856ac3dbf09c0147f782ca6d990cf15/setuptools-80.7.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/58/29/93c53c098d301132196c3238c312825324740851d77a8500a2462c0fd888/setuptools-80.8.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/8d/d2/ec1acaaff45caed5c2dedb33b67055ba9d4e96b091094df90762e60135fe/setuptools-80.8.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/18/5d/3bf57dcd21979b887f014ea83c24ae194cfcd12b9e0fda66b957c69d1fca/setuptools-80.9.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+  Collecting setuptools (from sip<7,>=6.8.6)
+    Obtaining dependency information for setuptools from https://files.pythonhosted.org/packages/15/65/3f0dba35760d902849d39d38c0a72767794b1963227b69a587f8a336d08c/setuptools-75.3.2-py3-none-any.whl.metadata
+    Using cached setuptools-75.3.2-py3-none-any.whl.metadata (6.9 kB)
+  Collecting tomli (from sip<7,>=6.8.6)
+    Obtaining dependency information for tomli from https://files.pythonhosted.org/packages/6e/c2/61d3e0f47e2b74ef40a68b9e6ad5984f6241a942f7cd3bbfbdbd03861ea9/tomli-2.2.1-py3-none-any.whl.metadata
+    Using cached tomli-2.2.1-py3-none-any.whl.metadata (10 kB)
+  Using cached sip-6.8.6-py3-none-any.whl (469 kB)
+  Using cached pyqt_builder-1.18.2-py3-none-any.whl (3.7 MB)
+  Using cached packaging-25.0-py3-none-any.whl (66 kB)
+  Using cached setuptools-75.3.2-py3-none-any.whl (1.3 MB)
+  Using cached tomli-2.2.1-py3-none-any.whl (14 kB)
+  Installing collected packages: tomli, setuptools, packaging, sip, PyQt-builder
+    Creating /tmp/pip-build-env-r_ds_52f/overlay/bin
+    changing mode of /tmp/pip-build-env-r_ds_52f/overlay/bin/sip-build to 775
+    changing mode of /tmp/pip-build-env-r_ds_52f/overlay/bin/sip-distinfo to 775
+    changing mode of /tmp/pip-build-env-r_ds_52f/overlay/bin/sip-install to 775
+    changing mode of /tmp/pip-build-env-r_ds_52f/overlay/bin/sip-module to 775
+    changing mode of /tmp/pip-build-env-r_ds_52f/overlay/bin/sip-sdist to 775
+    changing mode of /tmp/pip-build-env-r_ds_52f/overlay/bin/sip-wheel to 775
+    changing mode of /tmp/pip-build-env-r_ds_52f/overlay/bin/pyqt-bundle to 775
+    changing mode of /tmp/pip-build-env-r_ds_52f/overlay/bin/pyqt-qt-wheel to 775
+  Successfully installed PyQt-builder-1.18.2 packaging-25.0 setuptools-75.3.2 sip-6.8.6 tomli-2.2.1
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Running command Getting requirements to build wheel
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Running command Preparing metadata (pyproject.toml)
+  usage: _in_process.py [-h] [-V] [--deprecations-are-errors] [--quiet]
+                        [--verbose] [--name NAME] [--build-dir DIR]
+                        [--build-tag TAG] [--no-manylinux]
+                        [--minimum-glibc-version M.N] [--api-dir DIR]
+                        [--disable NAME] [--enable NAME] [--android-abi ABI]
+                        [--apple-universal2] [--link-full-dll] [--qml-debug]
+                        [--target-qt-dir DIR] [--confirm-license]
+                        [--license-dir DIR] [--qt-shared] [--no-designer-plugin]
+                        [--no-qml-plugin] [--dbus DIR] [--no-dbus-python]
+                        [--no-tools] [--jobs N] [--qmake FILE]
+                        [--qmake-setting 'NAME += VALUE'] [--spec SPEC]
+                        [--concatenate N] [--debug] [--disabled-feature TAG]
+                        [--no-docstrings] [--pep484-pyi] [--protected-is-public]
+                        [--no-protected-is-public] [--tracing]
+  _in_process.py: error: unrecognized arguments: confirm-license
+  error: subprocess-exited-with-error
+  
+  × Preparing metadata (pyproject.toml) did not run successfully.
+  │ exit code: 2
+  ╰─> See above for output.
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+  full command: /home/aharonilabjetson2/Desktop/dev-imaan/STIMViewer/venv/bin/python /home/aharonilabjetson2/Desktop/dev-imaan/STIMViewer/venv/lib/python3.8/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py prepare_metadata_for_build_wheel /tmp/tmpwz33i19c
+  cwd: /tmp/pip-install-9lmdnco7/pyqt5_3607edda80054905a5207b143cfb5cd8
+  Preparing metadata (pyproject.toml): finished with status 'error'
+error: metadata-generation-failed
+
+× Encountered error while generating package metadata.
+╰─> See above for output.
+
+note: This is an issue with the package mentioned above, not pip.
+hint: See above for details.
+
+Usage:   
+  /home/aharonilabjetson2/Desktop/dev-imaan/STIMViewer/venv/bin/python -m pip install [options] <requirement specifier> [package-index-options] ...
+  /home/aharonilabjetson2/Desktop/dev-imaan/STIMViewer/venv/bin/python -m pip install [options] -r <requirements file> [package-index-options] ...
+  /home/aharonilabjetson2/Desktop/dev-imaan/STIMViewer/venv/bin/python -m pip install [options] [-e] <vcs project url> ...
+  /home/aharonilabjetson2/Desktop/dev-imaan/STIMViewer/venv/bin/python -m pip install [options] [-e] <local project path> ...
+  /home/aharonilabjetson2/Desktop/dev-imaan/STIMViewer/venv/bin/python -m pip install [options] <archive url/path> ...
+
+no such option: --verboseclear
+Using pip 25.0.1 from /home/aharonilabjetson2/Desktop/dev-imaan/STIMViewer/venv/lib/python3.8/site-packages/pip (python 3.8)
+Collecting pyqt5
+  Using cached PyQt5-5.15.11.tar.gz (3.2 MB)
+  Installing build dependencies: started
+  Running command pip subprocess to install build dependencies
+  Using pip 25.0.1 from /home/aharonilabjetson2/Desktop/dev-imaan/STIMViewer/venv/lib/python3.8/site-packages/pip (python 3.8)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/5c/94/0a7379def91d4906c1b6ebe0e197f919cbdfbb7df9ff8e32f544a6ad8346/sip-6.9.0-py3-none-any.whl (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/b8/dc/17b69b375103aa3db633b3f1f46bf7030cbe516b2b6d5dc73b7668a7840d/sip-6.9.0.tar.gz (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/0b/b5/aafbb1f35d53ae590d5c0455edc0694a355c3dac22a88392421789c4edd1/sip-6.9.1-py3-none-any.whl (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/e2/83/b23f610ef99fa23aa3c8dcd2ff8536c37b943654405ff4f45f3230327a40/sip-6.9.1.tar.gz (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/04/85/317e2d2a3e926e928c85ea935bc5991ae09181ebdc724b4144546656fbce/sip-6.10.0-1-py3-none-any.whl (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/62/9a/78122735697dbfc6c1db363627309eb0da7e44d8c05ba017b08666530586/sip-6.10.0.tar.gz (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/b9/a9/3e2d8a1f5100117fe490ebee3e857e1c138d19d25667b25c7a0922fde2fb/sip-6.11.0-py3-none-any.whl (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/e3/11/1ad8d00e08f26eaa45c48c085b8fdb6aba32b5c96e601d96b4b821a5b88e/sip-6.11.0.tar.gz (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/d0/99/1c6ff1a3dbf99fe0d69f9eac9995da88aac106c8c64755b940799bcdf2d9/sip-6.11.1-py3-none-any.whl (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/5b/62/f46c9a5634d4f9712721fe6f3c17ec19df89400c4fda3a9fd7e0f960f88e/sip-6.11.1.tar.gz (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/5c/e0/361efe49c9731ee649723b87dba75db2a0ed86ff26cd7fa8f7c07cdcba2f/sip-6.12.0-py3-none-any.whl (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/25/fb/67c5ebb38defec74da7a3e2e0fa994809d152e3d4097f260bc7862a7af30/sip-6.12.0.tar.gz (from https://pypi.org/simple/sip/) (requires-python:>=3.9)
+  Collecting sip<7,>=6.8.6
+    Obtaining dependency information for sip<7,>=6.8.6 from https://files.pythonhosted.org/packages/26/7e/1fbee86c34d21f32fd8a6e3efbe4a796fb506541051280d5c94264343db7/sip-6.8.6-py3-none-any.whl.metadata
+    Using cached sip-6.8.6-py3-none-any.whl.metadata (5.3 kB)
+  Collecting PyQt-builder<2,>=1.14.1
+    Obtaining dependency information for PyQt-builder<2,>=1.14.1 from https://files.pythonhosted.org/packages/51/80/cbf9b332e01fc61e04c844560b59632842e93ef1e78a25c9caca03e7ab84/pyqt_builder-1.18.2-py3-none-any.whl.metadata
+    Using cached pyqt_builder-1.18.2-py3-none-any.whl.metadata (1.9 kB)
+  Collecting packaging (from sip<7,>=6.8.6)
+    Obtaining dependency information for packaging from https://files.pythonhosted.org/packages/20/12/38679034af332785aac8774540895e234f4d07f7545804097de4b666afd8/packaging-25.0-py3-none-any.whl.metadata
+    Using cached packaging-25.0-py3-none-any.whl.metadata (3.3 kB)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/21/df/7c6bb83dcb45b35dc35b310d752f254211cde0bcd2a35290ea6e2862b2a9/setuptools-75.4.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/e2/73/c1ccf3e057ef6331cc6861412905dc218203bde46dfe8262c1631aa7fb11/setuptools-75.4.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/fe/df/88ccbee85aefbca071db004fdc8f8d2507d55d5a9dc27ebb93c92edb1bd8/setuptools-75.5.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/c8/db/722a42ffdc226e950c4757b3da7b56ff5c090bb265dccd707f7b8a3c6fee/setuptools-75.5.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/55/21/47d163f615df1d30c094f6c8bbb353619274edccf0327b185cc2493c2c33/setuptools-75.6.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/43/54/292f26c208734e9a7f067aea4a7e282c080750c4546559b58e2e45413ca0/setuptools-75.6.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/4e/6e/abdfaaf5c294c553e7a81cf5d801fbb4f53f5c5b6646de651f92a2667547/setuptools-75.7.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/ac/57/e6f0bde5a2c333a32fbcce201f906c1fd0b3a7144138712a5e9d9598c5ec/setuptools-75.7.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/69/8a/b9dc7678803429e4a3bc9ba462fa3dd9066824d3c607490235c6a796be5a/setuptools-75.8.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/92/ec/089608b791d210aec4e7f97488e67ab0d33add3efccb83a056cbafe3a2a6/setuptools-75.8.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/da/bd/ac215d31c2904e47ec5332897442bdc19fd6b21a82068d057152f4e9c1cf/setuptools-75.8.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/e8/42/0e5f75d734f181367de4acd9aba8f875453a5905169c5485ca8416b015ae/setuptools-75.8.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/a9/38/7d7362e031bd6dc121e5081d8cb6aa6f6fedf2b67bf889962134c6da4705/setuptools-75.8.2-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/d1/53/43d99d7687e8cdef5ab5f9ec5eaf2c0423c2b35133a2b7e7bc276fc32b21/setuptools-75.8.2.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/e2/82/23e063d15ecb1484cd0bf713b36ef916bdc30aa153b71828e8b22a5b2d7b/setuptools-75.9.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/f5/38/6cafe2b3d55661b5d72dc12c038d83f6347d889853697cb98b5e4a5d853d/setuptools-75.9.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/8d/28/19ad82a0549d73ec6feffa6711eacf9246035a9426b8a8b528440c9959d2/setuptools-75.9.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/d0/df/ec5ad16b0ec305081c372bd0550fd638fa96e472cd5a03049c344076ea76/setuptools-75.9.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/37/66/d2d7e6ad554f3a7c7297c3f8ef6e22643ad3d35ef5c63bf488bc89f32f31/setuptools-76.0.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/32/d2/7b171caf085ba0d40d8391f54e1c75a1cda9255f542becf84575cfd8a732/setuptools-76.0.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/62/fb/47dc84839f2743553075c80d08543b3d0f498f42329141b6717504abcdfd/setuptools-76.1.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/fa/2b/287ade3a580869e6178cb37d045f54272b1f006f2c0ff6fad08db258d027/setuptools-76.1.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/40/50/bc3d02829a3babd70b7f1414c93cf6acd198976f0469a07d0e7b813c5002/setuptools-77.0.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/ea/df/9f719dc48f64284be8bd99e2e0bb0dd6e9f8e2c2c3c7bf7a685bc5adf2c7/setuptools-77.0.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/a9/07/99f2cefae815c66eb23148f15d79ec055429c38fa8986edcc712ab5f3223/setuptools-77.0.3-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/81/ed/7101d53811fd359333583330ff976e5177c5e871ca8b909d1d6c30553aa3/setuptools-77.0.3.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/42/c8/3faed884acdb2c1f2eb353cbacdd1ee4943de89a199d1f622ebefb6170e5/setuptools-78.0.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/47/42/55a8f24bd1287676b23e56a6d94e416be390ca6e0ee30fa46a782d038f80/setuptools-78.0.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/aa/db/2fd473dfe436ad19fda190f4079162d400402aedfcc41e048d38c0a375c6/setuptools-78.0.2-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/4c/f4/aa8d364f0dc1f33b2718938648c31202e2db5cd6479a73f0a9ca5a88372d/setuptools-78.0.2.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/54/21/f43f0a1fa8b06b32812e0975981f4677d28e0f3271601dc88ac5a5b83220/setuptools-78.1.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/a9/5a/0db4da3bc908df06e5efae42b44e75c81dd52716e10192ff36d0c1c8e379/setuptools-78.1.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/90/99/158ad0609729111163fc1f674a5a42f2605371a4cf036d0441070e2f7455/setuptools-78.1.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/81/9c/42314ee079a3e9c24b27515f9fbc7a3c1d29992c33451779011c74488375/setuptools-78.1.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/cc/ea/d53f2f8897c46a36df085964d07761ea4c2d1f2cf92019693b6742b7aabb/setuptools-79.0.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/7d/19/fecb7e2825616270f34512b3394cdcf6f45a79b5b6d94fdbd86a509e67b5/setuptools-79.0.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/0d/6d/b4752b044bf94cb802d88a888dc7d288baaf77d7910b7dedda74b5ceea0c/setuptools-79.0.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/bb/71/b6365e6325b3290e14957b2c3a804a529968c77a049b2ed40c095f749707/setuptools-79.0.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/23/63/5517029d6696ddf2bd378d46f63f479be001c31b462303170a1da57650cb/setuptools-80.0.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/44/80/97e25f0f1e4067677806084b7382a6ff9979f3d15119375c475c288db9d7/setuptools-80.0.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/2a/8e/2ee81652472f3c11503d1780c41844a9a9656989b69c29811a4631e4aeb9/setuptools-80.0.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/26/da/7a7021c150030617f90aa4a90a5b23f7b49af877f70ca46967e991645117/setuptools-80.0.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/8b/f6/126c9309c8fe93e5d6bb850593cd58d591daf2da45cc78b61e48d8d95879/setuptools-80.1.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/aa/b2/bd26ed086b842b68c8fe9aac380ad7e5118cf84fa7abd45bb059a88368a8/setuptools-80.1.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/51/95/522fb99f76ecf2efe0a372ee02665a3cda1e5653b37514fd05c98f05a9cf/setuptools-80.2.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/24/65/19a02e93da9d9f118ecb311419a353ae68a8e236c057bf164c866daa227f/setuptools-80.2.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/e6/61/a6239ff35d64e55def020335626894895847cc6659c0f8e1b676c58aad3b/setuptools-80.3.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/51/6c/a3f892949418b5b9aced7396919c75ffb57e38f08b712b565f5eb10677ee/setuptools-80.3.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/53/7e/5d8af3317ddbf9519b687bd1c39d8737fde07d97f54df65553faca5cffb1/setuptools-80.3.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/70/dc/3976b322de9d2e87ed0007cf04cc7553969b6c7b3f48a565d0333748fbcd/setuptools-80.3.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/b1/93/dba5ed08c2e31ec7cdc2ce75705a484ef0be1a2fecac8a58272489349de8/setuptools-80.4.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/95/32/0cc40fe41fd2adb80a2f388987f4f8db3c866c69e33e0b4c8b093fdf700e/setuptools-80.4.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/57/28/46ef5c181f4aa677d0d773da770a8c111e29f21ad67ed1d1b8e414d3fa0b/setuptools-80.6.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/bb/c6/4af6938e3c7321dab335c384d2ce4f604adc81099f124257de71599e301b/setuptools-80.6.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/70/78/ca86603790f24a597427bfedbc73a2aac5762b7c0b60a9d68631bc7e9a0e/setuptools-80.7.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/2b/22/2e66d286bf92bc5f0d0822346e53fc856b5e6ad38b2a53bcde7ea5eb1299/setuptools-80.7.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/a1/18/0e835c3a557dc5faffc8f91092f62fc337c1dab1066715842e7a4b318ec4/setuptools-80.7.1-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/9e/8b/dc1773e8e5d07fd27c1632c45c1de856ac3dbf09c0147f782ca6d990cf15/setuptools-80.7.1.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/58/29/93c53c098d301132196c3238c312825324740851d77a8500a2462c0fd888/setuptools-80.8.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/8d/d2/ec1acaaff45caed5c2dedb33b67055ba9d4e96b091094df90762e60135fe/setuptools-80.8.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+    Link requires a different Python (3.8.10 not in: '>=3.9'): https://files.pythonhosted.org/packages/18/5d/3bf57dcd21979b887f014ea83c24ae194cfcd12b9e0fda66b957c69d1fca/setuptools-80.9.0.tar.gz (from https://pypi.org/simple/setuptools/) (requires-python:>=3.9)
+  Collecting setuptools (from sip<7,>=6.8.6)
+    Obtaining dependency information for setuptools from https://files.pythonhosted.org/packages/15/65/3f0dba35760d902849d39d38c0a72767794b1963227b69a587f8a336d08c/setuptools-75.3.2-py3-none-any.whl.metadata
+    Using cached setuptools-75.3.2-py3-none-any.whl.metadata (6.9 kB)
+  Collecting tomli (from sip<7,>=6.8.6)
+    Obtaining dependency information for tomli from https://files.pythonhosted.org/packages/6e/c2/61d3e0f47e2b74ef40a68b9e6ad5984f6241a942f7cd3bbfbdbd03861ea9/tomli-2.2.1-py3-none-any.whl.metadata
+    Using cached tomli-2.2.1-py3-none-any.whl.metadata (10 kB)
+  Using cached sip-6.8.6-py3-none-any.whl (469 kB)
+  Using cached pyqt_builder-1.18.2-py3-none-any.whl (3.7 MB)
+  Using cached packaging-25.0-py3-none-any.whl (66 kB)
+  Using cached setuptools-75.3.2-py3-none-any.whl (1.3 MB)
+  Using cached tomli-2.2.1-py3-none-any.whl (14 kB)
+  Installing collected packages: tomli, setuptools, packaging, sip, PyQt-builder
+    Creating /tmp/pip-build-env-2yzukird/overlay/bin
+    changing mode of /tmp/pip-build-env-2yzukird/overlay/bin/sip-build to 775
+    changing mode of /tmp/pip-build-env-2yzukird/overlay/bin/sip-distinfo to 775
+    changing mode of /tmp/pip-build-env-2yzukird/overlay/bin/sip-install to 775
+    changing mode of /tmp/pip-build-env-2yzukird/overlay/bin/sip-module to 775
+    changing mode of /tmp/pip-build-env-2yzukird/overlay/bin/sip-sdist to 775
+    changing mode of /tmp/pip-build-env-2yzukird/overlay/bin/sip-wheel to 775
+    changing mode of /tmp/pip-build-env-2yzukird/overlay/bin/pyqt-bundle to 775
+    changing mode of /tmp/pip-build-env-2yzukird/overlay/bin/pyqt-qt-wheel to 775
+  Successfully installed PyQt-builder-1.18.2 packaging-25.0 setuptools-75.3.2 sip-6.8.6 tomli-2.2.1
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Running command Getting requirements to build wheel
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Running command Preparing metadata (pyproject.toml)
+  Querying qmake about your Qt installation...
+  This is the GPL version of PyQt 5.15.11 (licensed under the GNU General Public License) for Python 3.8.10 on linux.
+  Found the license file 'pyqt-gpl.sip'.
+  Checking to see if the QtCore bindings can be built...
+  Checking to see if the QtNetwork bindings can be built...
+  Checking to see if the QtGui bindings can be built...
+  Checking to see if the QtWidgets bindings can be built...
+  Checking to see if the QtQml bindings can be built...
+  Checking to see if the QAxContainer bindings can be built...
+  Checking to see if the QtAndroidExtras bindings can be built...
+  Checking to see if the QtBluetooth bindings can be built...
+  Checking to see if the QtDBus bindings can be built...
+  Checking to see if the QtDesigner bindings can be built...
+  Checking to see if the Enginio bindings can be built...
+  Checking to see if the QtHelp bindings can be built...
+  Checking to see if the QtMacExtras bindings can be built...
+  Checking to see if the QtMultimedia bindings can be built...
+  Checking to see if the QtMultimediaWidgets bindings can be built...
+  Checking to see if the QtNfc bindings can be built...
+  Checking to see if the QtOpenGL bindings can be built...
+  Checking to see if the QtPositioning bindings can be built...
+  Checking to see if the QtLocation bindings can be built...
+  Checking to see if the QtPrintSupport bindings can be built...
+  Checking to see if the QtQuick bindings can be built...
+  Checking to see if the QtQuick3D bindings can be built...
+  Checking to see if the QtQuickWidgets bindings can be built...
+  Checking to see if the QtRemoteObjects bindings can be built...
+  Checking to see if the QtSensors bindings can be built...
+  Checking to see if the QtSerialPort bindings can be built...
+  Checking to see if the QtSql bindings can be built...
+  Checking to see if the QtSvg bindings can be built...
+  Checking to see if the QtTest bindings can be built...
+  Checking to see if the QtTextToSpeech bindings can be built...
+  Checking to see if the QtWebChannel bindings can be built...
+  Checking to see if the QtWebKit bindings can be built...
+  Checking to see if the QtWebKitWidgets bindings can be built...
+  Checking to see if the QtWebSockets bindings can be built...
+  Checking to see if the QtWinExtras bindings can be built...
+  Checking to see if the QtX11Extras bindings can be built...
+  Checking to see if the QtXml bindings can be built...
+  Checking to see if the QtXmlPatterns bindings can be built...
+  Checking to see if the _QOpenGLFunctions_2_0 bindings can be built...
+  Checking to see if the _QOpenGLFunctions_2_1 bindings can be built...
+  Checking to see if the _QOpenGLFunctions_4_1_Core bindings can be built...
+  Checking to see if the dbus-python support should be built...
+  The dbus-python package does not seem to be installed.
+  These bindings will be built: QtCore, QtNetwork, QtGui, QtWidgets, QtQml, QtDBus, QtOpenGL, QtPrintSupport, QtQuick, QtQuickWidgets, QtSql, QtTest, QtXml, Qt, _QOpenGLFunctions_2_0, _QOpenGLFunctions_2_1, _QOpenGLFunctions_4_1_Core, pylupdate, pyrcc.
+  Generating the QtCore bindings...
+  Generating the QtNetwork bindings...
+  Generating the QtGui bindings...
+  Generating the QtWidgets bindings...
+  Generating the QtQml bindings...
+  Generating the QtDBus bindings...
+  Generating the QtOpenGL bindings...
+  Generating the QtPrintSupport bindings...
+  Generating the QtQuick bindings...
+  Generating the QtQuickWidgets bindings...
+  Generating the QtSql bindings...
+  Generating the QtTest bindings...
+  Generating the QtXml bindings...
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/QtCoremod.sip: line 66: '%Plugin' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 118: '%BIGetReadBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 131: '%BIGetSegCountCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 138: '%BIGetCharBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/QtCoremod.sip: line 66: '%Plugin' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 118: '%BIGetReadBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 131: '%BIGetSegCountCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 138: '%BIGetCharBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/QtCoremod.sip: line 66: '%Plugin' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 118: '%BIGetReadBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 131: '%BIGetSegCountCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 138: '%BIGetCharBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/QtCoremod.sip: line 66: '%Plugin' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 118: '%BIGetReadBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 131: '%BIGetSegCountCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 138: '%BIGetCharBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/QtCoremod.sip: line 66: '%Plugin' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 118: '%BIGetReadBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 131: '%BIGetSegCountCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 138: '%BIGetCharBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/QtCoremod.sip: line 66: '%Plugin' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 118: '%BIGetReadBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 131: '%BIGetSegCountCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 138: '%BIGetCharBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/QtCoremod.sip: line 66: '%Plugin' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 118: '%BIGetReadBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 131: '%BIGetSegCountCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 138: '%BIGetCharBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/QtCoremod.sip: line 66: '%Plugin' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 118: '%BIGetReadBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 131: '%BIGetSegCountCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 138: '%BIGetCharBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/QtCoremod.sip: line 66: '%Plugin' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 118: '%BIGetReadBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 131: '%BIGetSegCountCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 138: '%BIGetCharBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/QtCoremod.sip: line 66: '%Plugin' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 118: '%BIGetReadBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 131: '%BIGetSegCountCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 138: '%BIGetCharBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/QtCoremod.sip: line 66: '%Plugin' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 118: '%BIGetReadBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 131: '%BIGetSegCountCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 138: '%BIGetCharBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/QtCoremod.sip: line 66: '%Plugin' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 118: '%BIGetReadBufferCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 131: '%BIGetSegCountCode' is deprecated and will be removed in SIP v7.0.0
+  /tmp/pip-install-t2ybk6d0/pyqt5_134f0818e7bc4f3fb2da469b342ff350/sip/QtCore/qbytearray.sip: line 138: '%BIGetCharBufferCode' is deprecated and will be removed in SIP v7.0.0
+  Generating the Qt bindings...
+  Preparing metadata (pyproject.toml): finished with status 'canceled'
+ERROR: Operation cancelled by user

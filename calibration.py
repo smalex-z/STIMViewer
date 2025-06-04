@@ -1,3 +1,12 @@
+from pathlib import Path
+import os
+
+# use an env-var override so you can change it without editing code again
+SSD_ROOT = Path(os.getenv("STIM_DATA_DIR",
+            "/media/aharonilabjetson2/NVMe/stimviewer_data")).expanduser()
+SSD_ROOT.mkdir(parents=True, exist_ok=True)      # auto-create on first run
+
+
 import cv2
 import numpy as np
 # import matplotlib.pyplot
@@ -253,6 +262,8 @@ def find_homography():
     plt.show()
     """
     # Print the inverse homography matrix
+    # H_cam2proj = np.linalg.inv(homography_proj2cam)
+    np.save("homography_cam2proj.npy", homography)
     return homography
 
 
