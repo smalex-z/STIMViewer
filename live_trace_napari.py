@@ -340,7 +340,7 @@ class LiveTraceExtractorNapari(QObject):
             pi.clear()
             pi.addLegend()
             pi.setLabel('left', 'Mean Intensity')
-            pi.setLabel('bottom', 'Frames ago')
+            pi.setLabel('bottom', 'Frames sinze 0')
             pi.setYRange(0, 255)
             pi.setLimits(xMin=0, xMax=max_points)
             pi.enableAutoRange(axis='x', enable=True)
@@ -403,7 +403,9 @@ class LiveTraceExtractorNapari(QObject):
             y = list(self.buffers[rid])
             if not y:
                 continue
-            x = list(range(-len(y) + 1, 1))
+            # x = list(range(-len(y) + 1, 1))
+            x = list(range(len(y)))
+
             curve.setData(x, y)
             all_y.extend(y)
 

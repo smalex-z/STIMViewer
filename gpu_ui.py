@@ -51,8 +51,9 @@ class GPU(QWidget):
         self.setWindowTitle("CRISPI")
         self.resize(700, 500)
         self.requestStartLiveTraces.connect(self.start_live_traces, QtCore.Qt.QueuedConnection)
-        self.requestStartLiveTraces.connect(self.start_live_traces_napari, QtCore.Qt.QueuedConnection)
+        self.requestStartLiveTracesNapari.connect(self.start_live_traces_napari, QtCore.Qt.QueuedConnection)
         self.requestStartRecording.connect(self.camera.start_recording, QtCore.Qt.QueuedConnection)
+        self.refineRequested.connect(self._launch_napari_viewer)
         # self.camera.recordingStarted.connect(self.on_recording_started)
         # self.camera.recordingStopped.connect(self.on_recording_stopped)
         if hasattr(GPU.instance, "roiExported"):
@@ -71,9 +72,10 @@ class GPU(QWidget):
         self.rois_path    = "rois.npz"
         # self.curated_path = "rois_current.npz"
         self.trace_path   = "traces_live.npy"
+        self._discover_method = "OTSU" 
         # self.trace_plot = pg.PlotWidget(title="Live ROI Traces")
         # self.layout.addWidget(self.trace_plot)
-        self.refineRequested.connect(self._launch_napari_viewer)
+      
 
         # # Add a “Start Live Traces” button
         # btn = QPushButton("▶ Restart Live Traces")
@@ -103,7 +105,7 @@ class GPU(QWidget):
             if self.live_extractor_napari:
                 self.live_extractor_napari.stop()
                 self.live_extractor_napari = None
-            self.start_live_traces_napari()
+            self.requestStartLiveTracesNapari.emit()
         except Exception as e:
             GPU.log_ERRO(f"Failed to reinit live traces after export: {e}")
 
@@ -223,7 +225,7 @@ class GPU(QWidget):
     def _thread_discover_rois(self):
         GPU.log_NOTI("Discovering ROIs…")
         self.stop_live_traces()
-
+        self.stop_live_traces_napari()
         try:
 
             if self._discover_method == "OTSU":
@@ -245,18 +247,22 @@ class GPU(QWidget):
                 for i, mask in enumerate(masks, start=1):
                     labeled_image[mask] = i
 
-            elif self._discover_method == "Suite2p":
-                pass
-            
-            elif self._discover_method == "CaImAn":
-                pass
 
+            elif self._discover_method == "Suite2p":
+                # …call Suite2p’s pipeline on self.memmap_path…
+                # labeled_image, masks, sizes = run_suite2p(self.memmap_path, …)
+                raise NotImplementedError("Suite2p integration not yet implemented")
+
+            elif self._discover_method == "CaImAn":
+                # …call CaImAn’s pipeline on self.memmap_path…
+                raise NotImplementedError("CaImAn integration not yet implemented")
 
             elif self._discover_method == "Custom":
-                pass
+                # …run your custom ROI detection code…
+                raise NotImplementedError("Custom‐method not yet implemented")
 
             else:
-                raise ValueError(f"Unknown ROI Method: {self._discover_method}")
+                raise ValueError(f"Unknown ROI method: {self._discover_method}")
             # Save original discovered ROIs
            
 
@@ -344,8 +350,9 @@ class GPU(QWidget):
             self.live_extractor = LiveTraceExtractor(
                 camera=self.camera,
                 label_path=roi_path,
-                plot_widget=self.trace_plot,
-                max_points=300
+                # plot_widget=self.trace_plot,
+                max_points=300,
+                use_pygame_plot=True
             )
             GPU.log_INFO(f"Live trace extraction started using {os.path.basename(roi_path)}.")
         except Exception as e:
@@ -377,8 +384,9 @@ class GPU(QWidget):
             self.live_extractor_napari = LiveTraceExtractorNapari(
                 camera=self.camera,
                 label_path=roi_path,
-                plot_widget=self.trace_plot,
-                max_points=300
+                # plot_widget=self.trace_plot,
+                max_points=300,
+                use_pygame_plot=True
             )
             GPU.log_INFO(f"Live trace extraction started using {os.path.basename(roi_path)}.")
         except Exception as e:
@@ -457,6 +465,7 @@ class GPU(QWidget):
        
         def restore_after_napari(event=None):
             try:
+                event.accept()
                 from skimage.color import label2rgb
                 from PyQt5.QtGui import QGuiApplication
                 import numpy as np, cv2
@@ -497,14 +506,15 @@ class GPU(QWidget):
                 self.camera.start_recording()
 
                 # Only launch LiveTraceExtractor once, in Pygame mode:
-                self.live_extractor_napari = LiveTraceExtractorNapari(
-                    camera=self.camera,
-                    label_path=self.rois_path,
-                    plot_widget=self.trace_plot,
-                    max_points=300,
-                    use_pygame_plot=True          # force Pygame mode
-                )
-                self.start_live_traces_napari()
+                # self.live_extractor_napari = LiveTraceExtractorNapari(
+                #     camera=self.camera,
+                #     label_path=self.rois_path,
+                #     plot_widget=self.trace_plot,
+                #     max_points=300,
+                #     use_pygame_plot=True          # force Pygame mode
+                # )
+                # self.start_live_traces_napari()
+                self.requestStartLiveTracesNapari.emit()
                 GPU.log_INFO("Camera and live trace restarted after napari.")
 
             except Exception as e:
@@ -616,3 +626,4 @@ class GPU(QWidget):
         # Build an HTML-formatted log message.
         html = f"<span style='color: {color};'><b>{prefix}</b></span> {message}<br>"
         if cls.instance:
+            cls.instance.newLogpyqtSignal.emit(html)
