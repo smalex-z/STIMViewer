@@ -423,16 +423,35 @@ class Camera(QObject):
         self.video_recorder.start_recording(fps)
         self.is_recording = True
         self.recordingStarted.emit() 
+    # @pyqtSlot()
+    # def stop_recording(self):
+    #     # self.video_recorder.stop_recording()
+    #     # if self.writer is not None:
+    #     #     self.writer.release()
+    #     #     self.writer = None
+    #     if not self.is_recording:
+    #         return
+    #     self.video_recorder.stop_recording()
+    #     time.sleep(0.05)
+    #     self.is_recording = False
+    #     self.recordingStopped.emit()
     @pyqtSlot()
     def stop_recording(self):
-        # self.video_recorder.stop_recording()
-        # if self.writer is not None:
-        #     self.writer.release()
-        #     self.writer = None
         if not self.is_recording:
             return
+
+        # First, tell VideoRecorder to finish and close its internal writer.
+        # (Assuming VideoRecorder stores its cv2.VideoWriter as `self.writer`.)
+        if hasattr(self.video_recorder, "writer") and self.video_recorder.writer is not None:
+            self.video_recorder.writer.release()
+            self.video_recorder.writer = None
+
+        # Now stop the recording logic inside VideoRecorder
         self.video_recorder.stop_recording()
-        time.sleep(0.05)
+
+        # Give FFmpeg a moment to flush/finalize the file header
+        time.sleep(0.1)
+
         self.is_recording = False
         self.recordingStopped.emit()
 

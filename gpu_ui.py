@@ -452,113 +452,148 @@ class GPU(QWidget):
         except Exception as e:
             GPU.log_ERRO(f"ROI refinement failed: {e}")
 
+    # @pyqtSlot(object, object)
+    # def _launch_napari_viewer(self, mean, masks):
+    #     from roi_editor import refine_rois
+    #     self.stop_live_traces()
+    #     # import napari
+    #     if self.camera.is_recording:
+    #         self.camera.stop_recording()
+    #         time.sleep(0.05)   
+    #     # ok = self._wait_until_camera_stops(timeout=2.0)
+    #     GPU.log_INFO("Recording stopped before launching napari.")
+
+
+    #     # === Step 1: Pause conflicting components ===
+    #     try:
+    #         if self.proj_display:
+    #             self.proj_display.close()
+    #         self.camera.stop_realtime_acquisition()
+    #         GPU.log_INFO("Paused camera and projection before launching napari.")
+    #     except Exception as e:
+    #         GPU.log_WARN(f"Failed to pause components before napari: {e}")
+
+    #     _, viewer = refine_rois(mean, masks, return_viewer=True)  # refine_rois must support return_viewer=True
+
+       
+    #     def restore_after_napari(event=None):
+    #         try:
+    #             event.accept()
+             
+    #             from skimage.color import label2rgb
+    #             from projection import ProjectDisplay
+    #             from PyQt5.QtGui import QGuiApplication
+    #             labels     = np.load("rois.npz")["labels"]
+    #             rgb_image = (label2rgb(labels, bg_label=0) * 255).astype(np.uint8)
+    #             screen = QGuiApplication.screens()[1]  # or [0] if only one
+    #             size = screen.size()
+    #             h, w = size.height(), size.width()
+    #             rgb_image = cv2.resize(rgb_image, (w, h), interpolation=cv2.INTER_NEAREST)
+    #             screens = QGuiApplication.screens()
+    #             screen = screens[1] if len(screens) > 1 else screens[0]
+    #             self.proj_display = ProjectDisplay(screen)
+    #             self.proj_display.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
+
+    #             GPU.log_INFO("Mask projected after napari closed.")
+      
+    #             self.camera.start_realtime_acquisition()
+    #             self.camera.start_recording()
+
+           
+    #             if self.live_extractor_napari:
+    #                 self.live_extractor_napari.stop()
+    #                 self.live_extractor_napari = None
+    #             QtCore.QTimer.singleShot(100, self._spawn_pygame_extractor)
+          
+
+    #             GPU.log_INFO("Camera and live trace restarted after napari.")
+
+    #         except Exception as e:
+    #             GPU.log_ERRO(f"Failed to restore after napari: {e}")
+
+
+
+    #     viewer.window._qt_window.closeEvent = restore_after_napari
+
     @pyqtSlot(object, object)
     def _launch_napari_viewer(self, mean, masks):
         from roi_editor import refine_rois
-        self.stop_live_traces()
-        # import napari
+
+        # 1) If we were recording, stop it now so the old VideoWriter is released
         if self.camera.is_recording:
             self.camera.stop_recording()
-            time.sleep(0.05)   
-        # ok = self._wait_until_camera_stops(timeout=2.0)
-        GPU.log_INFO("Recording stopped before launching napari.")
+            GPU.log_INFO("Stopped recording before launching Napari.")
+            # Small pause to ensure writer closed
+            time.sleep(0.05)
 
+        # 2) Stop any live‐trace extractor (PyGame or Napari mode) before pausing the camera
+        self.stop_live_traces()           
+        self.stop_live_traces_napari()    
 
-        # === Step 1: Pause conflicting components ===
+        # 3) Pause camera & projector, so Napari can take over
         try:
             if self.proj_display:
                 self.proj_display.close()
             self.camera.stop_realtime_acquisition()
-            GPU.log_INFO("Paused camera and projection before launching napari.")
+            GPU.log_INFO("Paused camera acquisition and projection before Napari.")
         except Exception as e:
-            GPU.log_WARN(f"Failed to pause components before napari: {e}")
+            GPU.log_WARN(f"Failed to pause components before Napari: {e}")
 
-        _, viewer = refine_rois(mean, masks, return_viewer=True)  # refine_rois must support return_viewer=True
+        # 4) Launch Napari ROI editor (blocking until Napari window closes)
+        _, viewer = refine_rois(mean, masks, return_viewer=True)
 
-       
+        # 5) When Napari closes, execute restore_after_napari()
         def restore_after_napari(event=None):
             try:
                 event.accept()
-                # from skimage.color import label2rgb
-                # from PyQt5.QtGui import QGuiApplication
-                # import numpy as np, cv2
-                # from projection import ProjectDisplay
 
-                # # --- load latest labels and make them RGB -------------------------
-                # labels     = np.load("rois.npz")["labels"]
-                # rgb_image  = (label2rgb(labels, bg_label=0) * 255).astype(np.uint8)
-
-                # # --- apply camera→projector homography once -----------------------
-                # H = np.load("homography_cam2proj.npy")            # 3×3
-
-                # screens   = QGuiApplication.screens()
-                # screen    = screens[1] if len(screens) > 1 else screens[0]
-                # proj_w, proj_h = screen.size().width(), screen.size().height()
-
-                # rgb_image = cv2.warpPerspective(
-                #     rgb_image, H, (proj_w, proj_h),
-                #     flags=cv2.INTER_NEAREST,
-                #     borderMode=cv2.BORDER_CONSTANT, borderValue=0
-                # )
-                # # ------------------------------------------------------------------
-
-                # # launch / refresh projector window
-                # if self.proj_display:
-                #     self.proj_display.close()
-                # self.proj_display = ProjectDisplay(screen)
-                # self.proj_display.show_image_fullscreen_on_second_monitor(
-                #     rgb_image, homography_matrix=None      # already warped
-                # )
+                # 5a) Re‐project the updated mask
                 from skimage.color import label2rgb
                 from projection import ProjectDisplay
                 from PyQt5.QtGui import QGuiApplication
-                labels     = np.load("rois.npz")["labels"]
+
+                labels = np.load("rois.npz")["labels"]
                 rgb_image = (label2rgb(labels, bg_label=0) * 255).astype(np.uint8)
-                screen = QGuiApplication.screens()[1]  # or [0] if only one
-                size = screen.size()
-                h, w = size.height(), size.width()
-                rgb_image = cv2.resize(rgb_image, (w, h), interpolation=cv2.INTER_NEAREST)
+
                 screens = QGuiApplication.screens()
                 screen = screens[1] if len(screens) > 1 else screens[0]
+                h, w = screen.size().height(), screen.size().width()
+                rgb_image = cv2.resize(rgb_image, (w, h), interpolation=cv2.INTER_NEAREST)
+
+                # (Re‐)open the projector window
+                if self.proj_display:
+                    self.proj_display.close()
                 self.proj_display = ProjectDisplay(screen)
-                self.proj_display.show_image_fullscreen_on_second_monitor(rgb_image, homography_matrix=None)
+                self.proj_display.show_image_fullscreen_on_second_monitor(
+                    rgb_image, homography_matrix=None
+                )
+                GPU.log_INFO("Mask re‐projected after Napari closed.")
 
-                GPU.log_INFO("Mask projected after napari closed.")
-                # QtCore.QTimer.singleShot(50, self._finish_restore)
-                # Restart acquisition, recording, and live traces
-                # self.camera.start_realtime_acquisition()
-                # self.camera.start_recording()
-                self.camera.start_realtime_acquisition()
+                # 5b) Restart camera acquisition
+                started = self.camera.start_realtime_acquisition()
+                if not started:
+                    GPU.log_ERRO("Failed to restart camera acquisition after Napari.")
+                    return
+                GPU.log_INFO("Camera acquisition restarted after Napari.")
+
+                # 5c) Restart recording (new VideoWriter → no PTS conflict)
                 self.camera.start_recording()
+                GPU.log_INFO("Recording restarted after Napari (new writer).")
 
-                # Only launch LiveTraceExtractor once, in Pygame mode:
-                # self.live_extractor_napari = LiveTraceExtractorNapari(
-                #     camera=self.camera,
-                #     label_path=self.rois_path,
-                #     plot_widget=self.trace_plot,
-                #     max_points=300,
-                #     use_pygame_plot=True          # force Pygame mode
-                # )
-                # self.start_live_traces_napari()
+                # 5d) Spawn a fresh Pygame‐based LiveTraceExtractorNapari
                 if self.live_extractor_napari:
                     self.live_extractor_napari.stop()
                     self.live_extractor_napari = None
-                QtCore.QTimer.singleShot(100, self._spawn_pygame_extractor)
-                # self.live_extractor_napari = LiveTraceExtractor(
-                #     camera=self.camera,
-                #     label_path=self.rois_path,
-                #     max_points=300,
-                #     use_pygame_plot=True
-                # )
 
-                GPU.log_INFO("Camera and live trace restarted after napari.")
+                # Delay a few ms so that acquisition is fully up before extractor starts
+                QtCore.QTimer.singleShot(250, self._spawn_pygame_extractor)
 
+                GPU.log_INFO("Live‐trace extractor will restart shortly after Napari.")
             except Exception as e:
-                GPU.log_ERRO(f"Failed to restore after napari: {e}")
-
-
+                GPU.log_ERRO(f"Failed to restore after Napari: {e}")
 
         viewer.window._qt_window.closeEvent = restore_after_napari
+
 
     def _spawn_pygame_extractor(self):
         # Double-check that camera is truly streaming:

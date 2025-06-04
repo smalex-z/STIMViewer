@@ -573,14 +573,31 @@ class LiveTraceExtractorNapari(QObject):
                 self.plot.setYRange(mn - 5, mx + 5)
 
 
+    # def stop(self):
+    #     """Stop the worker thread and disconnect the camera signal."""
+    #     self.running = False
+    #     self.worker_thread.join(timeout=1.0)
+    #     if hasattr(self.camera, "frame_ready"):
+    #         self.camera.frame_ready.disconnect(self.on_frame)
+    #     # if self.use_pygame_plot:
+    #     #     pygame.quit()
     def stop(self):
-        """Stop the worker thread and disconnect the camera signal."""
-        self.running = False
-        self.worker_thread.join(timeout=1.0)
-        if hasattr(self.camera, "frame_ready"):
-            self.camera.frame_ready.disconnect(self.on_frame)
-        # if self.use_pygame_plot:
-        #     pygame.quit()
+         """Stop the worker thread, disconnect signals, and quit PyGame."""
+         self.running = False
+         self.worker_thread.join(timeout=1.0)
+         if hasattr(self.camera, "frame_ready"):
+             try:
+                 self.camera.frame_ready.disconnect(self.on_frame)
+             except Exception:
+                 pass
+ 
+         # If running in PyGame‐plot mode, ensure we fully shut down PyGame:
+         if self.use_pygame_plot:
+             try:
+                 pygame.display.quit()
+                 pygame.quit()
+             except Exception:
+                 pass
 
     def export_traces(self, output_path="live_traces.npy", rois_path="rois.npz", last_n=100, max_rois=10):
         try:
