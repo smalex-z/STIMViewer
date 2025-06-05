@@ -49,7 +49,7 @@ from gpu_ui import GPU
 # from PyQt5.QtWidgets import QDockWidget
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import Qt
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot as Slot
 from PyQt5.QtWidgets import QDialog, QLabel, QPushButton, QVBoxLayout
 from PyQt5.QtWidgets import QWidget
 
@@ -72,9 +72,9 @@ class Interface(QtWidgets.QMainWindow):
 
     messagebox_pyqtSignal = QtCore.pyqtSignal((str, str))
     start_button_pyqtSignal = QtCore.pyqtSignal()
+    image_update_signal = QtCore.pyqtSignal(QtGui.QImage)
 
     def __init__(self, cam_module: Optional[Camera] = None):
-        #from PyQt5.QtWidgets import QApplication
         # 1) Initialize Qt
         
         # qt_instance = QtWidgets.QApplication(sys.argv)
@@ -190,11 +190,11 @@ class Interface(QtWidgets.QMainWindow):
         
         #self.gpu_ui = None
         self._button_show_gpu_ui = None
+        self._dropdown_trigger_line = None # Dropdown for hardware trigger line
 
         self.messagebox_pyqtSignal[str, str].connect(self.message)
         self._camera.recordingStarted.connect(self._on_recording_started)
         self._camera.recordingStopped.connect(self._on_recording_stopped)
-
 
         self._GUIfps_label = None
         self._frame_count = 0
@@ -209,7 +209,7 @@ class Interface(QtWidgets.QMainWindow):
         return True
     
     def set_camera(self, cam_module):
-        self._camera = cam_module #.Camera(Camera.device_manager, self)
+        self._camera = cam_module
     
     #GUI Creation
     def _create_button_bar(self):
@@ -244,7 +244,7 @@ class Interface(QtWidgets.QMainWindow):
         self._dropdown_trigger_line.addItem("Line2")
         self._dropdown_trigger_line.addItem("Line3")
 
-        # Connect a pyqtSignal to self.change_hardware_trigger_line method
+        # Connect a signal to self.change_hardware_trigger_line method
         self._dropdown_trigger_line.currentIndexChanged.connect(self.change_hardware_trigger_line)
 
         # Pixel Format Dropdown
@@ -312,18 +312,62 @@ class Interface(QtWidgets.QMainWindow):
         self._spinbox_zoom = QtWidgets.QDoubleSpinBox()
         self._spinbox_zoom.valueChanged.connect(self.change_slider_zoom)
 
-        # Add Widgets to Layout
-        button_bar_layout.addWidget(self._button_start_hardware_acquisition, 0, 0, 1, 2)
-        button_bar_layout.addWidget(self._button_start_recording, 0, 2, 1, 2)
-        button_bar_layout.addWidget(self._button_software_trigger, 1, 0, 1, 2)
-        button_bar_layout.addWidget(self._dropdown_pixel_format, 1, 2, 1, 2)
-        button_bar_layout.addWidget(self._button_calibrate, 2, 0, 1, 2)
-        button_bar_layout.addWidget(self._button_project_white, 2, 2, 1, 2)
-        button_bar_layout.addWidget(self._label_trigger_line, 3, 0)
-        button_bar_layout.addWidget(self._dropdown_trigger_line, 3, 1, 1, 2) # Position trigger line dropdown
-        button_bar_layout.addWidget(self._button_show_logbook, 4, 0)
-        button_bar_layout.addWidget(self._button_show_gpu_ui, 4, 1)
-        #button_bar_layout.addWidget(self._)
+        # === Config GroupBox ===
+        config_group = QtWidgets.QGroupBox("Config")
+        config_layout = QtWidgets.QGridLayout()
+        config_group.setLayout(config_layout)
+        config_group.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid gray;
+                border-radius: 5px;
+                margin-top: 10px;
+                font-weight: bold;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                padding: 0 3px;
+                font-size: 11px;
+            }
+            QLabel {
+                font-size: 11px;
+            }
+        """)
+
+        # Add the four config widgets
+        config_layout.addWidget(self._button_start_hardware_acquisition, 0, 0)
+        config_layout.addWidget(self._button_show_logbook,               0, 1) 
+        config_layout.addWidget(self._button_calibrate,                  1, 0)
+        config_layout.addWidget(self._button_project_white,              1, 1)
+        config_layout.addWidget(self._label_trigger_line,                2, 0)
+        config_layout.addWidget(self._dropdown_trigger_line,             2, 1)    
+
+        # === Capture GroupBox ===
+        capture_group = QtWidgets.QGroupBox("Capture")
+        capture_layout = QtWidgets.QGridLayout()
+        capture_group.setLayout(capture_layout)
+        capture_group.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid gray;
+                border-radius: 5px;
+                margin-top: 10px;
+                font-weight: bold;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                padding: 0 3px;
+                font-size: 11px;
+            }
+            QLabel, QPushButton {
+                font-size: 11px;
+            }
+        """)
+
+        # Add the two capture widgets
+        capture_layout.addWidget(self._button_start_recording, 0, 0)
+        capture_layout.addWidget(self._button_software_trigger, 0, 1)
+        capture_layout.addWidget(self._dropdown_pixel_format, 1, 0)
 
         # === Gain/D-Gain/Zoom Controls in GroupBox ===
         control_group = QtWidgets.QGroupBox("Adjustments")
@@ -377,17 +421,37 @@ class Interface(QtWidgets.QMainWindow):
         self._zoom_value_label.setStyleSheet("font-size: 10px;")
         control_group_layout.addWidget(self._zoom_value_label, 2, 2)
 
+
+        # Group Box size policies
+        control_group.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed,
+            QtWidgets.QSizePolicy.Preferred
+        )
+        for grp in (config_group, capture_group):
+            grp.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding,
+                QtWidgets.QSizePolicy.Preferred
+            )
+
+        # column stretches
+        button_bar_layout.setColumnStretch(4, 1)
+        button_bar_layout.setColumnStretch(5, 1)
+        button_bar_layout.setColumnStretch(7, 0)
+
         # Add group box to the right side of the layout (spanning multiple rows)
         button_bar_layout.addWidget(control_group, 0, 7, 7, 1)
+        button_bar_layout.addWidget(config_group, 0, 4, 4, 2)
+        button_bar_layout.addWidget(capture_group, 4, 4, 1, 2)
+        button_bar_layout.addWidget(self._button_show_gpu_ui, 5, 4, 1, 2)
 
+        
 
         # ToolTips:
         # Buttons
         self._button_start_hardware_acquisition.setToolTip("Start/Stop acquiring images using hardware triggering rather than real time(RT) acquisition. Hardware Trigger FPS must stay <45 hz")
         self._button_start_recording.setToolTip("Start/Stop recording video of the live feed.")
         self._button_software_trigger.setToolTip("Save the next processed frame.")
-        self._button_show_logbook.setToolTip("Show the logbook window.")
-        self._button_show_gpu_ui.setToolTip("Show the CRISPI Window")
+
         # Slider Lables
         self._gain_label.setToolTip("Adjust the analog gain level (brightness).")
         self._dgain_label.setToolTip("Adjust the digital gain level.")
@@ -436,6 +500,32 @@ class Interface(QtWidgets.QMainWindow):
         self._camera.killed = True
         self.acquisition_thread.join()
 
+    def closeEvent(self, event):
+        """
+        Ensure the projection window is closed,
+        the acquisition thread is stopped, and the
+        whole QApplication exits when the main window is closed.
+        """
+        # 1) Close projection window if open
+        if hasattr(self, "projection") and self.projection is not None:
+            try:
+                self.projection.close()
+            except Exception as e:
+                print(f"Error closing projection: {e}")
+
+        # 2) Stop camera threads and clean up
+        try:
+            self._close()
+        except Exception as e:
+            print(f"Error during acquisition shutdown: {e}")
+
+        # 3) Quit the Qt event loop
+        QtWidgets.QApplication.instance().quit()
+
+        # Accept the close so the window actually goes away
+        event.accept()
+
+
 
     def start_window(self):
         # self.display = Display()
@@ -446,6 +536,8 @@ class Interface(QtWidgets.QMainWindow):
             self._camera._interface.on_mask_received = self.display.on_mask_received
         self._create_button_bar()
         self._create_statusbar()
+        
+        self.image_update_signal.connect(self.display.on_image_received, QtCore.Qt.QueuedConnection)
 
         screens = QGuiApplication.screens()
         if len(screens) > 1:
@@ -469,33 +561,14 @@ class Interface(QtWidgets.QMainWindow):
         self._button_start_hardware_acquisition.setEnabled(True)
         if not self._hardware_status:
             self._dropdown_trigger_line.setEnabled(True)
-
     
     def start_interface(self):
-        # self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
-        
-        # QtCore.QCoreApplication.setApplicationName(
-        #     "STIMViewer")
-        # print(">> now in start_interface(), about to exec()")
-        # self.show()
-        # self._qt_instance.exec_()
-        import threading
         self._gain_slider.setMaximum(int(self._camera.max_gain * 100))
-
-        # — fire up the camera acquisition —
-        if not self._camera.acquisition_running:
-            self._camera.start_realtime_acquisition()
-        self.acquisition_thread = threading.Thread(
-           target=self._camera.acquisition_thread,
-            daemon=True
-        )
-        self.acquisition_thread.start()
-
-        # — now show the window —
-        QtCore.QCoreApplication.setApplicationName("STIMViewer")
-        print(">> now in start_interface(), about to exec()")
+        
+        QtCore.QCoreApplication.setApplicationName(
+            "STIMViewer")
         self.show()
-        self._qt_instance.exec_()
+        self._qt_instance.exec()
 
 
     def _trigger_sw_trigger(self):
@@ -583,9 +656,9 @@ class Interface(QtWidgets.QMainWindow):
         )
              
         try:
-            self.display.on_image_received(qt_image)
+            self.image_update_signal.emit(qt_image)
         except Exception as e:
-            Logbook.log_ERRO(f"Error updating Display, {e}")
+            print(f"Error updating Display, {e}")
 
     def on_projection_received(self, image, homography_matrix = None):
         """
@@ -596,15 +669,15 @@ class Interface(QtWidgets.QMainWindow):
         try:
             self.projection.show_image_fullscreen_on_second_monitor(image, homography_matrix)
         except Exception as e:
-            Logbook.log_ERRO(f"Error updating Projection, {e}")
+            print(f"Error updating Projection, {e}")
         
 
 
     def warning(self, message: str):
-        self.messagebox_pyqtSignal.emit("Warning", message)
+        self.messagebox_signal.emit("Warning", message)
 
     def information(self, message: str):
-        self.messagebox_pyqtSignal.emit("Information", message)
+        self.messagebox_signal.emit("Information", message)
 
     def show_logbook(self):
         """
@@ -623,7 +696,7 @@ class Interface(QtWidgets.QMainWindow):
         self.logbook.move(main_geom.right() + 5, main_geom.top())
         self.logbook.show()
         # self._button_show_logbook.setEnabled(False)
-    
+
     def show_gpu_ui(self):
         if self.gpu_ui is None:
             self.gpu_ui = GPU(camera=self._camera)
@@ -631,9 +704,8 @@ class Interface(QtWidgets.QMainWindow):
         self.gpu_ui.move(self.geometry().right() + 5, self.geometry().top())
         self.gpu_ui.show()
 
-
-    #pyqtSlot SW Trigger
-    @pyqtSlot(str, str)
+    #Slot SW Trigger
+    @Slot(str, str)
     def message(self, typ: str, message: str):
         if typ == "Warning":
             QtWidgets.QMessageBox.warning(
@@ -642,12 +714,12 @@ class Interface(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.information(
                 self, "Information", message, QtWidgets.QMessageBox.Ok)
 
-    #pyqtSlot Gain
-    @pyqtSlot(float)
+    #Slot Gain
+    @Slot(float)
     def change_slider_gain(self, val):
         self._gain_slider.setValue(int(val * 100))
 
-    @pyqtSlot(int)
+    @Slot(int)
     def _update_gain(self, val):
         value = val / 100
         self._gain_value_label.setText(f"{value:.2f}")
@@ -655,12 +727,12 @@ class Interface(QtWidgets.QMainWindow):
         self._camera.node_map.FindNode("GainSelector").SetCurrentEntry("AnalogAll")
         self._camera.set_remote_device_value("Gain", value)
 
-    #pyqtSlot Gain
-    @pyqtSlot(float)
+    #Slot Gain
+    @Slot(float)
     def change_slider_dgain(self, val):
         self._dgain_slider.setValue(int(val * 100))
 
-    @pyqtSlot(int)
+    @Slot(int)
     def _update_dgain(self, val):
         value = val / 100
         self._dgain_value_label.setText(f"{value:.2f}")
@@ -668,11 +740,11 @@ class Interface(QtWidgets.QMainWindow):
         self._camera.node_map.FindNode("GainSelector").SetCurrentEntry("DigitalAll")
         self._camera.set_remote_device_value("Gain", value)
     
-    @pyqtSlot(float)
+    @Slot(float)
     def change_slider_zoom(self, val):
         self._zoom_slider.setValue(int(val * 100))
 
-    @pyqtSlot(int)
+    @Slot(int)
     def _update_zoom(self, val):
         value = val / 100
         self._zoom_value_label.setText(f"{value:.2f}")
